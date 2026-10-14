@@ -8,8 +8,8 @@ Este repositorio documenta el diseño y la construcción de un agente de IA con 
 
 | # | Fase | Estado |
 |---|------|--------|
-| 1 | Definición del problema | 🟡 En revisión |
-| 2 | Visión del producto | ⚪ Pendiente |
+| 1 | [Definición del problema](#fase-1-definición-del-problema) | ✅ Aprobada |
+| 2 | [Visión del producto](#fase-2-visión-del-producto) | 🟡 En revisión |
 | 3 | Requisitos (historias, criterios de aceptación, RNF) | ⚪ Pendiente |
 | 4 | Especificación del agente (rol, capacidades, herramientas, límites) | ⚪ Pendiente |
 | 5 | Diseño técnico (arquitectura, modelo, prompts, memoria, evals) | ⚪ Pendiente |
@@ -121,3 +121,105 @@ Cagan advierte que una persona inventada en un workshop, sin datos detrás, es c
 - [x] ~~**Por qué IA**~~: guiar, relevar, sintetizar, detectar supuestos y proponer borradores, siempre con aprobación humana.
 - [ ] **Métricas:** se definen en la Fase 2, junto con la visión del producto.
 - [ ] **Restricciones técnicas** (presupuesto, stack, plazos): se definen en la Fase 3 como requisitos no funcionales.
+
+---
+
+## Fase 2: Visión del producto
+
+### Objetivo del proyecto
+
+Proyecto de **aprendizaje y portfolio**. Busca demostrar Spec Driven Development y el diseño de agentes de IA con un **MVP funcional y bien documentado**. No hace falta escala, multi-tenant ni monetización. Igual, la arquitectura no debería impedir crecer después.
+
+### Declaración de visión
+
+> **Para** equipos de producto (PM, diseño e ingeniería) **que** necesitan saber para quién construyen, pero no tienen el tiempo ni la práctica para hacer research,
+> **User-Persona Agente** es una **aplicación web con un agente de IA** que guía a cada miembro del equipo con preguntas, releva información pública y combina la investigación propia para **proponer User Personas trazables a su evidencia**.
+> **A diferencia de** los generadores de personas con IA, que inventan perfiles verosímiles en segundos, y de los workshops tradicionales, que formalizan supuestos, **nuestro producto** muestra de dónde sale cada atributo y qué tan confiable es, expone los desacuerdos del equipo, propone cómo validar los supuestos y **no publica nada sin la aprobación del Product Manager**.
+
+**Visión a largo plazo:** que las personas sean el lenguaje común del equipo y estén conectadas a las decisiones del día a día, como el backlog, las iniciativas y las hipótesis de impacto.
+
+### Usuarios y roles
+
+| Rol | Qué hace en el producto |
+|-----|-------------------------|
+| **Product Manager (owner)** | Crea el proyecto, carga el contexto del producto, invita al equipo, revisa, edita y **aprueba o rechaza** las personas. |
+| **Miembro del equipo** (diseño, ingeniería, negocio) | Responde por separado la entrevista guiada del agente sobre los usuarios. |
+| **Aportante de evidencia** (opcional; puede ser el PM) | Carga investigación propia: entrevistas, encuestas, analítica o tickets de soporte. |
+
+### Flujo principal
+
+```mermaid
+flowchart LR
+    A[1. Contexto<br/>del producto] --> B[2. Entrevista guiada<br/>a cada miembro]
+    A --> C[3. Relevamiento<br/>web]
+    A --> D[4. Carga de investigación<br/>propia - opcional]
+    B --> E[5. Síntesis:<br/>segmentos y proto-personas]
+    C --> E
+    D --> E
+    E --> F{6. Revisión<br/>del PM}
+    F -- editar / rechazar --> E
+    F -- aprobar --> G[7. Persona aprobada<br/>+ plan de validación]
+    G -- nueva evidencia --> E
+```
+
+1. **Contexto del producto:** el PM describe el producto, su propuesta de valor, mercado, competidores y modelo de negocio. Un formulario lo guía.
+2. **Entrevista guiada:** el agente entrevista a cada miembro **por separado** y adapta las preguntas al producto.
+3. **Relevamiento web:** el agente busca competidores, reseñas, foros y estudios públicos sobre el segmento.
+4. **Investigación propia** (opcional): el equipo carga evidencia real mediante formularios o archivos.
+5. **Síntesis:** el agente propone segmentos y proto-personas. Cada atributo indica su fuente y su nivel de confianza, y se marcan las **divergencias** entre miembros del equipo.
+6. **Revisión humana:** el PM edita, rechaza o aprueba cada persona. Nada queda como válido sin su aprobación.
+7. **Plan de validación:** para cada supuesto de baja confianza, el agente propone cómo validarlo, por ejemplo con una guía de entrevista o una encuesta. Cuando entra evidencia nueva, la persona se actualiza y vuelve a revisión.
+
+### Principios de producto
+
+1. **Evidencia por sobre verosimilitud:** una persona incompleta y honesta vale más que una completa e inventada.
+2. **La IA propone y el humano decide:** toda persona necesita la aprobación explícita del PM.
+3. **Supuestos a la vista:** cada atributo muestra su fuente (investigación propia, información pública o supuesto del equipo) y su nivel de confianza.
+4. **El desacuerdo es información:** las divergencias del equipo se muestran, no se promedian.
+5. **Agnóstico de producto:** ni las preguntas ni las plantillas asumen una industria o un tipo de producto.
+6. **Accionable, no decorativa:** la persona prioriza objetivos, problemas, comportamientos y contexto de uso por sobre datos de color ("le gusta el café").
+7. **Artefacto vivo:** la persona tiene versiones y madura con la evidencia.
+
+### Qué es y qué no es
+
+| ✅ Es | ❌ No es |
+|-------|---------|
+| Un asistente de discovery que estructura y acelera la definición de personas | Un generador de personas en un clic |
+| Una herramienta que hace explícitos los supuestos y propone cómo validarlos | Un reemplazo de hablar con usuarios reales |
+| Un espacio donde el equipo se alinea sobre quién es el usuario | Una herramienta de analítica ni un CRM |
+| Un MVP de portfolio, bien especificado y documentado | Un SaaS multi-tenant listo para producción |
+
+### Alcance
+
+| MVP | Futuro (fuera del MVP) |
+|-----|------------------------|
+| Proyecto con contexto del producto | Integración con Jira o Linear para vincular personas a iniciativas |
+| Entrevista guiada individual a cada miembro del equipo | Chequeo automático de que cada iniciativa tenga una persona objetivo y una hipótesis |
+| Relevamiento web con fuentes citadas | Ingesta automática (transcripciones, analítica, tickets) |
+| Carga manual de investigación propia mediante formularios | Actualización continua y alertas de personas desactualizadas |
+| Síntesis de proto-personas con fuente, confianza y divergencias | Multi-organización, permisos avanzados y facturación |
+| Revisión, edición y aprobación por el PM | |
+| Plan de validación de supuestos | |
+| Exportación de la persona (Markdown o PDF) | |
+
+### Métricas de éxito del producto
+
+Las métricas de impacto de la Fase 1, como la adopción de funcionalidades o el % de iniciativas con persona objetivo, se miden a largo plazo y quedan fuera del alcance de un MVP de portfolio. Para el MVP medimos la **calidad y la utilidad de la solución**:
+
+| Métrica | Tipo | Objetivo MVP |
+|---------|------|--------------|
+| % de atributos de cada persona con fuente trazable | Guardrail | **100%** (ningún atributo sin fuente o sin marca de "supuesto") |
+| % de personas que el PM aprueba, con o sin ediciones menores | Calidad | ≥ 70% |
+| % de atributos que el PM tiene que reescribir | Calidad | ≤ 30% |
+| Tiempo desde la creación del proyecto hasta la primera persona aprobada | Eficiencia | Menos de 1 día de calendario; menos de 30 min por miembro del equipo |
+| % de supuestos de baja confianza con un plan de validación | Accionabilidad | 100% |
+| Divergencias del equipo detectadas y mostradas | Alineación | Cualitativa: validar en una prueba con un equipo real |
+
+### Preguntas abiertas de la Fase 2
+
+- [x] ~~**Objetivo del proyecto**~~: aprendizaje y portfolio.
+- [x] ~~**Forma**~~: app web con un agente de IA.
+- [x] ~~**Entrevistas**~~: a cada miembro del equipo por separado.
+- [ ] ¿Los objetivos de las métricas son razonables?
+- [ ] ¿Hay algo del alcance del MVP que querés sumar, sacar o mover a "Futuro"?
+- [ ] ¿Con qué producto real (propio o público) vamos a probar el MVP?
