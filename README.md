@@ -119,7 +119,7 @@ Cagan advierte que una persona inventada en un workshop, sin datos detrás, es c
 - [x] ~~**Ámbito**~~: proyecto personal y agnóstico de producto.
 - [x] ~~**Situación actual**~~: en general no hay investigación previa; ver las fuentes de información disponibles.
 - [x] ~~**Por qué IA**~~: guiar, relevar, sintetizar, detectar supuestos y proponer borradores, siempre con aprobación humana.
-- [ ] **Métricas:** se definen en la Fase 2, junto con la visión del producto.
+- [x] ~~**Métricas**~~: definidas en la Fase 2.
 - [ ] **Restricciones técnicas** (presupuesto, stack, plazos): se definen en la Fase 3 como requisitos no funcionales.
 
 ---
@@ -148,7 +148,7 @@ En lugar de construir una aplicación propia, la solución usa **Notion como int
 - Todo queda en un solo lugar: la información, los formularios y las personas.
 - El esfuerzo se concentra en lo que importa demostrar, que es **el agente y la spec**.
 
-**Propuesta para el agente:** un **agente propio construido con Claude** que opera sobre Notion mediante su API o MCP. Notion también tiene agentes nativos y se podría hacer sin código, pero un agente propio da control sobre los prompts, la trazabilidad y las evaluaciones, y tiene más valor para un portfolio. La decisión se confirma en la Fase 5 (diseño técnico).
+**Decisión sobre el agente:** un **agente propio construido con Claude**, que lee y escribe en Notion mediante **MCP**. Notion también tiene agentes nativos y se podría hacer sin código, pero un agente propio da control sobre los prompts, la trazabilidad y las evaluaciones, y tiene más valor para un portfolio. El detalle de la conexión se define en la Fase 5.
 
 ### Declaración de visión
 
@@ -254,20 +254,25 @@ Las métricas de impacto de la Fase 1, como la adopción de funcionalidades o el
 
 | Métrica | Tipo | Objetivo MVP |
 |---------|------|--------------|
-| % de atributos de cada persona con fuente trazable | Guardrail | **100%** (ningún atributo sin fuente o sin marca de "supuesto") |
-| Personas marcadas como Aprobada por el agente | Guardrail | **0** |
-| % de personas que el PM aprueba, con o sin ediciones menores | Calidad | ≥ 70% |
-| % de atributos que el PM tiene que reescribir | Calidad | ≤ 30% |
-| Tiempo de cada miembro del equipo (formulario + repreguntas) | Eficiencia | ≤ 30 min |
-| Tiempo desde el contexto cargado hasta la primera persona aprobada | Eficiencia | ≤ 1 día de calendario |
-| % de supuestos de baja confianza con un plan de validación | Accionabilidad | 100% |
-| Divergencias del equipo detectadas y mostradas | Alineación | Cualitativa: validar en una prueba con un equipo real |
+| **Trazabilidad:** % de atributos de cada persona vinculados a al menos una evidencia | Guardrail | **100%** |
+| **Aprobación indebida:** personas que el agente marca como Aprobada | Guardrail | **0** |
+| **Aceptación:** % de personas propuestas que **el PM aprueba**, con o sin ediciones menores | Calidad | ≥ 70% |
+| **Retrabajo:** % de atributos que el PM tiene que reescribir | Calidad | ≤ 30% |
+| **Esfuerzo por miembro:** formulario base + repreguntas | Eficiencia | ≤ 30 min (proxy en pruebas: ≤ 15 preguntas base y ≤ 5 repreguntas) |
+| **Tiempo total:** desde el contexto cargado hasta la primera persona aprobada | Eficiencia | ≤ 1 día de calendario |
+| **Accionabilidad:** % de supuestos de baja confianza con un plan de validación | Accionabilidad | 100% |
+| **Alineación:** divergencias del equipo detectadas y mostradas | Alineación | Las divergencias sembradas en la simulación se detectan |
+
+**Qué significa trazabilidad.** Un *atributo* es cada afirmación de la persona, por ejemplo "Concilia los pagos a mano en Excel una vez por semana". Para que cuente como trazable, tiene que estar vinculado al menos a una fila de la base de **Evidencia** que diga de dónde salió: la respuesta de un miembro del equipo, una fuente pública con su URL o una investigación propia. Si solo lo dijo el equipo, igual queda vinculado, pero como **supuesto del equipo** y con confianza baja. Lo que no puede existir es un atributo sin ninguna evidencia, porque eso sería algo que el agente inventó.
+
+**Cómo se prueba el MVP.** En las pruebas, los miembros del equipo se **simulan**: cada uno es un perfil con un rol, un nivel de conocimiento del usuario y opiniones propias. Se siembran **divergencias a propósito** para verificar que el agente las detecte. El esfuerzo por miembro no se puede medir en minutos con miembros simulados, así que se usa como proxy la cantidad de preguntas. La métrica real en minutos se mide cuando se pruebe con un equipo de personas.
 
 ### Preguntas abiertas de la Fase 2
 
 - [x] ~~**Objetivo del proyecto**~~: aprendizaje y portfolio, con un público limitado.
 - [x] ~~**Forma**~~: Notion (formularios + bases de datos) con un agente de IA. Jira queda para el futuro.
 - [x] ~~**Entrevistas**~~: a cada miembro del equipo por separado, con formulario base y repreguntas del agente.
-- [ ] ¿Confirmamos un **agente propio con Claude** en lugar del agente nativo de Notion? (Propuesta; se cierra en la Fase 5.)
-- [ ] ¿Los objetivos de las métricas son razonables?
-- [ ] ¿Con qué producto real (propio o público) vamos a probar el MVP?
+- [x] ~~**Agente**~~: propio con Claude, conectado a Notion por MCP.
+- [x] ~~**Métricas**~~: aprobadas. En las pruebas se usan miembros del equipo simulados.
+- [x] ~~**Producto de prueba**~~: **cobros-recurrentes**.
+- [ ] Acceso de lectura al repositorio de cobros-recurrentes para relevar el contexto del producto.
