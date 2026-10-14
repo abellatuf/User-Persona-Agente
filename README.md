@@ -128,47 +128,92 @@ Cagan advierte que una persona inventada en un workshop, sin datos detrás, es c
 
 ### Objetivo del proyecto
 
-Proyecto de **aprendizaje y portfolio**. Busca demostrar Spec Driven Development y el diseño de agentes de IA con un **MVP funcional y bien documentado**. No hace falta escala, multi-tenant ni monetización. Igual, la arquitectura no debería impedir crecer después.
+Proyecto de **aprendizaje y portfolio**. Busca demostrar Spec Driven Development y el diseño de agentes de IA con un **MVP funcional y bien documentado**, pensado para un **público limitado**. No hace falta escala, multi-tenant ni monetización.
+
+### Forma de la solución: Notion + agente de IA
+
+En lugar de construir una aplicación propia, la solución usa **Notion como interfaz y como base de conocimiento**, y un **agente de IA** que lee y escribe en Notion.
+
+| Necesidad | Se resuelve con |
+|-----------|-----------------|
+| Cargar el contexto del producto y la investigación propia | **Formularios de Notion** |
+| Entrevistar a cada miembro del equipo | Formulario base de Notion + **repreguntas del agente** en la página de cada miembro |
+| Guardar fuentes y evidencia | **Base de datos** de Notion |
+| Detallar las User Personas con trazabilidad | **Bases de datos relacionadas**: cada atributo se vincula a su evidencia |
+| Revisar y aprobar | **Estado** de la persona, que solo cambia el PM, y comentarios de Notion |
+| Versionar | Historial de páginas de Notion |
+
+**Por qué Notion:**
+- El público es limitado. No hace falta construir login, invitaciones, pantallas ni permisos: Notion ya los tiene.
+- Todo queda en un solo lugar: la información, los formularios y las personas.
+- El esfuerzo se concentra en lo que importa demostrar, que es **el agente y la spec**.
+
+**Propuesta para el agente:** un **agente propio construido con Claude** que opera sobre Notion mediante su API o MCP. Notion también tiene agentes nativos y se podría hacer sin código, pero un agente propio da control sobre los prompts, la trazabilidad y las evaluaciones, y tiene más valor para un portfolio. La decisión se confirma en la Fase 5 (diseño técnico).
 
 ### Declaración de visión
 
 > **Para** equipos de producto (PM, diseño e ingeniería) **que** necesitan saber para quién construyen, pero no tienen el tiempo ni la práctica para hacer research,
-> **User-Persona Agente** es una **aplicación web con un agente de IA** que guía a cada miembro del equipo con preguntas, releva información pública y combina la investigación propia para **proponer User Personas trazables a su evidencia**.
-> **A diferencia de** los generadores de personas con IA, que inventan perfiles verosímiles en segundos, y de los workshops tradicionales, que formalizan supuestos, **nuestro producto** muestra de dónde sale cada atributo y qué tan confiable es, expone los desacuerdos del equipo, propone cómo validar los supuestos y **no publica nada sin la aprobación del Product Manager**.
+> **User-Persona Agente** es un **agente de IA que trabaja dentro de Notion**: recopila el conocimiento del equipo mediante formularios y repreguntas, releva información pública, suma la investigación propia y **detalla User Personas trazables a su evidencia**.
+> **A diferencia de** los generadores de personas con IA, que inventan perfiles verosímiles en segundos, y de los workshops tradicionales, que formalizan supuestos, **nuestro producto** muestra de dónde sale cada atributo y qué tan confiable es, expone los desacuerdos del equipo, propone cómo validar los supuestos y **no da nada por válido sin la aprobación del Product Manager**.
 
-**Visión a largo plazo:** que las personas sean el lenguaje común del equipo y estén conectadas a las decisiones del día a día, como el backlog, las iniciativas y las hipótesis de impacto.
+**Visión a largo plazo:** que las personas sean el lenguaje común del equipo y estén conectadas a las decisiones del día a día. Por ejemplo, integrar Jira para vincular personas a épicas e historias.
 
 ### Usuarios y roles
 
-| Rol | Qué hace en el producto |
-|-----|-------------------------|
-| **Product Manager (owner)** | Crea el proyecto, carga el contexto del producto, invita al equipo, revisa, edita y **aprueba o rechaza** las personas. |
-| **Miembro del equipo** (diseño, ingeniería, negocio) | Responde por separado la entrevista guiada del agente sobre los usuarios. |
-| **Aportante de evidencia** (opcional; puede ser el PM) | Carga investigación propia: entrevistas, encuestas, analítica o tickets de soporte. |
+| Rol | Qué hace |
+|-----|----------|
+| **Product Manager (owner)** | Duplica el espacio de Notion, completa el contexto del producto, invita al equipo, ejecuta el agente, revisa, edita y **aprueba o rechaza** las personas. |
+| **Miembro del equipo** (diseño, ingeniería, negocio) | Completa el formulario base y responde las repreguntas del agente en su página. |
+| **Aportante de evidencia** (opcional; puede ser el PM) | Carga investigación propia mediante un formulario: entrevistas, encuestas, analítica o tickets de soporte. |
+
+### Estructura en Notion (alto nivel)
+
+```mermaid
+erDiagram
+    CONTEXTO_PRODUCTO ||--o{ ENTREVISTA : "enmarca"
+    MIEMBRO ||--o{ ENTREVISTA : "responde"
+    ENTREVISTA ||--o{ EVIDENCIA : "genera"
+    EVIDENCIA }o--o{ ATRIBUTO : "respalda"
+    USER_PERSONA ||--o{ ATRIBUTO : "se compone de"
+    ATRIBUTO ||--o| SUPUESTO_A_VALIDAR : "si es de baja confianza"
+```
+
+| Base de datos | Contenido |
+|---------------|-----------|
+| **Contexto del producto** | Propuesta de valor, mercado, competidores y modelo de negocio. Se carga por formulario. |
+| **Equipo** | Miembros y roles. |
+| **Entrevistas** | Respuestas al formulario base y repreguntas del agente, una página por miembro. |
+| **Evidencia** | Cada fuente con su tipo (supuesto del equipo, información pública o investigación propia), su origen (miembro o URL) y un extracto. |
+| **User Personas** | Una página por persona, con estado (`Borrador → En revisión → Aprobada / Rechazada`), versión y aprobador. |
+| **Atributos** | Afirmaciones de la persona por categoría (objetivos, problemas, comportamientos, contexto), con nivel de confianza, evidencias relacionadas y marca de divergencia. |
+| **Supuestos a validar** | Plan de validación de cada atributo de baja confianza: método, preguntas sugeridas y estado. |
+
+> El modelo de datos detallado se define en la Fase 5.
 
 ### Flujo principal
 
 ```mermaid
 flowchart LR
-    A[1. Contexto<br/>del producto] --> B[2. Entrevista guiada<br/>a cada miembro]
+    A[1. Formulario:<br/>contexto del producto] --> B[2. Formulario base<br/>a cada miembro]
+    B --> B2[2b. Repreguntas<br/>del agente]
     A --> C[3. Relevamiento<br/>web]
-    A --> D[4. Carga de investigación<br/>propia - opcional]
-    B --> E[5. Síntesis:<br/>segmentos y proto-personas]
+    A --> D[4. Formulario: investigación<br/>propia - opcional]
+    B2 --> E[5. Síntesis en Notion:<br/>proto-personas]
     C --> E
     D --> E
     E --> F{6. Revisión<br/>del PM}
     F -- editar / rechazar --> E
-    F -- aprobar --> G[7. Persona aprobada<br/>+ plan de validación]
+    F -- aprobar --> G[7. Persona aprobada<br/>+ supuestos a validar]
     G -- nueva evidencia --> E
 ```
 
-1. **Contexto del producto:** el PM describe el producto, su propuesta de valor, mercado, competidores y modelo de negocio. Un formulario lo guía.
-2. **Entrevista guiada:** el agente entrevista a cada miembro **por separado** y adapta las preguntas al producto.
-3. **Relevamiento web:** el agente busca competidores, reseñas, foros y estudios públicos sobre el segmento.
-4. **Investigación propia** (opcional): el equipo carga evidencia real mediante formularios o archivos.
-5. **Síntesis:** el agente propone segmentos y proto-personas. Cada atributo indica su fuente y su nivel de confianza, y se marcan las **divergencias** entre miembros del equipo.
-6. **Revisión humana:** el PM edita, rechaza o aprueba cada persona. Nada queda como válido sin su aprobación.
-7. **Plan de validación:** para cada supuesto de baja confianza, el agente propone cómo validarlo, por ejemplo con una guía de entrevista o una encuesta. Cuando entra evidencia nueva, la persona se actualiza y vuelve a revisión.
+1. **Contexto del producto:** el PM completa un formulario de Notion.
+2. **Entrevista a cada miembro:** cada uno completa por separado un formulario base agnóstico de producto. Después, el agente analiza las respuestas y escribe **repreguntas** en la página de cada miembro para profundizar, aclarar o pedir ejemplos.
+3. **Relevamiento web:** el agente busca competidores, reseñas, foros y estudios públicos, y registra cada fuente en la base de evidencia.
+4. **Investigación propia** (opcional): se carga mediante un formulario.
+5. **Síntesis:** el agente crea o actualiza las páginas de User Persona y sus atributos, cada uno vinculado a su evidencia, con nivel de confianza y marca de divergencia entre miembros.
+6. **Revisión humana:** el PM edita, comenta, rechaza o aprueba. **El agente nunca puede marcar una persona como Aprobada.**
+7. **Supuestos a validar:** para cada atributo de baja confianza, el agente propone cómo validarlo. Cuando entra evidencia nueva, la persona vuelve a revisión con una nueva versión.
 
 ### Principios de producto
 
@@ -176,31 +221,32 @@ flowchart LR
 2. **La IA propone y el humano decide:** toda persona necesita la aprobación explícita del PM.
 3. **Supuestos a la vista:** cada atributo muestra su fuente (investigación propia, información pública o supuesto del equipo) y su nivel de confianza.
 4. **El desacuerdo es información:** las divergencias del equipo se muestran, no se promedian.
-5. **Agnóstico de producto:** ni las preguntas ni las plantillas asumen una industria o un tipo de producto.
+5. **Agnóstico de producto:** ni los formularios, ni las preguntas, ni las plantillas asumen una industria o un tipo de producto.
 6. **Accionable, no decorativa:** la persona prioriza objetivos, problemas, comportamientos y contexto de uso por sobre datos de color ("le gusta el café").
 7. **Artefacto vivo:** la persona tiene versiones y madura con la evidencia.
+8. **Donde el equipo ya trabaja:** todo pasa en Notion, sin herramientas nuevas que adoptar.
 
 ### Qué es y qué no es
 
 | ✅ Es | ❌ No es |
 |-------|---------|
-| Un asistente de discovery que estructura y acelera la definición de personas | Un generador de personas en un clic |
+| Un agente de discovery que estructura y acelera la definición de personas dentro de Notion | Un generador de personas en un clic |
 | Una herramienta que hace explícitos los supuestos y propone cómo validarlos | Un reemplazo de hablar con usuarios reales |
 | Un espacio donde el equipo se alinea sobre quién es el usuario | Una herramienta de analítica ni un CRM |
-| Un MVP de portfolio, bien especificado y documentado | Un SaaS multi-tenant listo para producción |
+| Un MVP de portfolio para un público limitado | Una aplicación web propia ni un SaaS |
 
 ### Alcance
 
 | MVP | Futuro (fuera del MVP) |
 |-----|------------------------|
-| Proyecto con contexto del producto | Integración con Jira o Linear para vincular personas a iniciativas |
-| Entrevista guiada individual a cada miembro del equipo | Chequeo automático de que cada iniciativa tenga una persona objetivo y una hipótesis |
-| Relevamiento web con fuentes citadas | Ingesta automática (transcripciones, analítica, tickets) |
-| Carga manual de investigación propia mediante formularios | Actualización continua y alertas de personas desactualizadas |
-| Síntesis de proto-personas con fuente, confianza y divergencias | Multi-organización, permisos avanzados y facturación |
-| Revisión, edición y aprobación por el PM | |
-| Plan de validación de supuestos | |
-| Exportación de la persona (Markdown o PDF) | |
+| Plantilla de Notion con bases de datos y formularios | Integración con Jira: personas vinculadas a épicas e historias y marca de historias "como usuario…" sin persona |
+| Formulario de contexto del producto | Ingesta automática (transcripciones, analítica, tickets) |
+| Formulario base para cada miembro del equipo + repreguntas del agente | Ejecución automática del agente ante cada formulario nuevo |
+| Relevamiento web con fuentes citadas | Alertas de personas desactualizadas |
+| Formulario de investigación propia | Uso por muchos equipos en paralelo |
+| Síntesis de proto-personas con fuente, confianza y divergencias | |
+| Revisión y aprobación por el PM mediante estados de Notion | |
+| Supuestos a validar con métodos sugeridos | |
 
 ### Métricas de éxito del producto
 
@@ -209,17 +255,19 @@ Las métricas de impacto de la Fase 1, como la adopción de funcionalidades o el
 | Métrica | Tipo | Objetivo MVP |
 |---------|------|--------------|
 | % de atributos de cada persona con fuente trazable | Guardrail | **100%** (ningún atributo sin fuente o sin marca de "supuesto") |
+| Personas marcadas como Aprobada por el agente | Guardrail | **0** |
 | % de personas que el PM aprueba, con o sin ediciones menores | Calidad | ≥ 70% |
 | % de atributos que el PM tiene que reescribir | Calidad | ≤ 30% |
-| Tiempo desde la creación del proyecto hasta la primera persona aprobada | Eficiencia | Menos de 1 día de calendario; menos de 30 min por miembro del equipo |
+| Tiempo de cada miembro del equipo (formulario + repreguntas) | Eficiencia | ≤ 30 min |
+| Tiempo desde el contexto cargado hasta la primera persona aprobada | Eficiencia | ≤ 1 día de calendario |
 | % de supuestos de baja confianza con un plan de validación | Accionabilidad | 100% |
 | Divergencias del equipo detectadas y mostradas | Alineación | Cualitativa: validar en una prueba con un equipo real |
 
 ### Preguntas abiertas de la Fase 2
 
-- [x] ~~**Objetivo del proyecto**~~: aprendizaje y portfolio.
-- [x] ~~**Forma**~~: app web con un agente de IA.
-- [x] ~~**Entrevistas**~~: a cada miembro del equipo por separado.
+- [x] ~~**Objetivo del proyecto**~~: aprendizaje y portfolio, con un público limitado.
+- [x] ~~**Forma**~~: Notion (formularios + bases de datos) con un agente de IA. Jira queda para el futuro.
+- [x] ~~**Entrevistas**~~: a cada miembro del equipo por separado, con formulario base y repreguntas del agente.
+- [ ] ¿Confirmamos un **agente propio con Claude** en lugar del agente nativo de Notion? (Propuesta; se cierra en la Fase 5.)
 - [ ] ¿Los objetivos de las métricas son razonables?
-- [ ] ¿Hay algo del alcance del MVP que querés sumar, sacar o mover a "Futuro"?
 - [ ] ¿Con qué producto real (propio o público) vamos a probar el MVP?
