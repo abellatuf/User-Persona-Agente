@@ -4,6 +4,20 @@ Agente de IA para construir y usar User Personas basadas en evidencia.
 
 Este repositorio documenta el diseño y la construcción de un agente de IA con **Spec Driven Development (SDD)**. Cada fase produce una especificación que funciona como contrato para la siguiente. No se pasa a una fase sin aprobar la anterior.
 
+## Base metodológica: *Inspired*, de Marty Cagan
+
+Toda la solución se apoya en el enfoque de **product discovery** que Marty Cagan describe en *Inspired: How to Create Tech Products Customers Love*. Estas son las ideas del libro que guían las decisiones de este proyecto:
+
+| Idea de *Inspired* | Cómo se refleja en la solución |
+|--------------------|--------------------------------|
+| Las personas son útiles solo si nacen de **investigación con usuarios reales**. Una persona inventada formaliza supuestos. | Cada atributo se vincula a su evidencia, y los supuestos del equipo se marcan como tales, con confianza baja. |
+| Discovery busca reducir los **cuatro riesgos**: valor, usabilidad, factibilidad y viabilidad de negocio. | Las personas atacan sobre todo los riesgos de **valor** y **usabilidad**: para quién es y qué problema le resuelve. |
+| Los equipos de producto se miden por **resultados (outcomes)**, no por lo que entregan (output). | Las personas sirven para definir para quién es cada iniciativa y qué cambio se espera. Ver la visión a largo plazo. |
+| Las ideas se **validan con usuarios** antes de construir. | Cada supuesto de baja confianza tiene un plan de validación con usuarios reales. |
+| El equipo necesita **contacto frecuente con usuarios**. | El agente no reemplaza ese contacto: lo dispara, proponiendo a quién y qué preguntar. |
+
+> Las ideas de la tabla son una síntesis propia del enfoque del libro, no citas textuales.
+
 ## Estado del proceso
 
 | # | Fase | Estado |
@@ -258,14 +272,22 @@ Las métricas de impacto de la Fase 1, como la adopción de funcionalidades o el
 | **Aprobación indebida:** personas que el agente marca como Aprobada | Guardrail | **0** |
 | **Aceptación:** % de personas propuestas que **el PM aprueba**, con o sin ediciones menores | Calidad | ≥ 70% |
 | **Retrabajo:** % de atributos que el PM tiene que reescribir | Calidad | ≤ 30% |
-| **Esfuerzo por miembro:** formulario base + repreguntas | Eficiencia | ≤ 30 min (proxy en pruebas: ≤ 15 preguntas base y ≤ 5 repreguntas) |
+| **Esfuerzo por miembro:** formulario base + repreguntas | Eficiencia | ≤ 30 min (pauta de diseño: ≤ 15 preguntas base y ≤ 5 repreguntas) |
 | **Tiempo total:** desde el contexto cargado hasta la primera persona aprobada | Eficiencia | ≤ 1 día de calendario |
 | **Accionabilidad:** % de supuestos de baja confianza con un plan de validación | Accionabilidad | 100% |
-| **Alineación:** divergencias del equipo detectadas y mostradas | Alineación | Las divergencias sembradas en la simulación se detectan |
+| **Alineación:** divergencias del equipo detectadas y mostradas | Alineación | Se detectan todas las divergencias planteadas a propósito en la prueba |
 
 **Qué significa trazabilidad.** Un *atributo* es cada afirmación de la persona, por ejemplo "Concilia los pagos a mano en Excel una vez por semana". Para que cuente como trazable, tiene que estar vinculado al menos a una fila de la base de **Evidencia** que diga de dónde salió: la respuesta de un miembro del equipo, una fuente pública con su URL o una investigación propia. Si solo lo dijo el equipo, igual queda vinculado, pero como **supuesto del equipo** y con confianza baja. Lo que no puede existir es un atributo sin ninguna evidencia, porque eso sería algo que el agente inventó.
 
-**Cómo se prueba el MVP.** En las pruebas, los miembros del equipo se **simulan**: cada uno es un perfil con un rol, un nivel de conocimiento del usuario y opiniones propias. Se siembran **divergencias a propósito** para verificar que el agente las detecte. El esfuerzo por miembro no se puede medir en minutos con miembros simulados, así que se usa como proxy la cantidad de preguntas. La métrica real en minutos se mide cuando se pruebe con un equipo de personas.
+### Plan de prueba del MVP
+
+**Producto de prueba: cobros-recurrentes.** Es una app para que un **emisor** (un particular, una sociedad de fomento o un profesional independiente, en Argentina) le cobre un monto recurrente a un **pagador**. El pago se pide por email o WhatsApp, sin login, y la conciliación del comprobante es manual. Es un buen caso de prueba por tres razones:
+
+- Es un producto real, con una spec escrita pero **sin investigación con usuarios**: el caso general que plantea la Fase 1.
+- Tiene dos actores muy distintos y, dentro del emisor, **segmentos que pueden tener necesidades diferentes**. Son candidatos naturales a varias personas.
+- Su spec sirve como insumo para el **formulario de contexto del producto**: el agente no lee el repositorio, lee lo que el PM carga en Notion.
+
+**Miembros del equipo: una persona con distintos sombreros.** Abel completa los formularios y responde las repreguntas varias veces, cada vez con un rol distinto, por ejemplo PM, diseño, ingeniería y negocio. Cada rol tiene su propio nivel de conocimiento del usuario y sus opiniones. En algunos puntos se plantean **divergencias a propósito** para verificar que el agente las detecte. Como responde una persona real, el esfuerzo por miembro **se mide en minutos**.
 
 ### Preguntas abiertas de la Fase 2
 
@@ -273,6 +295,6 @@ Las métricas de impacto de la Fase 1, como la adopción de funcionalidades o el
 - [x] ~~**Forma**~~: Notion (formularios + bases de datos) con un agente de IA. Jira queda para el futuro.
 - [x] ~~**Entrevistas**~~: a cada miembro del equipo por separado, con formulario base y repreguntas del agente.
 - [x] ~~**Agente**~~: propio con Claude, conectado a Notion por MCP.
-- [x] ~~**Métricas**~~: aprobadas. En las pruebas se usan miembros del equipo simulados.
-- [x] ~~**Producto de prueba**~~: **cobros-recurrentes**.
-- [ ] Acceso de lectura al repositorio de cobros-recurrentes para relevar el contexto del producto.
+- [x] ~~**Métricas**~~: aprobadas.
+- [x] ~~**Producto de prueba**~~: **cobros-recurrentes**. Abel hace de los distintos miembros del equipo.
+- [x] ~~**Base metodológica**~~: *Inspired*, de Marty Cagan.
