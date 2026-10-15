@@ -1,0 +1,46 @@
+# Ejecuta el agente: atiende las Solicitudes pendientes de Notion (Fase 5).
+# Se pausa desde la casilla «Agente activo» de Configuración, en Notion.
+name: Agente
+
+on:
+  schedule:
+    # Todos los días a las 15:00 de Argentina (18:00 UTC).
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Nunca dos ejecuciones a la vez: la segunda espera a que termine la primera.
+concurrency:
+  group: agente
+  cancel-in-progress: false
+
+jobs:
+  agente:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar
+        run: npm run build
+
+      # En el H1 solo recibe el token de Notion: sin las claves de los modelos,
+      # el agente no puede gastar tokens de IA.
+      - name: Ejecutar el agente
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: npm start
