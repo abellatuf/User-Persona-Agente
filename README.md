@@ -31,8 +31,8 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 3 | [Requisitos](docs/03-requisitos.md) (historias, criterios de aceptación, RNF) | ✅ Aprobada |
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
-| 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | 🟡 En revisión |
-| 7 | Implementación y validación | ⚪ Pendiente |
+| 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 |
 
 ---
 
@@ -44,7 +44,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 
 - **Spec Driven Development** fase por fase. No se avanza sin la aprobación explícita de Abel.
 - Todo se documenta en español: el README tiene el índice y esta bitácora, y cada fase vive en su archivo de `docs/`. Se sube a `main` después de cada cambio.
-- **Método de implementación:** el asistente escribe y prueba el código en la carpeta de su sesión de Claude Code (que tiene Node.js) y lo sube a GitHub con el conector. Abel no necesita instalar nada. Además, un workflow de CI corre las pruebas en cada cambio.
+- **Método de implementación** (confirmado): el asistente escribe y prueba el código en la carpeta de su sesión de Claude Code (que tiene Node.js) y lo sube a GitHub con el conector. Abel no necesita instalar nada. Además, un workflow de CI corre las pruebas en cada cambio.
 - Abel define y decide. El asistente propone, cuestiona y redacta.
 - La base metodológica es *Inspired*, de Marty Cagan.
 
@@ -90,10 +90,12 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-15 | 6 | Se aprueban el orden de los hitos y el cierre con demo. El asistente crea la plantilla de Notion con el MCP de Notion. Cada fase pasa a su archivo en `docs/`. |
 | 2026-10-15 | 6 | El asistente crea la **plantilla de Notion**: página raíz privada y 10 bases relacionadas (T1.2). *Agente activo* queda desmarcado hasta el H1. Los formularios quedan para H4 y H5. |
 | 2026-10-15 | 6 | Abel no puede trabajar en su máquina por ahora. **Propuesta:** el asistente escribe y prueba el código en la carpeta de su sesión y lo sube con el conector, con CI en GitHub Actions como segunda red. Pendiente de confirmación. |
+| 2026-10-15 | 6 | Abel confirma el método de implementación. **Se aprueba la Fase 6.** |
+| 2026-10-15 | 7 | Arranca la Fase 7 con el **H0**: guía paso a paso para la integración de Notion, las claves y los secretos, y un workflow *Verificar accesos* que prueba los tres secretos sin mostrarlos. |
 
 ### Próximo paso
 
-Confirmar el método de implementación y aprobar la **Fase 6: Plan de tareas**. Después sigue la **Fase 7: Implementación y validación**, empezando por el hito H0.
+**H0 (Abel):** seguir la guía de [docs/07-implementacion.md](docs/07-implementacion.md) (T0.1 a T0.4) y ejecutar el workflow *Verificar accesos*. Con el resultado en verde se cierra el H0 y arranca el **H1: esqueleto sin modelo**.
 
 ### Cómo retomar en otro chat
 

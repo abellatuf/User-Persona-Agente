@@ -1,0 +1,77 @@
+# Verifica que los secretos del agente funcionen, sin mostrarlos (hito H0).
+name: Verificar accesos
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      NOTION_ROOT_PAGE_ID: 3fa245a35f2b81f2afcec088c81678a4
+    steps:
+      - name: Verificar Notion, Gemini y OpenRouter
+        run: |
+          fallas=0
+
+          check() {
+            local nombre="$1" codigo="$2"
+            if [ "$codigo" = "200" ]; then
+              echo "✅ $nombre: OK"
+            else
+              echo "❌ $nombre: FALLA (HTTP $codigo)"
+              fallas=$((fallas + 1))
+            fi
+          }
+
+          falta() {
+            echo "❌ $1: FALLA (el secreto $2 no está cargado)"
+            fallas=$((fallas + 1))
+          }
+
+          if [ -z "$NOTION_TOKEN" ]; then
+            falta "Notion" "NOTION_TOKEN"
+          else
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $NOTION_TOKEN" \
+              -H "Notion-Version: 2022-06-28" \
+              "https://api.notion.com/v1/pages/$NOTION_ROOT_PAGE_ID")
+            check "Notion (lectura de la página raíz)" "$codigo"
+          fi
+
+          if [ -z "$GEMINI_API_KEY" ]; then
+            falta "Gemini" "GEMINI_API_KEY"
+          else
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "x-goog-api-key: $GEMINI_API_KEY" \
+              "https://generativelanguage.googleapis.com/v1beta/models")
+            check "Gemini" "$codigo"
+          fi
+
+          if [ -z "$OPENROUTER_API_KEY" ]; then
+            falta "OpenRouter" "OPENROUTER_API_KEY"
+          else
+            codigo=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+              "https://openrouter.ai/api/v1/key")
+            # Ruta anterior de la API, por compatibilidad.
+            if [ "$codigo" != "200" ]; then
+              codigo=$(curl -s -o /dev/null -w '%{http_code}' \
+                -H "Authorization: Bearer $OPENROUTER_API_KEY" \
+                "https://openrouter.ai/api/v1/auth/key")
+            fi
+            check "OpenRouter" "$codigo"
+          fi
+
+          if [ "$fallas" -gt 0 ]; then
+            echo "Hay $fallas acceso(s) con problemas. Revisá la guía del H0 en docs/07-implementacion.md."
+            exit 1
+          fi
+          echo "Todos los accesos funcionan."

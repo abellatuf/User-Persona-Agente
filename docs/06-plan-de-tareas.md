@@ -154,7 +154,7 @@ El MVP está terminado cuando:
 
 ## Preguntas abiertas de la Fase 6
 
-- [ ] **Método de trabajo para la implementación (T0.5).** Abel no puede trabajar en su máquina por ahora. **Propuesta:** el asistente escribe y prueba el código en la carpeta de su sesión de Claude Code, que ya tiene Node.js, y lo sube a GitHub con el conector. Abel no instala nada, y un workflow de CI corre las pruebas en GitHub Actions en cada cambio, como segunda red. Falta la confirmación de Abel.
+- [x] ~~**Método de trabajo para la implementación (T0.5)**~~: confirmado. Abel no puede trabajar en su máquina por ahora, así que el asistente escribe y prueba el código en la carpeta de su sesión de Claude Code, que ya tiene Node.js, y lo sube a GitHub con el conector. Abel no instala nada, y un workflow de CI corre las pruebas en GitHub Actions en cada cambio, como segunda red.
 - [x] ~~**Plantilla de Notion (T1.2)**~~: la crea el asistente con el MCP de Notion.
 - [x] ~~**Orden de los hitos**~~: aprobado, con una demo y la aprobación de Abel al cierre de cada uno.
 - [x] ~~**README**~~: cada fase pasa a su archivo en `docs/`, y el README queda con el índice y la bitácora.
