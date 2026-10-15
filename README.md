@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, sigue el H1 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 con el código listo y la demo pendiente |
 
 ---
 
@@ -57,7 +57,8 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | Segundo producto de prueba | `abellatuf/rutina-app` (privado, de Abel). |
 | Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. También tiene **Workflows: Read and write**, para subir los archivos de `.github/workflows/`. |
 | Plantilla de Notion | [User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4) (privada), con 10 bases. El detalle y los IDs están en [docs/notion-plantilla.md](docs/notion-plantilla.md). |
-| Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente va a usar un servidor MCP con token de integración (Fase 5). |
+| Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente usa el servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) con el token de la integración *User-Persona Agente* (secreto `NOTION_TOKEN`). |
+| Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (programado a las 15 h de Argentina, y manual) y [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio). |
 
 ### Bitácora de decisiones
 
@@ -93,10 +94,12 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-15 | 6 | Abel confirma el método de implementación. **Se aprueba la Fase 6.** |
 | 2026-10-15 | 7 | Arranca la Fase 7 con el **H0**: guía paso a paso para la integración de Notion, las claves y los secretos, y un workflow *Verificar accesos* que prueba los tres secretos sin mostrarlos. |
 | 2026-10-15 | 7 | **Se cierra el H0:** integración de Notion, claves de Gemini y OpenRouter, y los tres secretos cargados. *Verificar accesos* en verde. El primer intento dio 404 porque la página no estaba compartida con la integración. |
+| 2026-10-15 | 7 | Diseño del **H1** aprobado: servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) por stdio, interfaz `EspacioNotion` para probar sin Notion, una fila en Ejecuciones por corrida (también *Pausado* y *Sin pendientes*), hasta 10 solicitudes por ejecución, y `agente.yml` solo con `NOTION_TOKEN` para no gastar tokens. Se sube directo a `main`. |
+| 2026-10-15 | 7 | Código del H1 en `main`: etapa 0, bucle de solicitudes, registro en Ejecuciones, `agente.yml` y CI. 25 pruebas, incluida una de integración con el servidor MCP real y una API de Notion falsa. Las etapas 1 a 5 son marcadores sin modelo. Falta la demo de Abel. |
 
 ### Próximo paso
 
-**H1: esqueleto de punta a punta, sin modelo de lenguaje** (ver [docs/06-plan-de-tareas.md](docs/06-plan-de-tareas.md)). El asistente inicializa el proyecto TypeScript, conecta el agente a Notion por MCP, implementa la etapa 0, el bucle de solicitudes y el registro en Ejecuciones, y crea el workflow `agente.yml`. **Demo:** Abel crea una Solicitud en Notion, ejecuta el workflow a mano y la ve pasar a *Lista*.
+**Demo del H1** (la hace Abel, con el paso a paso de [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h1-la-hace-abel)): marcar *Agente activo* en Configuración, crear una Solicitud en *Pendiente*, ejecutar el workflow **Agente** a mano desde Actions y verla pasar a *Lista* con su fila en Ejecuciones. Con el OK de Abel se cierra el H1 y sigue el **H2: reglas en código**.
 
 ### Cómo retomar en otro chat
 
