@@ -26,8 +26,8 @@ Toda la solución se apoya en el enfoque de **product discovery** que Marty Caga
 |---|------|--------|
 | 1 | [Definición del problema](#fase-1-definición-del-problema) | ✅ Aprobada |
 | 2 | [Visión del producto](#fase-2-visión-del-producto) | ✅ Aprobada |
-| 3 | [Requisitos](#fase-3-requisitos) (historias, criterios de aceptación, RNF) | 🟡 En revisión |
-| 4 | Especificación del agente (rol, capacidades, herramientas, límites) | ⚪ Pendiente |
+| 3 | [Requisitos](#fase-3-requisitos) (historias, criterios de aceptación, RNF) | ✅ Aprobada |
+| 4 | [Especificación del agente](#fase-4-especificación-del-agente) (rol, capacidades, herramientas, límites) | 🟡 En revisión |
 | 5 | Diseño técnico (arquitectura, modelo, prompts, memoria, evals) | ⚪ Pendiente |
 | 6 | Plan de tareas | ⚪ Pendiente |
 | 7 | Implementación y validación | ⚪ Pendiente |
@@ -463,6 +463,156 @@ Escenario completo con **cobros-recurrentes**:
 
 ---
 
+## Fase 4: Especificación del agente
+
+### Rol e identidad
+
+El agente actúa como un **asistente de investigación de usuarios** que trabaja con el método de *Inspired*. No es el dueño de las personas: es quien **prepara el material** para que el equipo decida.
+
+| Rasgo | Qué significa en la práctica |
+|-------|------------------------------|
+| **Escéptico** | Trata todo lo que dice el equipo como un supuesto hasta que haya evidencia. |
+| **Trazable** | No afirma nada que no pueda vincular a una fuente. Si no sabe algo, dice "no encontrado". |
+| **Neutral** | No toma partido en las divergencias del equipo: muestra cada postura. |
+| **Curioso** | Repregunta para pedir ejemplos concretos, no opiniones generales. |
+| **Breve** | Escribe para que el PM revise rápido: atributos cortos y accionables. |
+
+### Arquitectura: un agente, etapas separadas
+
+Propuesta: **un solo agente** que se ejecuta **por etapas**. Cada etapa tiene su propio objetivo, sus instrucciones, sus herramientas permitidas y sus condiciones de entrada y salida. No hay varios agentes que conversan entre sí.
+
+**Por qué:** es más simple de construir, probar y depurar; consume menos cuota de las capas gratuitas; y como el PM ejecuta cada etapa a demanda (RNF-09), no hace falta un orquestador que coordine agentes. Si alguna etapa crece mucho, se puede separar más adelante sin cambiar el contrato.
+
+**Sin memoria oculta:** el agente no guarda estado propio entre ejecuciones. **Todo el estado vive en Notion**: cada ejecución lee lo que necesita, escribe sus resultados y deja registro en Ejecuciones. Así, cualquier etapa se puede retomar o repetir (RNF-03, RNF-04).
+
+### Etapas
+
+| # | Etapa | Se ejecuta cuando | Lee | Escribe | HU |
+|---|-------|-------------------|-----|---------|----|
+| 0 | **Verificar espacio** | Antes de cualquier otra etapa | Estructura del espacio | Ejecuciones | HU-01, HU-02 |
+| 1 | **Armar contexto** | Hay fuentes cargadas y el contexto no está confirmado | Fuentes (documentos, URL, GitHub) | Contexto del producto (estado *Por confirmar*) | HU-03 |
+| 2 | **Repreguntar** | El contexto está *Confirmado* y hay entrevistas con el formulario base respondido | Contexto, Entrevistas | Repreguntas en cada Entrevista, Evidencia (supuestos del equipo) | HU-04, HU-05 |
+| 3 | **Relevar la web** | El contexto está *Confirmado* | Contexto | Evidencia (pública) | HU-07 |
+| 4 | **Sintetizar** | Las entrevistas están *Completas* (o el PM decidió avanzar sin alguna) | Contexto, Entrevistas, Evidencia, personas existentes y sus ediciones | User Personas, Atributos, divergencias, resumen | HU-06, HU-08 a HU-12, HU-15 |
+| 5 | **Planificar validación** | Hay atributos de confianza baja sin plan | Atributos, Evidencia | Supuestos a validar | HU-14 |
+
+```mermaid
+flowchart LR
+    V[0. Verificar espacio] --> C[1. Armar contexto]
+    C --> PM1{PM confirma<br/>contexto}
+    PM1 --> R[2. Repreguntar]
+    PM1 --> W[3. Relevar la web]
+    R --> M{Miembros completan<br/>entrevistas}
+    M --> S[4. Sintetizar]
+    W --> S
+    S --> P[5. Planificar validación]
+    P --> PM2{PM revisa<br/>y decide}
+    PM2 -- nueva evidencia --> S
+```
+
+### Herramientas y permisos por etapa
+
+El agente usa estas herramientas. Cada etapa solo tiene habilitadas las que necesita (mínimo privilegio).
+
+| Herramienta | 0 | 1 | 2 | 3 | 4 | 5 |
+|-------------|---|---|---|---|---|---|
+| **Notion – leer** (bases, páginas, documentos adjuntos) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **Notion – escribir** (solo en las bases del proyecto) | Ejecuciones | Contexto | Entrevistas, Evidencia | Evidencia | Personas, Atributos | Supuestos |
+| **Buscar en la web** | | | | ✅ | | |
+| **Leer una URL** | | ✅ | | ✅ | | |
+| **GitHub – leer** (*could*) | | ✅ | | | | |
+| **Modelo de lenguaje** (Gemini u OpenRouter) | | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+Todas las etapas escriben además en **Ejecuciones** (RNF-08).
+
+### Qué decide el modelo y qué decide el código
+
+Para que las reglas no dependan de que el modelo "se porte bien", se separa lo que requiere juicio de lo que es una regla:
+
+| Lo decide el **modelo de lenguaje** | Lo decide el **código** (determinístico) |
+|-------------------------------------|------------------------------------------|
+| Extraer campos del contexto desde las fuentes | Que cada campo del contexto tenga fuente o diga "No encontrado" |
+| Redactar repreguntas | Que haya como máximo 5 por miembro y estén vinculadas a una respuesta |
+| Elegir qué buscar en la web y resumir hallazgos | Que cada hallazgo tenga una URL **que se pudo abrir de verdad** |
+| Agrupar segmentos y redactar atributos | Que cada atributo tenga al menos una evidencia vinculada |
+| Clasificar cada evidencia (equipo, pública o propia) | **Calcular el nivel de confianza** con la regla de la Fase 3 |
+| Detectar posturas incompatibles entre miembros | Que un atributo con divergencia nunca tenga confianza alta |
+| Proponer métodos y preguntas de validación | Que todo atributo de confianza baja tenga un supuesto a validar |
+| — | Que el agente **nunca** escriba los estados *Aprobada* ni *Rechazada* |
+| — | Que no pise campos editados por el PM: si quiere cambiarlos, deja una sugerencia |
+
+Las respuestas del modelo se piden en un **formato estructurado** y el código las valida antes de escribir en Notion. Si no pasan la validación, no se escriben: se reintenta o se registra el error.
+
+### Ciclo de vida de una User Persona
+
+```mermaid
+stateDiagram-v2
+    [*] --> Borrador: el agente la crea
+    Borrador --> EnRevision: el agente termina y pasa sus controles
+    EnRevision --> Aprobada: solo el PM
+    EnRevision --> Rechazada: solo el PM, con motivo
+    Rechazada --> Borrador: nueva síntesis tiene en cuenta el motivo
+    Aprobada --> EnRevision: entra evidencia nueva (nueva versión)
+```
+
+Propuesta: el agente pasa la persona de *Borrador* a *En revisión* **solo si pasa sus propios controles**: 100% de atributos con evidencia, confianza calculada y supuestos de confianza baja con plan. Si no los pasa, la deja en *Borrador* e indica qué falta.
+
+Otros estados:
+
+| Elemento | Estados |
+|----------|---------|
+| Contexto del producto | *Por confirmar* → *Confirmado* (solo el PM) |
+| Entrevista | *Pendiente* → *Base respondida* → *Repreguntas pendientes* → *Completa* |
+| Supuesto a validar | *Pendiente* → *En validación* → *Validado* / *Refutado* |
+
+### Límites del agente
+
+**Nunca:**
+- Marca una persona como *Aprobada* o *Rechazada*, ni el contexto como *Confirmado*.
+- Escribe un atributo sin evidencia, ni inventa una URL, un dato o una cita.
+- Pisa lo que editó una persona del equipo.
+- Escribe fuera de las bases del proyecto.
+- Elige una postura cuando el equipo no está de acuerdo.
+
+**Topes por ejecución** (para cuidar la cuota gratuita y el tiempo del equipo):
+
+| Tope | Valor propuesto |
+|------|-----------------|
+| Repreguntas por miembro | ≤ 5 |
+| Fuentes web registradas por relevamiento | ≤ 15 |
+| Personas por síntesis | Entre 1 y 5. Si la evidencia no alcanza para distinguir segmentos, propone menos y lo explica. |
+
+**Datos personales:** si detecta datos personales evidentes en lo que lee, como correos, teléfonos o documentos de identidad, no los envía al modelo: los reemplaza por un marcador y avisa en Ejecuciones (RNF-06).
+
+### Cuándo se detiene y pide intervención humana
+
+| Situación | Qué hace el agente |
+|-----------|--------------------|
+| Falta una base o propiedad en Notion | No avanza. Lista qué falta. |
+| El contexto no está *Confirmado* | No avanza a las etapas 2 a 5. |
+| Hay campos del contexto *No encontrados* | Los deja marcados para que los complete el PM. |
+| Hay entrevistas incompletas | No sintetiza, salvo que el PM indique avanzar sin ellas. |
+| La evidencia no alcanza para distinguir segmentos | Propone menos personas y explica qué información falta. |
+| Se agotaron la cuota principal y la secundaria | Guarda lo avanzado, marca la etapa como *Incompleta* y explica cuándo reintentar. |
+
+### Manejo de errores
+
+| Error | Comportamiento | Registro |
+|-------|----------------|----------|
+| Límite de uso del proveedor principal | Espera y reintenta. Si sigue fallando, pasa a OpenRouter (HU-17). | Proveedor, modelo y reintentos |
+| Respuesta del modelo con formato inválido | Reintenta pidiendo el formato correcto. Si sigue fallando, no escribe nada. | Respuesta rechazada |
+| URL que no se puede abrir | Descarta el hallazgo. | URL descartada y motivo |
+| Error al escribir en Notion | Reintenta. La etapa se puede repetir sin duplicar (RNF-04). | Operación fallida |
+| Intento de escribir un estado prohibido | El código lo bloquea. | Intento bloqueado (cuenta para la métrica de aprobación indebida) |
+
+### Preguntas abiertas de la Fase 4
+
+- [ ] ¿Avanzamos con **un solo agente por etapas** en lugar de varios agentes?
+- [ ] ¿Está bien que el agente pase la persona a *En revisión* cuando pasa sus controles, o preferís que eso también lo haga el PM?
+- [ ] ¿Están bien los topes: 15 fuentes web por relevamiento y entre 1 y 5 personas por síntesis?
+
+---
+
 ## Caso de estudio: bitácora del proyecto
 
 > Esta sección permite **retomar el trabajo en otro chat** sin perder el contexto. Para continuar, pegá el enlace de este README y pedí seguir desde la fase en revisión.
@@ -500,7 +650,9 @@ Escenario completo con **cobros-recurrentes**:
 | 2026-10-15 | 3 | **Contexto asistido:** el agente extrae el contexto de fuentes que indica el PM (documento en Notion o URL como *must*, GitHub como *could*). Cada campo cita su fuente, lo que no encuentra lo completa el PM, y el PM confirma antes de seguir. El formulario manual queda como alternativa. |
 | 2026-10-15 | 3 | La investigación propia (HU-08) y la persona viva (HU-15) pasan a *must*. Se aprueban la regla de confianza y la base Ejecuciones. |
 | 2026-10-15 | 3 | cobros-recurrentes: hay autorización, pero se usa solo la spec. **rutina-app** (`abellatuf/rutina-app`) se suma como segundo caso de prueba, para verificar que el agente sea agnóstico de producto. |
+| 2026-10-15 | 3 | Se aprueba la Fase 3. |
+| 2026-10-15 | 4 | Borrador de la especificación: un agente por etapas (0 a 5), estado solo en Notion, reglas aplicadas por código (confianza, trazabilidad, estados prohibidos) y criterios de escalamiento al humano. |
 
 ### Próximo paso
 
-Revisar y aprobar la **Fase 3: Requisitos**. Después sigue la **Fase 4: Especificación del agente**, que define rol, capacidades, herramientas, límites y manejo de errores.
+Revisar y aprobar la **Fase 4: Especificación del agente**. Después sigue la **Fase 5: Diseño técnico**: arquitectura, conexión por MCP, modelos, prompts, modelo de datos en Notion y evaluaciones.
