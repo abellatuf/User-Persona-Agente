@@ -203,7 +203,7 @@ erDiagram
 | **Equipo** | Miembros y roles. |
 | **Entrevistas** | Respuestas al formulario base y repreguntas del agente, una página por miembro. |
 | **Evidencia** | Cada fuente con su tipo (supuesto del equipo, información pública o investigación propia), su origen (miembro o URL) y un extracto. |
-| **User Personas** | Una página por persona, con estado (`Borrador → En revisión → Aprobada / Rechazada`), versión y aprobador. |
+| **User Personas** | Una página por persona y versión, con estado (`Borrador → En revisión → Aprobada / Rechazada`, y `Reemplazada` para versiones anteriores), versión y aprobador. |
 | **Atributos** | Afirmaciones de la persona por categoría (objetivos, problemas, comportamientos, contexto), con nivel de confianza, evidencias relacionadas y marca de divergencia. |
 | **Supuestos a validar** | Plan de validación de cada atributo de baja confianza: método, preguntas sugeridas y estado. |
 
@@ -232,7 +232,7 @@ flowchart LR
 4. **Investigación propia** (opcional): se carga mediante un formulario.
 5. **Síntesis:** el agente crea o actualiza las páginas de User Persona y sus atributos, cada uno vinculado a su evidencia, con nivel de confianza y marca de divergencia entre miembros.
 6. **Revisión humana:** el PM edita, comenta, rechaza o aprueba. **El agente nunca puede marcar una persona como Aprobada.**
-7. **Supuestos a validar:** para cada atributo de baja confianza, el agente propone cómo validarlo. Cuando entra evidencia nueva, la persona vuelve a revisión con una nueva versión.
+7. **Supuestos a validar:** para cada atributo de baja confianza, el agente propone cómo validarlo. Cuando entra evidencia nueva, el agente crea una versión nueva de la persona para revisar.
 
 ### Principios de producto
 
@@ -411,7 +411,7 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 - **Dado** que edité un atributo, **cuando** el agente vuelve a sintetizar, **entonces** no pisa mi edición: si propone un cambio, lo deja como sugerencia.
 
 **HU-13 · Aprobación exclusiva del PM (M).** Como PM, quiero ser el único que aprueba o rechaza una persona.
-- Solo el PM puede cambiar el estado a **Aprobada** o **Rechazada**.
+- Solo el PM puede cambiar el estado a **En revisión**, **Aprobada** o **Rechazada** (ajustado en la Fase 4).
 - **Dado** que el agente intenta marcar una persona como Aprobada, **entonces** el código bloquea la operación y la registra.
 - Al rechazar, el PM indica un motivo y el agente lo tiene en cuenta en la próxima síntesis.
 
@@ -421,7 +421,7 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 - Cada atributo de confianza baja tiene un supuesto a validar con método sugerido (entrevista, encuesta, prueba o analítica), perfil de usuario a contactar y preguntas abiertas y no sesgadas.
 
 **HU-15 · Persona viva (M).** Como PM, quiero que la persona se actualice cuando entra evidencia nueva.
-- **Dado** que se cargó evidencia nueva relacionada con una persona aprobada, **cuando** ejecuto la síntesis, **entonces** la persona vuelve a **En revisión** con una nueva versión y un registro de cambios.
+- **Dado** que se cargó evidencia nueva relacionada con una persona aprobada, **cuando** ejecuto la síntesis, **entonces** el agente crea una **versión nueva** en **Borrador**, con un registro de cambios. La versión aprobada sigue vigente hasta que el PM apruebe la nueva (ajustado en la Fase 4).
 
 #### E9. Operación
 
@@ -479,9 +479,16 @@ El agente actúa como un **asistente de investigación de usuarios** que trabaja
 
 ### Arquitectura: un agente, etapas separadas
 
-Propuesta: **un solo agente** que se ejecuta **por etapas**. Cada etapa tiene su propio objetivo, sus instrucciones, sus herramientas permitidas y sus condiciones de entrada y salida. No hay varios agentes que conversan entre sí.
+Decisión: **un solo agente** que se ejecuta **por etapas**. Cada etapa funciona como un **agente especializado**, con su propio objetivo, sus instrucciones, sus herramientas permitidas y sus condiciones de entrada y salida. Por ejemplo, la etapa 1 es el **agente de contexto** definido en la Fase 3, que arma el contexto del producto a partir de las fuentes. Todas las etapas comparten la conexión a Notion, el acceso a los modelos y las reglas aplicadas por código. Las etapas no conversan entre sí: se comunican solo a través de lo que dejan escrito en Notion.
 
-**Por qué:** es más simple de construir, probar y depurar; consume menos cuota de las capas gratuitas; y como el PM ejecuta cada etapa a demanda (RNF-09), no hace falta un orquestador que coordine agentes. Si alguna etapa crece mucho, se puede separar más adelante sin cambiar el contrato.
+**Por qué:** es más simple de construir, probar y depurar; consume menos cuota de las capas gratuitas; y como el PM ejecuta cada etapa a demanda (RNF-09), no hace falta un orquestador que coordine agentes. Si alguna etapa crece mucho, se puede separar en un agente independiente sin cambiar el contrato.
+
+**Cómo se asegura la fiabilidad:** la fiabilidad no depende de cuántos agentes haya, sino de cuatro mecanismos:
+
+1. **Tareas acotadas:** cada etapa le pide al modelo una sola cosa, con instrucciones específicas. Los modelos fallan menos con tareas chicas y claras.
+2. **Formato estructurado validado:** el código revisa cada respuesta del modelo antes de escribirla en Notion.
+3. **Reglas en el código:** la trazabilidad, la confianza y los estados prohibidos no dependen del modelo (ver más abajo).
+4. **Evaluaciones:** un conjunto de casos de prueba, como cobros-recurrentes y rutina-app, mide la calidad de cada etapa cada vez que se cambia un prompt o un modelo. Se definen en la Fase 5.
 
 **Sin memoria oculta:** el agente no guarda estado propio entre ejecuciones. **Todo el estado vive en Notion**: cada ejecución lee lo que necesita, escribe sus resultados y deja registro en Ejecuciones. Así, cualquier etapa se puede retomar o repetir (RNF-03, RNF-04).
 
@@ -490,7 +497,7 @@ Propuesta: **un solo agente** que se ejecuta **por etapas**. Cada etapa tiene su
 | # | Etapa | Se ejecuta cuando | Lee | Escribe | HU |
 |---|-------|-------------------|-----|---------|----|
 | 0 | **Verificar espacio** | Antes de cualquier otra etapa | Estructura del espacio | Ejecuciones | HU-01, HU-02 |
-| 1 | **Armar contexto** | Hay fuentes cargadas y el contexto no está confirmado | Fuentes (documentos, URL, GitHub) | Contexto del producto (estado *Por confirmar*) | HU-03 |
+| 1 | **Armar contexto** (agente de contexto) | Hay fuentes cargadas y el contexto no está confirmado | Fuentes (documentos, URL, GitHub) | Contexto del producto (estado *Por confirmar*) | HU-03 |
 | 2 | **Repreguntar** | El contexto está *Confirmado* y hay entrevistas con el formulario base respondido | Contexto, Entrevistas | Repreguntas en cada Entrevista, Evidencia (supuestos del equipo) | HU-04, HU-05 |
 | 3 | **Relevar la web** | El contexto está *Confirmado* | Contexto | Evidencia (pública) | HU-07 |
 | 4 | **Sintetizar** | Las entrevistas están *Completas* (o el PM decidió avanzar sin alguna) | Contexto, Entrevistas, Evidencia, personas existentes y sus ediciones | User Personas, Atributos, divergencias, resumen | HU-06, HU-08 a HU-12, HU-15 |
@@ -538,7 +545,7 @@ Para que las reglas no dependan de que el modelo "se porte bien", se separa lo q
 | Clasificar cada evidencia (equipo, pública o propia) | **Calcular el nivel de confianza** con la regla de la Fase 3 |
 | Detectar posturas incompatibles entre miembros | Que un atributo con divergencia nunca tenga confianza alta |
 | Proponer métodos y preguntas de validación | Que todo atributo de confianza baja tenga un supuesto a validar |
-| — | Que el agente **nunca** escriba los estados *Aprobada* ni *Rechazada* |
+| — | Que el agente **nunca** escriba los estados *En revisión*, *Aprobada* ni *Rechazada* |
 | — | Que no pise campos editados por el PM: si quiere cambiarlos, deja una sugerencia |
 
 Las respuestas del modelo se piden en un **formato estructurado** y el código las valida antes de escribir en Notion. Si no pasan la validación, no se escriben: se reintenta o se registra el error.
@@ -548,14 +555,23 @@ Las respuestas del modelo se piden en un **formato estructurado** y el código l
 ```mermaid
 stateDiagram-v2
     [*] --> Borrador: el agente la crea
-    Borrador --> EnRevision: el agente termina y pasa sus controles
-    EnRevision --> Aprobada: solo el PM
-    EnRevision --> Rechazada: solo el PM, con motivo
-    Rechazada --> Borrador: nueva síntesis tiene en cuenta el motivo
-    Aprobada --> EnRevision: entra evidencia nueva (nueva versión)
+    Borrador --> EnRevision: el PM empieza a revisarla
+    EnRevision --> Aprobada: el PM da el OK
+    EnRevision --> Rechazada: el PM no da el OK, con motivo
+    Aprobada --> Reemplazada: el PM aprueba una versión nueva
+    Rechazada --> [*]
+    Reemplazada --> [*]
 ```
 
-Propuesta: el agente pasa la persona de *Borrador* a *En revisión* **solo si pasa sus propios controles**: 100% de atributos con evidencia, confianza calculada y supuestos de confianza baja con plan. Si no los pasa, la deja en *Borrador* e indica qué falta.
+| Estado | Quién lo pone | Significado |
+|--------|---------------|-------------|
+| **Borrador** | El agente | La persona está lista para revisar. Una propiedad **Controles** indica si pasó los controles del agente (100% de atributos con evidencia, confianza calculada, supuestos de confianza baja con plan) o qué le falta. |
+| **En revisión** | El PM | El PM empezó a revisarla. |
+| **Aprobada** | El PM | El PM dio el OK. Es la versión vigente. |
+| **Rechazada** | El PM | El PM no dio el OK e indicó un motivo. La próxima síntesis crea una **versión nueva** en *Borrador* que tiene en cuenta ese motivo. |
+| **Reemplazada** | El agente | Había una versión más nueva y el PM la aprobó. La versión anterior queda como historial. |
+
+**Persona viva (ajusta HU-15):** cuando entra evidencia nueva sobre una persona *Aprobada*, el agente **no la modifica**. Crea una **versión nueva** en *Borrador*, vinculada a la anterior y con un registro de cambios. La versión aprobada sigue vigente hasta que el PM apruebe la nueva.
 
 Otros estados:
 
@@ -568,19 +584,20 @@ Otros estados:
 ### Límites del agente
 
 **Nunca:**
-- Marca una persona como *Aprobada* o *Rechazada*, ni el contexto como *Confirmado*.
+- Marca una persona como *En revisión*, *Aprobada* o *Rechazada*, ni el contexto como *Confirmado*.
+- Modifica una persona *Aprobada*: si hay evidencia nueva, crea una versión nueva.
 - Escribe un atributo sin evidencia, ni inventa una URL, un dato o una cita.
 - Pisa lo que editó una persona del equipo.
 - Escribe fuera de las bases del proyecto.
 - Elige una postura cuando el equipo no está de acuerdo.
 
-**Topes por ejecución** (para cuidar la cuota gratuita y el tiempo del equipo):
+**Topes por ejecución** (para cuidar la cuota gratuita y el tiempo del equipo). Son **máximos, no objetivos**: si el agente encuentra menos, **sigue adelante con lo que encontró** y lo indica en el resumen. Nunca se traba por no alcanzar un tope.
 
-| Tope | Valor propuesto |
-|------|-----------------|
-| Repreguntas por miembro | ≤ 5 |
-| Fuentes web registradas por relevamiento | ≤ 15 |
-| Personas por síntesis | Entre 1 y 5. Si la evidencia no alcanza para distinguir segmentos, propone menos y lo explica. |
+| Tope | Valor |
+|------|-------|
+| Repreguntas por miembro | Hasta 5 |
+| Fuentes web registradas por relevamiento | Hasta 15 |
+| Personas por síntesis | Hasta 5. Si la evidencia no alcanza para distinguir segmentos, propone menos y lo explica. |
 
 **Datos personales:** si detecta datos personales evidentes en lo que lee, como correos, teléfonos o documentos de identidad, no los envía al modelo: los reemplaza por un marcador y avisa en Ejecuciones (RNF-06).
 
@@ -607,9 +624,9 @@ Otros estados:
 
 ### Preguntas abiertas de la Fase 4
 
-- [ ] ¿Avanzamos con **un solo agente por etapas** en lugar de varios agentes?
-- [ ] ¿Está bien que el agente pase la persona a *En revisión* cuando pasa sus controles, o preferís que eso también lo haga el PM?
-- [ ] ¿Están bien los topes: 15 fuentes web por relevamiento y entre 1 y 5 personas por síntesis?
+- [x] ~~**Arquitectura**~~: un solo agente por etapas, y cada etapa funciona como un agente especializado. La etapa 1 es el agente de contexto. La fiabilidad se asegura con tareas acotadas, formato validado, reglas en el código y evaluaciones.
+- [x] ~~**Estados de la persona**~~: el agente solo crea *Borrador*. El PM la pasa a *En revisión* cuando empieza a revisarla y después a *Aprobada* o *Rechazada*. Las versiones anteriores quedan como *Reemplazada*.
+- [x] ~~**Topes**~~: hasta 15 fuentes web y hasta 5 personas. Son máximos: si encuentra menos, sigue con lo que encontró.
 
 ---
 
@@ -652,6 +669,9 @@ Otros estados:
 | 2026-10-15 | 3 | cobros-recurrentes: hay autorización, pero se usa solo la spec. **rutina-app** (`abellatuf/rutina-app`) se suma como segundo caso de prueba, para verificar que el agente sea agnóstico de producto. |
 | 2026-10-15 | 3 | Se aprueba la Fase 3. |
 | 2026-10-15 | 4 | Borrador de la especificación: un agente por etapas (0 a 5), estado solo en Notion, reglas aplicadas por código (confianza, trazabilidad, estados prohibidos) y criterios de escalamiento al humano. |
+| 2026-10-15 | 4 | Un solo agente por etapas, cada etapa funciona como un agente especializado (la etapa 1 es el agente de contexto). La fiabilidad se asegura con tareas acotadas, formato validado, reglas en código y evaluaciones. |
+| 2026-10-15 | 4 | Estados de la persona: el agente solo crea *Borrador*. El PM la pasa a *En revisión* al empezar a revisarla y después a *Aprobada* o *Rechazada*. La evidencia nueva genera una versión nueva y la anterior queda *Reemplazada*. Ajusta HU-13 y HU-15. |
+| 2026-10-15 | 4 | Los topes (15 fuentes web, 5 personas, 5 repreguntas) son máximos: el agente sigue con lo que encuentra. |
 
 ### Próximo paso
 
