@@ -28,8 +28,8 @@ Toda la solución se apoya en el enfoque de **product discovery** que Marty Caga
 | 2 | [Visión del producto](#fase-2-visión-del-producto) | ✅ Aprobada |
 | 3 | [Requisitos](#fase-3-requisitos) (historias, criterios de aceptación, RNF) | ✅ Aprobada |
 | 4 | [Especificación del agente](#fase-4-especificación-del-agente) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
-| 5 | [Diseño técnico](#fase-5-diseño-técnico) (arquitectura, modelo, prompts, memoria, evals) | 🟡 En revisión |
-| 6 | Plan de tareas | ⚪ Pendiente |
+| 5 | [Diseño técnico](#fase-5-diseño-técnico) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
+| 6 | Plan de tareas | 🔜 Próxima |
 | 7 | Implementación y validación | ⚪ Pendiente |
 
 ---
@@ -873,7 +873,7 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 | Repositorio de la spec y del código | [abellatuf/User-Persona-Agente](https://github.com/abellatuf/User-Persona-Agente), rama `main`, **privado** |
 | Producto de prueba principal | `franCiti/cobros-recurrentes` (privado). Se usa solo su spec, `cobros-recurrentes-spec.md`. |
 | Segundo producto de prueba | `abellatuf/rutina-app` (privado, de Abel). |
-| Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. Para la implementación necesita además **Workflows: Read and write**. |
+| Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. También tiene **Workflows: Read and write**, para subir los archivos de `.github/workflows/`. |
 | Conexión con Notion | Por MCP. Abel la configura en otro chat. |
 
 ### Bitácora de decisiones
@@ -901,7 +901,9 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 | 2026-10-15 | 5 | Stack: **TypeScript**, cliente MCP hacia un servidor MCP de Notion con token de integración, Gemini con búsqueda integrada de Google, OpenRouter de respaldo, Zod y Vitest. |
 | 2026-10-15 | 5 | Ejecución **todo desde Notion**: base Solicitudes + GitHub Actions programado **una vez por día a las 15 h de Argentina**. Se pausa desde la página Configuración y no gasta tokens si no hay solicitudes. El código va en este mismo repo, que hoy es privado. |
 | 2026-10-15 | 5 | El repo **queda privado**: no hace falta que sea público. La pausa se hace desde la casilla *Agente activo* de Notion, con un paso a paso en la Fase 5. |
+| 2026-10-15 | 5 | Se agrega el permiso **Workflows: Read and write** al token del conector. Se probó creando `.github/workflows/README.md`. |
+| 2026-10-15 | 5 | Se aprueba la Fase 5. |
 
 ### Próximo paso
 
-Revisar y aprobar la **Fase 5: Diseño técnico**. Después sigue la **Fase 6: Plan de tareas**, que divide la implementación en pasos chicos y verificables.
+Arrancar la **Fase 6: Plan de tareas**, que divide la implementación en pasos chicos y verificables.
