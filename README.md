@@ -56,7 +56,8 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | Producto de prueba principal | `franCiti/cobros-recurrentes` (privado). Se usa solo su spec, `cobros-recurrentes-spec.md`. |
 | Segundo producto de prueba | `abellatuf/rutina-app` (privado, de Abel). |
 | Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. También tiene **Workflows: Read and write**, para subir los archivos de `.github/workflows/`. |
-| Conexión con Notion | Por MCP. Abel la configura en otro chat. |
+| Plantilla de Notion | [User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4) (privada), con 10 bases. El detalle y los IDs están en [docs/notion-plantilla.md](docs/notion-plantilla.md). |
+| Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente va a usar un servidor MCP con token de integración (Fase 5). |
 
 ### Bitácora de decisiones
 
@@ -87,6 +88,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-15 | 5 | Se aprueba la Fase 5. |
 | 2026-10-15 | 6 | Borrador del plan: 10 hitos verticales (H0 a H9), cada uno con una demo y la aprobación de Abel. Primero el circuito con Notion y las reglas en código, y recién después el modelo de lenguaje. |
 | 2026-10-15 | 6 | Se aprueban el orden de los hitos y el cierre con demo. El asistente crea la plantilla de Notion con el MCP de Notion. Cada fase pasa a su archivo en `docs/`. |
+| 2026-10-15 | 6 | El asistente crea la **plantilla de Notion**: página raíz privada y 10 bases relacionadas (T1.2). *Agente activo* queda desmarcado hasta el H1. Los formularios quedan para H4 y H5. |
 | 2026-10-15 | 6 | Abel no puede trabajar en su máquina por ahora. **Propuesta:** el asistente escribe y prueba el código en la carpeta de su sesión y lo sube con el conector, con CI en GitHub Actions como segunda red. Pendiente de confirmación. |
 
 ### Próximo paso
