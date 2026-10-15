@@ -136,7 +136,7 @@ Cagan advierte que una persona inventada en un workshop, sin datos detrás, es c
 - [x] ~~**Situación actual**~~: en general no hay investigación previa; ver las fuentes de información disponibles.
 - [x] ~~**Por qué IA**~~: guiar, relevar, sintetizar, detectar supuestos y proponer borradores, siempre con aprobación humana.
 - [x] ~~**Métricas**~~: definidas en la Fase 2.
-- [ ] **Restricciones técnicas** (presupuesto, stack, plazos): se definen en la Fase 3 como requisitos no funcionales.
+- [x] ~~**Restricciones técnicas**~~: definidas en la Fase 3 como requisitos no funcionales.
 
 ---
 
@@ -152,7 +152,8 @@ En lugar de construir una aplicación propia, la solución usa **Notion como int
 
 | Necesidad | Se resuelve con |
 |-----------|-----------------|
-| Cargar el contexto del producto y la investigación propia | **Formularios de Notion** |
+| Cargar el contexto del producto | **El agente lo extrae** de fuentes que indica el PM (documento o URL), y el PM lo confirma. Hay un formulario como alternativa (ajustado en la Fase 3). |
+| Cargar la investigación propia | **Formularios de Notion** |
 | Entrevistar a cada miembro del equipo | Formulario base de Notion + **repreguntas del agente** en la página de cada miembro |
 | Guardar fuentes y evidencia | **Base de datos** de Notion |
 | Detallar las User Personas con trazabilidad | **Bases de datos relacionadas**: cada atributo se vincula a su evidencia |
@@ -180,7 +181,7 @@ En lugar de construir una aplicación propia, la solución usa **Notion como int
 
 | Rol | Qué hace |
 |-----|----------|
-| **Product Manager (owner)** | Duplica el espacio de Notion, completa el contexto del producto, invita al equipo, ejecuta el agente, revisa, edita y **aprueba o rechaza** las personas. |
+| **Product Manager (owner)** | Duplica el espacio de Notion, indica las fuentes del contexto del producto y lo confirma, invita al equipo, ejecuta el agente, revisa, edita y **aprueba o rechaza** las personas. |
 | **Miembro del equipo** (diseño, ingeniería, negocio) | Completa el formulario base y responde las repreguntas del agente en su página. |
 | **Aportante de evidencia** (opcional; puede ser el PM) | Carga investigación propia mediante un formulario: entrevistas, encuestas, analítica o tickets de soporte. |
 
@@ -198,7 +199,7 @@ erDiagram
 
 | Base de datos | Contenido |
 |---------------|-----------|
-| **Contexto del producto** | Propuesta de valor, mercado, competidores y modelo de negocio. Se carga por formulario. |
+| **Contexto del producto** | Propuesta de valor, mercado, competidores y modelo de negocio, cada uno con su fuente. Lo arma el agente a partir de las fuentes que indica el PM, y el PM lo confirma. |
 | **Equipo** | Miembros y roles. |
 | **Entrevistas** | Respuestas al formulario base y repreguntas del agente, una página por miembro. |
 | **Evidencia** | Cada fuente con su tipo (supuesto del equipo, información pública o investigación propia), su origen (miembro o URL) y un extracto. |
@@ -212,7 +213,7 @@ erDiagram
 
 ```mermaid
 flowchart LR
-    A[1. Formulario:<br/>contexto del producto] --> B[2. Formulario base<br/>a cada miembro]
+    A[1. Contexto asistido<br/>+ confirmación del PM] --> B[2. Formulario base<br/>a cada miembro]
     B --> B2[2b. Repreguntas<br/>del agente]
     A --> C[3. Relevamiento<br/>web]
     A --> D[4. Formulario: investigación<br/>propia - opcional]
@@ -225,7 +226,7 @@ flowchart LR
     G -- nueva evidencia --> E
 ```
 
-1. **Contexto del producto:** el PM completa un formulario de Notion.
+1. **Contexto del producto:** el PM indica las fuentes, el agente arma el contexto y el PM lo confirma. Si no hay nada escrito, se usa un formulario (ajustado en la Fase 3).
 2. **Entrevista a cada miembro:** cada uno completa por separado un formulario base agnóstico de producto. Después, el agente analiza las respuestas y escribe **repreguntas** en la página de cada miembro para profundizar, aclarar o pedir ejemplos.
 3. **Relevamiento web:** el agente busca competidores, reseñas, foros y estudios públicos, y registra cada fuente en la base de evidencia.
 4. **Investigación propia** (opcional): se carga mediante un formulario.
@@ -258,7 +259,7 @@ flowchart LR
 | MVP | Futuro (fuera del MVP) |
 |-----|------------------------|
 | Plantilla de Notion con bases de datos y formularios | Integración con Jira: personas vinculadas a épicas e historias y marca de historias "como usuario…" sin persona |
-| Formulario de contexto del producto | Ingesta automática (transcripciones, analítica, tickets) |
+| Contexto asistido desde un documento o una URL, con confirmación del PM | Ingesta automática (transcripciones, analítica, tickets) |
 | Formulario base para cada miembro del equipo + repreguntas del agente | Ejecución automática del agente ante cada formulario nuevo |
 | Relevamiento web con fuentes citadas | Alertas de personas desactualizadas |
 | Formulario de investigación propia | Uso por muchos equipos en paralelo |
@@ -289,7 +290,7 @@ Las métricas de impacto de la Fase 1, como la adopción de funcionalidades o el
 
 - Es un producto real, con una spec escrita pero **sin investigación con usuarios**: el caso general que plantea la Fase 1.
 - Tiene dos actores muy distintos y, dentro del emisor, **segmentos que pueden tener necesidades diferentes**. Son candidatos naturales a varias personas.
-- Su spec sirve como insumo para el **formulario de contexto del producto**: el agente no lee el repositorio, lee lo que el PM carga en Notion.
+- Su spec es la fuente del **contexto asistido**: se sube a Notion solo la spec, no el código del repositorio.
 
 **Miembros del equipo: una persona con distintos sombreros.** Abel completa los formularios y responde las repreguntas varias veces, cada vez con un rol distinto, por ejemplo PM, diseño, ingeniería y negocio. Cada rol tiene su propio nivel de conocimiento del usuario y sus opiniones. En algunos puntos se plantean **divergencias a propósito** para verificar que el agente las detecte. Como responde una persona real, el esfuerzo por miembro **se mide en minutos**.
 
@@ -344,7 +345,7 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 #### E1. Espacio de trabajo
 
 **HU-01 · Plantilla de Notion (M).** Como PM, quiero duplicar una plantilla de Notion con las bases y los formularios listos, para empezar sin configurar nada.
-- **Dado** que duplico la plantilla, **entonces** existen las bases Contexto del producto, Equipo, Entrevistas, Evidencia, User Personas, Atributos, Supuestos a validar y Ejecuciones, con sus relaciones, y los formularios de contexto, de entrevista base y de investigación propia.
+- **Dado** que duplico la plantilla, **entonces** existen las bases Contexto del producto, Equipo, Entrevistas, Evidencia, User Personas, Atributos, Supuestos a validar y Ejecuciones, con sus relaciones, la página de fuentes del contexto y los formularios de entrevista base, de investigación propia y de contexto manual.
 - **Dado** que ejecuto el agente, **cuando** falta alguna base o propiedad obligatoria, **entonces** el agente no avanza y lista lo que falta.
 
 **HU-02 · Conexión segura (M).** Como PM, quiero conectar el agente solo a mi espacio del proyecto, para controlar qué puede leer y escribir.
@@ -352,9 +353,16 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 
 #### E2. Contexto del producto
 
-**HU-03 · Formulario de contexto (M).** Como PM, quiero cargar el contexto del producto en un formulario, para que el agente entienda qué producto analiza.
-- Campos obligatorios: nombre, problema que resuelve, propuesta de valor, usuarios que creemos tener, país o mercado y modelo de negocio. Campos opcionales: competidores y enlaces de referencia.
-- **Dado** que falta un campo obligatorio, **entonces** el agente no avanza y avisa cuál falta.
+**HU-03 · Contexto asistido (M).** Como PM, quiero indicarle al agente de dónde sacar el contexto del producto, en lugar de escribirlo yo, para no repetir información que ya existe.
+- El PM indica **al menos una fuente**: un documento subido a Notion, como una spec, un PRD o un pitch (**M**); la URL pública del producto (**M**); o un repositorio de GitHub (**C**).
+- **Dado** que indiqué las fuentes, **cuando** ejecuto la etapa de contexto, **entonces** el agente completa la página de Contexto del producto: nombre, problema que resuelve, propuesta de valor, usuarios que creemos tener, país o mercado, modelo de negocio y competidores.
+- Cada campo indica **de qué fuente salió**.
+- Los campos que el agente no encuentra quedan marcados como **"No encontrado"**. El agente no los inventa, y **los completa el PM**.
+- El contexto queda en estado **Por confirmar**. **Ninguna etapa siguiente arranca hasta que el PM lo marca como Confirmado.**
+- Las fuentes que se le pasan al agente se envían a un proveedor de IA. Por eso se advierte que solo se usen fuentes que el PM está autorizado a compartir (ver RNF-06).
+
+**HU-03b · Formulario de contexto manual (S).** Como PM de un producto que todavía no tiene nada escrito, por ejemplo una idea temprana, quiero cargar el contexto en un formulario.
+- Tiene los mismos campos que el contexto asistido y también requiere la confirmación del PM.
 
 #### E3. Entrevista al equipo
 
@@ -378,7 +386,7 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 
 #### E5. Investigación propia
 
-**HU-08 · Carga de investigación (S).** Como aportante de evidencia, quiero cargar investigación propia mediante un formulario, para que las personas se apoyen en datos reales.
+**HU-08 · Carga de investigación (M).** Como aportante de evidencia, quiero cargar investigación propia mediante un formulario, para que las personas se apoyen en datos reales.
 - Campos: tipo (entrevista, encuesta, analítica, soporte u otro), fecha, método, muestra y hallazgos.
 - El formulario advierte que no hay que incluir datos personales.
 - Cada carga se guarda como evidencia del tipo **investigación propia**.
@@ -412,7 +420,7 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 **HU-14 · Plan de validación (M).** Como PM, quiero un plan para validar cada supuesto de baja confianza, para saber qué preguntar y a quién.
 - Cada atributo de confianza baja tiene un supuesto a validar con método sugerido (entrevista, encuesta, prueba o analítica), perfil de usuario a contactar y preguntas abiertas y no sesgadas.
 
-**HU-15 · Persona viva (S).** Como PM, quiero que la persona se actualice cuando entra evidencia nueva.
+**HU-15 · Persona viva (M).** Como PM, quiero que la persona se actualice cuando entra evidencia nueva.
 - **Dado** que se cargó evidencia nueva relacionada con una persona aprobada, **cuando** ejecuto la síntesis, **entonces** la persona vuelve a **En revisión** con una nueva versión y un registro de cambios.
 
 #### E9. Operación
@@ -427,7 +435,7 @@ Prioridad según MoSCoW: **M** = must, **S** = should, **C** = could.
 
 Escenario completo con **cobros-recurrentes**:
 
-1. El PM duplica la plantilla y carga el contexto a partir de la spec del producto.
+1. El PM duplica la plantilla, sube a Notion **solo la spec** del producto (`cobros-recurrentes-spec.md`, no el código) y ejecuta la etapa de contexto. Completa los campos "No encontrado" y confirma el contexto.
 2. Abel completa el formulario base **con al menos 3 sombreros** (por ejemplo PM, ingeniería y negocio) y plantea **al menos 2 divergencias** a propósito.
 3. El agente genera repreguntas, Abel las responde y cierra cada entrevista.
 4. El agente releva información pública sobre cobros recurrentes y sus usuarios en Argentina.
@@ -440,14 +448,18 @@ Escenario completo con **cobros-recurrentes**:
    - Esfuerzo por sombrero de 30 minutos o menos.
 7. El PM revisa, edita y aprueba o rechaza. Se mide la aceptación y el retrabajo.
 
+**Segundo caso de prueba (S): rutina-app.** Es una app de rutinas de gimnasio y su repositorio es 100% de Abel. Un dominio tan distinto de cobros-recurrentes permite verificar que el agente es realmente **agnóstico de producto** (RNF-12). Repetimos el mismo escenario y comparamos los resultados de los dos casos.
+
 ### Preguntas abiertas de la Fase 3
 
 - [x] ~~**Presupuesto**~~: costo cero, con Gemini (capa gratuita) como principal y OpenRouter como secundario.
 - [x] ~~**Idioma**~~: el del equipo.
 - [x] ~~**Plazo**~~: sin plazo fijo.
-- [ ] ¿Están bien las prioridades MoSCoW? En particular, la investigación propia (HU-08) y la persona viva (HU-15) quedaron como *should*.
-- [ ] ¿Está bien la regla de nivel de confianza?
-- [ ] Agregué la base **Ejecuciones** para auditoría. ¿Te parece bien?
+- [x] ~~**Prioridades**~~: la investigación propia (HU-08) y la persona viva (HU-15) suben a *must*.
+- [x] ~~**Regla de confianza**~~: aprobada.
+- [x] ~~**Base Ejecuciones**~~: aprobada.
+- [x] ~~**Contexto del producto**~~: lo extrae el agente desde un documento o una URL (*must*) o desde GitHub (*could*). El PM completa lo que falta y confirma. El formulario queda como alternativa.
+- [x] ~~**Privacidad del caso de prueba**~~: hay autorización para usar cobros-recurrentes (Abel es co-owner de la idea), pero el agente recibe **solo la spec**, no el código.
 
 ---
 
@@ -467,7 +479,8 @@ Escenario completo con **cobros-recurrentes**:
 | Recurso | Detalle |
 |---------|---------|
 | Repositorio de la spec | [abellatuf/User-Persona-Agente](https://github.com/abellatuf/User-Persona-Agente), rama `main` |
-| Producto de prueba | `franCiti/cobros-recurrentes` (privado). Su spec está en `cobros-recurrentes-spec.md`. |
+| Producto de prueba principal | `franCiti/cobros-recurrentes` (privado). Se usa solo su spec, `cobros-recurrentes-spec.md`. |
+| Segundo producto de prueba | `abellatuf/rutina-app` (privado, de Abel). |
 | Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. |
 | Conexión con Notion | Por MCP. Abel la configura en otro chat. |
 
@@ -484,6 +497,9 @@ Escenario completo con **cobros-recurrentes**:
 | 2026-10-14 | 2 | Prueba con cobros-recurrentes, con Abel en el rol de varios miembros del equipo. |
 | 2026-10-14 | 3 | Modelos: **Gemini (capa gratuita)** como principal y **OpenRouter** como secundario. Reemplaza la idea inicial de usar Claude. |
 | 2026-10-14 | 3 | Idioma del equipo. Sin plazo fijo. |
+| 2026-10-15 | 3 | **Contexto asistido:** el agente extrae el contexto de fuentes que indica el PM (documento en Notion o URL como *must*, GitHub como *could*). Cada campo cita su fuente, lo que no encuentra lo completa el PM, y el PM confirma antes de seguir. El formulario manual queda como alternativa. |
+| 2026-10-15 | 3 | La investigación propia (HU-08) y la persona viva (HU-15) pasan a *must*. Se aprueban la regla de confianza y la base Ejecuciones. |
+| 2026-10-15 | 3 | cobros-recurrentes: hay autorización, pero se usa solo la spec. **rutina-app** (`abellatuf/rutina-app`) se suma como segundo caso de prueba, para verificar que el agente sea agnóstico de producto. |
 
 ### Próximo paso
 
