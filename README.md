@@ -697,6 +697,32 @@ flowchart LR
 3. Los topes de la Fase 4 limitan cuánto hace cada etapa.
 4. El programado también se puede **desactivar desde GitHub** (pestaña Actions → *Disable workflow*).
 
+#### Cómo pausar y reanudar el agente (paso a paso)
+
+**Opción 1: desde Notion** (recomendada, no requiere conocimientos técnicos)
+
+Para **pausar**:
+1. Abrí el espacio del proyecto en Notion.
+2. Entrá a la página **Configuración**.
+3. **Desmarcá** la casilla **Agente activo**.
+4. Listo. En la próxima ejecución programada (15 h), el agente lee la casilla, ve que está apagada y termina **sin hacer nada y sin gastar tokens**. Deja una fila en Ejecuciones con el resultado *Pausado*.
+
+Para **reanudar**:
+1. Volvé a **marcar** la casilla **Agente activo**.
+2. Las solicitudes que se crearon durante la pausa quedaron en *Pendiente*, así que se atienden en la próxima ejecución.
+
+**Opción 2: desde GitHub** (corta también la ejecución programada, así que no usa ni minutos de GitHub Actions)
+
+Para **desactivar**:
+1. Entrá a [github.com/abellatuf/User-Persona-Agente](https://github.com/abellatuf/User-Persona-Agente).
+2. Abrí la pestaña **Actions**.
+3. En la lista de la izquierda, elegí el workflow **Agente** (`agente.yml`).
+4. Hacé clic en el botón **⋯** (arriba a la derecha) y después en **Disable workflow**.
+
+Para **reactivar**: en el mismo lugar, hacé clic en **Enable workflow**.
+
+> Usá la opción 1 para pausas habituales. La opción 2 conviene si el proyecto va a quedar quieto mucho tiempo.
+
 > GitHub puede demorar unos minutos las ejecuciones programadas en horarios de mucha demanda. Además, **desactiva automáticamente** los workflows programados de un repo sin actividad durante 60 días. Hay que tenerlo en cuenta si el proyecto queda quieto.
 
 ### Flujo de una ejecución
@@ -816,16 +842,16 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 - **Claves:** `NOTION_TOKEN`, `GEMINI_API_KEY` y `OPENROUTER_API_KEY` se guardan como **secretos de GitHub Actions**. Nunca se suben al repositorio.
 - **Notion:** la integración se comparte **solo con la página del proyecto** (RNF-10).
 - **Inyección de instrucciones:** el contenido de documentos y páginas web es **dato, no instrucción**. Además, cada etapa tiene herramientas limitadas y el código bloquea las escrituras prohibidas, así que aunque una fuente intente manipular al modelo, el daño posible es acotado.
-- **Repositorio:** hoy es **privado**. Si se hace público para el portfolio, las ejecuciones desde *forks* no reciben los secretos, así que nadie de afuera puede usar las claves.
+- **Repositorio:** queda **privado**. No hace falta que sea público para desarrollar ni para ejecutar el agente. Si en el futuro se hace público para el portfolio, las ejecuciones desde *forks* no reciben los secretos, así que nadie de afuera puede usar las claves.
+- **Permisos para la implementación:** para que el asistente pueda subir los archivos de `.github/workflows/`, el token del conector de GitHub necesita además el permiso **Workflows: Read and write**. Los secretos los carga Abel a mano en **Settings → Secrets and variables → Actions**.
 
 ### Preguntas abiertas de la Fase 5
 
 - [x] ~~**Lenguaje**~~: TypeScript.
 - [x] ~~**Ejecución**~~: panel de Solicitudes en Notion + GitHub Actions programado una vez por día, a las 15 h de Argentina, con pausa desde Notion.
 - [x] ~~**Búsqueda web**~~: búsqueda integrada de Gemini.
-- [x] ~~**Repositorio**~~: el código va en este mismo repo, que hoy es privado.
-- [ ] ¿Está bien controlar la pausa desde la página **Configuración** de Notion (*Agente activo*)?
-- [ ] ¿Querés hacer público el repo para el portfolio, o lo dejamos privado por ahora?
+- [x] ~~**Repositorio**~~: el código va en este mismo repo, que **queda privado**.
+- [x] ~~**Pausa**~~: desde la casilla *Agente activo* de la página Configuración de Notion, o desactivando el workflow en GitHub. El paso a paso está más arriba.
 
 ---
 
@@ -844,10 +870,10 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 
 | Recurso | Detalle |
 |---------|---------|
-| Repositorio de la spec | [abellatuf/User-Persona-Agente](https://github.com/abellatuf/User-Persona-Agente), rama `main` |
+| Repositorio de la spec y del código | [abellatuf/User-Persona-Agente](https://github.com/abellatuf/User-Persona-Agente), rama `main`, **privado** |
 | Producto de prueba principal | `franCiti/cobros-recurrentes` (privado). Se usa solo su spec, `cobros-recurrentes-spec.md`. |
 | Segundo producto de prueba | `abellatuf/rutina-app` (privado, de Abel). |
-| Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. |
+| Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. Para la implementación necesita además **Workflows: Read and write**. |
 | Conexión con Notion | Por MCP. Abel la configura en otro chat. |
 
 ### Bitácora de decisiones
@@ -874,6 +900,7 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 | 2026-10-15 | 4 | Se aprueba la Fase 4. |
 | 2026-10-15 | 5 | Stack: **TypeScript**, cliente MCP hacia un servidor MCP de Notion con token de integración, Gemini con búsqueda integrada de Google, OpenRouter de respaldo, Zod y Vitest. |
 | 2026-10-15 | 5 | Ejecución **todo desde Notion**: base Solicitudes + GitHub Actions programado **una vez por día a las 15 h de Argentina**. Se pausa desde la página Configuración y no gasta tokens si no hay solicitudes. El código va en este mismo repo, que hoy es privado. |
+| 2026-10-15 | 5 | El repo **queda privado**: no hace falta que sea público. La pausa se hace desde la casilla *Agente activo* de Notion, con un paso a paso en la Fase 5. |
 
 ### Próximo paso
 
