@@ -6,8 +6,8 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 
 | Hito | Estado |
 |------|--------|
-| H0. Preparación de cuentas y accesos | 🟡 En curso |
-| H1. Esqueleto sin modelo | ⚪ Pendiente |
+| H0. Preparación de cuentas y accesos | ✅ Cerrado |
+| H1. Esqueleto sin modelo | 🔜 Próximo |
 | H2. Reglas en código | ⚪ Pendiente |
 | H3. Capa de modelos | ⚪ Pendiente |
 | H4. Agente de contexto | ⚪ Pendiente |
@@ -25,12 +25,12 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 
 | Tarea | Quién | Estado |
 |-------|-------|--------|
-| T0.1 Integración de Notion | 👤 | ⚪ |
-| T0.2 Compartir la página raíz con la integración | 👤 | ⚪ |
-| T0.3 Claves de Gemini y OpenRouter | 👤 | ⚪ |
-| T0.4 Secretos en GitHub | 👤 | ⚪ |
+| T0.1 Integración de Notion | 👤 | ✅ |
+| T0.2 Compartir la página raíz con la integración | 👤 | ✅ |
+| T0.3 Claves de Gemini y OpenRouter | 👤 | ✅ |
+| T0.4 Secretos en GitHub | 👤 | ✅ |
 | T0.5 Método de trabajo | 👤 🤖 | ✅ Código en la carpeta de la sesión del asistente + conector + CI |
-| Verificación de accesos (workflow) | 🤖 + 👤 | ⚪ |
+| Verificación de accesos (workflow) | 🤖 + 👤 | ✅ Notion, Gemini y OpenRouter OK |
 
 ### T0.1 · Crear la integración de Notion
 
@@ -89,4 +89,6 @@ Para ejecutarlo:
 3. Hacé clic en **Run workflow** → **Run workflow**.
 4. Al minuto, el resultado aparece con ✅ o ❌. Si algo falla, abrí la ejecución y fijate cuál de los tres dio FALLA.
 
-**Demo de cierre del H0:** la ejecución de *Verificar accesos* en verde ✅.
+**Demo de cierre del H0:** la ejecución de *Verificar accesos* en verde ✅. **Cumplida el 2026-10-15.**
+
+> **Lección aprendida:** la primera verificación dio **404 en Notion**. La página raíz tenía la conexión de Claude (la que usó el asistente para crear la plantilla), pero no la de la integración *User-Persona Agente*. Son conexiones distintas. Para la API de Notion, una página que no está compartida con la integración "no existe", por eso devuelve 404 y no 403.

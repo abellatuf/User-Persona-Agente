@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, sigue el H1 |
 
 ---
 
@@ -92,10 +92,11 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-15 | 6 | Abel no puede trabajar en su máquina por ahora. **Propuesta:** el asistente escribe y prueba el código en la carpeta de su sesión y lo sube con el conector, con CI en GitHub Actions como segunda red. Pendiente de confirmación. |
 | 2026-10-15 | 6 | Abel confirma el método de implementación. **Se aprueba la Fase 6.** |
 | 2026-10-15 | 7 | Arranca la Fase 7 con el **H0**: guía paso a paso para la integración de Notion, las claves y los secretos, y un workflow *Verificar accesos* que prueba los tres secretos sin mostrarlos. |
+| 2026-10-15 | 7 | **Se cierra el H0:** integración de Notion, claves de Gemini y OpenRouter, y los tres secretos cargados. *Verificar accesos* en verde. El primer intento dio 404 porque la página no estaba compartida con la integración. |
 
 ### Próximo paso
 
-**H0 (Abel):** seguir la guía de [docs/07-implementacion.md](docs/07-implementacion.md) (T0.1 a T0.4) y ejecutar el workflow *Verificar accesos*. Con el resultado en verde se cierra el H0 y arranca el **H1: esqueleto sin modelo**.
+**H1: esqueleto de punta a punta, sin modelo de lenguaje** (ver [docs/06-plan-de-tareas.md](docs/06-plan-de-tareas.md)). El asistente inicializa el proyecto TypeScript, conecta el agente a Notion por MCP, implementa la etapa 0, el bucle de solicitudes y el registro en Ejecuciones, y crea el workflow `agente.yml`. **Demo:** Abel crea una Solicitud en Notion, ejecuta el workflow a mano y la ve pasar a *Lista*.
 
 ### Cómo retomar en otro chat
 
