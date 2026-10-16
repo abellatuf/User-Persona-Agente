@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 con el código listo y el CI por confirmar |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, sigue el H3 |
 
 ---
 
@@ -99,10 +99,11 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-16 | 7 | **Se cierra el H1:** CI en verde, y en la demo la Solicitud pasó a *Lista* con su fila en Ejecuciones, sin gastar tokens. *Agente activo* queda marcado. |
 | 2026-10-16 | 7 | Diseño del **H2** aprobado: un único `Escritor` con `guardar` (con clave crea o actualiza), `actualizar` y `archivar` (agregada a pedido de Abel, va a la papelera y nunca elimina), siempre pasando por las reglas. Un intento bloqueado deja la solicitud en *Error*. Dos filas distintas de investigación propia cuentan como fuentes independientes. Se agregan *Clave* y *Editado por el PM* a la plantilla. |
 | 2026-10-16 | 7 | Código del H2 en `main`: confianza, estados prohibidos, trazabilidad, no pisar al PM, datos personales y claves. 101 pruebas. **Ajuste:** desmarcar *Editado por el PM* no vuelve a habilitar al agente (haría falta una "huella"). Por ahora la casilla queda fija. |
+| 2026-10-16 | 7 | **Se cierra el H2:** CI en verde con las 101 pruebas. |
 
 ### Próximo paso
 
-**Demo del H2** (la hace Abel, con el paso a paso de [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h2-la-hace-abel)): confirmar que el CI del último commit está en verde. Con el OK de Abel se cierra el H2 y sigue el **H3: capa de modelos** (Gemini y OpenRouter, con respaldo y formato validado). Es el primer hito que gasta cuota gratuita.
+**H3: capa de modelos** (ver [docs/06-plan-de-tareas.md](docs/06-plan-de-tareas.md)): interfaz común de modelos, adaptadores de Gemini y OpenRouter con salida validada por Zod, reintentos y respaldo ante límites de uso, reintento por formato inválido y plantilla base de prompts (T3.1 a T3.5). Acá se conecta `ocultarDatosPersonales` antes de cada llamada. **Es el primer hito que gasta cuota gratuita.** El asistente propone el diseño concreto antes de escribir código. **Demo:** una llamada de prueba devuelve una respuesta validada y, si se fuerza un error en Gemini, responde OpenRouter y queda registrado.
 
 ### Cómo retomar en otro chat
 

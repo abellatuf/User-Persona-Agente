@@ -8,8 +8,8 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 |------|--------|
 | H0. Preparación de cuentas y accesos | ✅ Cerrado |
 | H1. Esqueleto sin modelo | ✅ Cerrado |
-| H2. Reglas en código | 🟡 Código listo, falta confirmar el CI |
-| H3. Capa de modelos | ⚪ Pendiente |
+| H2. Reglas en código | ✅ Cerrado |
+| H3. Capa de modelos | 🔜 Próximo |
 | H4. Agente de contexto | ⚪ Pendiente |
 | H5. Entrevistas | ⚪ Pendiente |
 | H6. Web | ⚪ Pendiente |
@@ -169,7 +169,7 @@ Las reglas que no pueden depender de que el modelo "se porte bien" ya están en 
 | T2.4 No pisar al PM | 🤖 | ✅ |
 | T2.5 Ocultar datos personales | 🤖 | ✅ `ocultarDatosPersonales`, se conecta a los modelos en el H3 |
 | T2.6 Idempotencia | 🤖 | ✅ Propiedad *Clave* |
-| Demo | 👤 | ⏳ CI en verde |
+| Demo | 👤 | ✅ Cumplida el 2026-10-16 |
 
 ### Decisiones de diseño (aprobadas por Abel)
 
@@ -217,3 +217,5 @@ Para confirmar que las pruebas detectan fallas, se sacó a propósito la regla d
 1. Abrí la pestaña **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** y revisá que el workflow **CI** del último commit esté en ✅.
 2. **Opcional:** abrí la ejecución → paso **Pruebas** para ver el listado. Las pruebas de estados prohibidos están en `reglas-escritura.test.ts`, `escritor.test.ts` e `integracion-mcp.test.ts`.
 3. **Opcional:** ejecutá el workflow **Agente** con una Solicitud nueva. Tiene que seguir funcionando igual que en el H1, ahora verificando también las propiedades nuevas de la plantilla.
+
+**Demo de cierre del H2:** CI en verde ✅ con las 101 pruebas. **Cumplida el 2026-10-16.**
