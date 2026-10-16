@@ -3,7 +3,9 @@ import { ejecutarAgente } from '../src/ciclo.js';
 import { BASES } from '../src/config.js';
 import { conectarNotionMcp, type ConexionMcp } from '../src/notion/cliente-mcp.js';
 import { EspacioNotionMcp } from '../src/notion/espacio.js';
-import { ETAPAS } from '../src/stages/registro.js';
+import { estado, relacion, titulo } from '../src/notion/propiedades.js';
+import { ETAPAS, type FuncionEtapa } from '../src/stages/registro.js';
+import { textoDe } from './apoyo/formato.js';
 import { NotionFalso } from './apoyo/notion-falso.js';
 
 /**
@@ -83,5 +85,61 @@ describe('integración con el servidor MCP de Notion', () => {
     const errores = (fila.properties['Errores'] as { rich_text: Array<{ text: { content: string } }> }).rich_text[0]!
       .text.content;
     expect(errores).toContain('Falta la base «Supuestos a validar»');
+  });
+
+  /** Crea una solicitud de Sintetizar y corre el agente con esa etapa reemplazada. */
+  async function correrSintesis(etapa: FuncionEtapa) {
+    const solicitud = notion.crearSolicitud('Prueba H2', 'Sintetizar');
+    await ejecutarAgente({ espacio: new EspacioNotionMcp(conexion), etapas: { ...ETAPAS, Sintetizar: etapa }, log: () => {} });
+    return { solicitud, fila: notion.filasDe(BASES.ejecuciones).at(-1)![1] };
+  }
+
+  const lista = { resultado: 'Lista' as const, notas: [], errores: [], proveedorModelo: 'Ninguno (H1)' };
+
+  it('un intento de aprobar una persona no llega a la API y queda registrado en Ejecuciones', async () => {
+    const { solicitud, fila } = await correrSintesis(async ({ espacio }) => {
+      await espacio.escritor.guardar('personas', { Nombre: titulo('Ana'), Estado: estado('Aprobada') }, { clave: 'persona:ana' });
+      return lista;
+    });
+
+    const enPersonas = notion
+      .escrituras()
+      .filter((p) => (p.cuerpo?.['parent'] as { data_source_id?: string } | undefined)?.data_source_id === BASES.personas);
+    expect(enPersonas).toEqual([]);
+    expect(notion.filasDe(BASES.personas)).toEqual([]);
+    expect(notion.paginas.get(solicitud)?.properties['Estado']).toEqual({ status: { name: 'Error' } });
+    expect(fila.properties['Intentos bloqueados']).toEqual({ number: 1 });
+    expect(textoDe(fila.properties['Errores'])).toMatch(/Escritura bloqueada en «User Personas»/);
+  });
+
+  const guardarAtributo = (afirmacion: string): FuncionEtapa => async ({ espacio }) => {
+    await espacio.escritor.guardar(
+      'atributos',
+      { 'Afirmación': titulo(afirmacion), Evidencias: relacion(['evidencia-1']) },
+      { clave: 'atributo:integracion' },
+    );
+    return lista;
+  };
+
+  it('repetir la misma escritura con clave no duplica la fila', async () => {
+    await correrSintesis(guardarAtributo('Paga a fin de mes'));
+    await correrSintesis(guardarAtributo('Paga a fin de mes, sin recordatorio'));
+
+    const atributos = notion.filasDe(BASES.atributos);
+    expect(atributos).toHaveLength(1);
+    expect(textoDe(atributos[0]![1].properties['Afirmación'])).toBe('Paga a fin de mes, sin recordatorio');
+  });
+
+  it('una edición del PM no se pisa: la propuesta queda como sugerencia', async () => {
+    const [id] = notion.filasDe(BASES.atributos)[0]!;
+    notion.editarComoPm(id, { 'Afirmación': titulo('Paga cuando cobra el sueldo') });
+
+    const { fila } = await correrSintesis(guardarAtributo('Paga a principio de mes'));
+
+    const atributo = notion.paginas.get(id)!;
+    expect(textoDe(atributo.properties['Afirmación'])).toBe('Paga cuando cobra el sueldo');
+    expect(textoDe(atributo.properties['Sugerencia del agente'])).toContain('«Paga a principio de mes»');
+    expect(atributo.properties['Editado por el PM']).toEqual({ checkbox: true });
+    expect(fila.properties['Resultado']).toEqual({ select: { name: 'Lista' } });
   });
 });

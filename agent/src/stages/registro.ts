@@ -2,6 +2,7 @@ import type { EspacioNotion, EtapaSolicitable, Solicitud } from '../notion/espac
 
 export interface ContextoEtapa {
   solicitud: Solicitud;
+  /** Lecturas con espacio, escrituras siempre con espacio.escritor (pasan por las reglas). */
   espacio: EspacioNotion;
 }
 
@@ -11,7 +12,6 @@ export interface ResultadoEtapa {
   errores: string[];
   /** Proveedor y modelo de lenguaje usados, o "Ninguno". */
   proveedorModelo: string;
-  intentosBloqueados: number;
 }
 
 export type FuncionEtapa = (ctx: ContextoEtapa) => Promise<ResultadoEtapa>;
@@ -22,7 +22,6 @@ const marcador: FuncionEtapa = async () => ({
   notas: ['Etapa no implementada todavía (H1: esqueleto). No se llamó a ningún modelo.'],
   errores: [],
   proveedorModelo: 'Ninguno (H1)',
-  intentosBloqueados: 0,
 });
 
 export const ETAPAS: Record<EtapaSolicitable, FuncionEtapa> = {

@@ -8,7 +8,10 @@ import type {
   EstadoSolicitud,
   Solicitud,
 } from '../../src/notion/espacio.js';
+import { Contador } from '../../src/notion/contador.js';
+import { EscritorNotion } from '../../src/notion/escritor.js';
 import { ESQUEMA_ESPERADO } from '../../src/stages/0-verificar-espacio/esquema-esperado.js';
+import { LlamadorFalso } from './llamador-falso.js';
 
 /** Esquema "real" igual al esperado, en el formato de EsquemaBase. */
 export function esquemaCompleto(clave: ClaveBase): EsquemaBase {
@@ -36,8 +39,10 @@ export class EspacioFalso implements EspacioNotion {
   ejecuciones: FilaEjecucion[] = [];
   historialEstados: Array<{ id: string; estado: EstadoSolicitud }> = [];
   falla: Partial<Record<'leerConfiguracion' | 'marcarSolicitud' | 'crearEjecucion', Error>> = {};
-  private lecturas = 0;
-  private escrituras = 0;
+  private readonly contador = new Contador();
+  /** Notion falso detrás del Escritor que usan las etapas. */
+  readonly notion = new LlamadorFalso();
+  readonly escritor = new EscritorNotion(this.notion, this.contador);
 
   agregarSolicitud(s: Partial<Solicitud> & { id: string }) {
     this.solicitudes.push({ titulo: s.id, etapa: 'Armar contexto', opciones: '', estado: 'Pendiente', ...s });
@@ -48,17 +53,21 @@ export class EspacioFalso implements EspacioNotion {
   }
 
   contadores() {
-    return { lecturas: this.lecturas, escrituras: this.escrituras };
+    return this.contador.instantanea();
+  }
+
+  avisosDesde(desde: number) {
+    return this.contador.avisosDesde(desde);
   }
 
   async leerConfiguracion() {
-    this.lecturas++;
+    this.contador.lecturas++;
     if (this.falla.leerConfiguracion) throw this.falla.leerConfiguracion;
     return this.configuracion;
   }
 
   async solicitudesPendientes(maximo: number) {
-    this.lecturas++;
+    this.contador.lecturas++;
     return this.solicitudes
       .filter((s) => s.estado === 'Pendiente')
       .slice(0, maximo)
@@ -66,12 +75,12 @@ export class EspacioFalso implements EspacioNotion {
   }
 
   async leerEsquema(id: string) {
-    this.lecturas++;
+    this.contador.lecturas++;
     return this.esquemas.get(id) ?? null;
   }
 
   async marcarSolicitud(id: string, estado: EstadoSolicitud) {
-    this.escrituras++;
+    this.contador.escrituras++;
     if (this.falla.marcarSolicitud) throw this.falla.marcarSolicitud;
     const s = this.solicitudes.find((x) => x.id === id);
     if (!s) throw new Error(`No existe la solicitud ${id}`);
@@ -80,7 +89,7 @@ export class EspacioFalso implements EspacioNotion {
   }
 
   async crearEjecucion(apertura: AperturaEjecucion) {
-    this.escrituras++;
+    this.contador.escrituras++;
     if (this.falla.crearEjecucion) throw this.falla.crearEjecucion;
     const id = `ejec-${this.ejecuciones.length + 1}`;
     this.ejecuciones.push({ id, apertura });
@@ -88,7 +97,7 @@ export class EspacioFalso implements EspacioNotion {
   }
 
   async cerrarEjecucion(id: string, cierre: CierreEjecucion) {
-    this.escrituras++;
+    this.contador.escrituras++;
     const fila = this.ejecuciones.find((e) => e.id === id);
     if (!fila) throw new Error(`No existe la ejecución ${id}`);
     fila.cierre = cierre;

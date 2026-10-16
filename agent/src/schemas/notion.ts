@@ -15,13 +15,20 @@ export const valorPropiedad = z
     checkbox: z.boolean().optional(),
     select: z.object({ name: z.string() }).loose().nullable().optional(),
     status: z.object({ name: z.string() }).loose().nullable().optional(),
+    relation: z.array(z.object({ id: z.string() }).loose()).optional(),
   })
   .loose();
+
+const usuario = z.object({ id: z.string() }).loose();
 
 export const pagina = z
   .object({
     object: z.literal('page'),
     id: z.string(),
+    parent: z.object({ type: z.string(), data_source_id: z.string().optional() }).loose().optional(),
+    created_by: usuario.optional(),
+    last_edited_by: usuario.optional(),
+    in_trash: z.boolean().optional(),
     properties: z.record(z.string(), valorPropiedad),
   })
   .loose();
@@ -58,3 +65,5 @@ export const dataSource = z
   .loose();
 
 export const paginaCreada = z.object({ object: z.literal('page'), id: z.string() }).loose();
+
+export const usuarioPropio = z.object({ object: z.literal('user'), id: z.string() }).loose();

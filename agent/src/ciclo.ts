@@ -149,7 +149,6 @@ async function atenderSolicitud(
     notas: [],
     errores: [],
     proveedorModelo: SIN_MODELO,
-    intentosBloqueados: 0,
   };
 
   try {
@@ -184,15 +183,16 @@ async function atenderSolicitud(
     }
     if (ejecucionId) {
       const ahora = espacio.contadores();
+      const notas = [...r.notas, ...espacio.avisosDesde(base.avisos)];
       const cierre: CierreEjecucion = {
         fin: reloj(),
         resultado: r.resultado,
         errores: r.errores,
-        notas: r.notas,
+        notas,
         lecturas: ahora.lecturas - base.lecturas,
         // Se suman el propio cierre y, si hay notas, la escritura de las notas.
-        escrituras: ahora.escrituras - base.escrituras + 1 + (r.notas.length > 0 ? 1 : 0),
-        intentosBloqueados: r.intentosBloqueados,
+        escrituras: ahora.escrituras - base.escrituras + 1 + (notas.length > 0 ? 1 : 0),
+        intentosBloqueados: ahora.bloqueos - base.bloqueos,
         proveedorModelo: r.proveedorModelo,
       };
       try {

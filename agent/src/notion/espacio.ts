@@ -1,7 +1,11 @@
 import { BASES } from '../config.js';
-import { dataSource, paginaCreada, resultadoConsulta } from '../schemas/notion.js';
+import { dataSource, resultadoConsulta } from '../schemas/notion.js';
 import { ErrorNotion, type LlamadorHerramientas } from './cliente-mcp.js';
+import { Contador, type Contadores } from './contador.js';
+import { EscritorNotion, type Escritor } from './escritor.js';
 import * as p from './propiedades.js';
+
+export type { Contadores } from './contador.js';
 
 /** Etapas que el PM puede pedir desde Solicitudes. */
 export const ETAPAS_SOLICITABLES = [
@@ -53,11 +57,6 @@ export interface CierreEjecucion {
   proveedorModelo: string;
 }
 
-export interface Contadores {
-  lecturas: number;
-  escrituras: number;
-}
-
 /**
  * Acceso del agente a su espacio de Notion. El bucle y las etapas dependen de esta
  * interfaz y no de MCP, así se pueden probar con un espacio falso en memoria.
@@ -70,7 +69,11 @@ export interface EspacioNotion {
   marcarSolicitud(id: string, estado: EstadoSolicitud): Promise<void>;
   crearEjecucion(apertura: AperturaEjecucion): Promise<string>;
   cerrarEjecucion(id: string, cierre: CierreEjecucion): Promise<void>;
+  /** Único punto de escritura para las etapas: aplica las reglas en código. */
+  readonly escritor: Escritor;
   contadores(): Contadores;
+  /** Avisos (sugerencias, filas archivadas) desde la posición indicada en Contadores.avisos. */
+  avisosDesde(desde: number): string[];
 }
 
 export class ErrorEspacio extends Error {
@@ -79,22 +82,23 @@ export class ErrorEspacio extends Error {
 
 /** Implementación de EspacioNotion sobre el servidor MCP de Notion. */
 export class EspacioNotionMcp implements EspacioNotion {
-  private lecturas = 0;
-  private escrituras = 0;
+  private readonly contador = new Contador();
+  readonly escritor: Escritor;
 
-  constructor(private readonly mcp: LlamadorHerramientas) {}
+  constructor(private readonly mcp: LlamadorHerramientas) {
+    this.escritor = new EscritorNotion(mcp, this.contador);
+  }
 
   contadores(): Contadores {
-    return { lecturas: this.lecturas, escrituras: this.escrituras };
+    return this.contador.instantanea();
+  }
+
+  avisosDesde(desde: number): string[] {
+    return this.contador.avisosDesde(desde);
   }
 
   private async leer(herramienta: string, args: Record<string, unknown>) {
-    this.lecturas++;
-    return this.mcp.llamar(herramienta, args);
-  }
-
-  private async escribir(herramienta: string, args: Record<string, unknown>) {
-    this.escrituras++;
+    this.contador.lecturas++;
     return this.mcp.llamar(herramienta, args);
   }
 
@@ -146,9 +150,7 @@ export class EspacioNotionMcp implements EspacioNotion {
   }
 
   async marcarSolicitud(id: string, estado: EstadoSolicitud): Promise<void> {
-    paginaCreada.parse(
-      await this.escribir('API-patch-page', { page_id: id, properties: { Estado: p.estado(estado) } }),
-    );
+    await this.escritor.actualizar('solicitudes', id, { Estado: p.estado(estado) });
   }
 
   async crearEjecucion(apertura: AperturaEjecucion): Promise<string> {
@@ -158,35 +160,20 @@ export class EspacioNotionMcp implements EspacioNotion {
     };
     if (apertura.etapa) propiedades['Etapa'] = p.seleccion(apertura.etapa);
     if (apertura.solicitudId) propiedades['Solicitud'] = p.relacion([apertura.solicitudId]);
-    const creada = paginaCreada.parse(
-      await this.escribir('API-post-page', {
-        parent: { type: 'data_source_id', data_source_id: BASES.ejecuciones },
-        properties: propiedades,
-      }),
-    );
-    return creada.id;
+    const { id } = await this.escritor.guardar('ejecuciones', propiedades);
+    return id;
   }
 
   async cerrarEjecucion(id: string, cierre: CierreEjecucion): Promise<void> {
-    paginaCreada.parse(
-      await this.escribir('API-patch-page', {
-        page_id: id,
-        properties: {
-          Fin: p.fecha(cierre.fin),
-          Resultado: p.seleccion(cierre.resultado),
-          Errores: p.texto(cierre.errores.join('\n')),
-          Lecturas: p.numero(cierre.lecturas),
-          Escrituras: p.numero(cierre.escrituras),
-          'Intentos bloqueados': p.numero(cierre.intentosBloqueados),
-          'Proveedor y modelo': p.texto(cierre.proveedorModelo),
-        },
-      }),
-    );
-    if (cierre.notas.length > 0) {
-      await this.escribir('API-patch-block-children', {
-        block_id: id,
-        children: cierre.notas.map((n) => p.parrafo(n)),
-      });
-    }
+    await this.escritor.actualizar('ejecuciones', id, {
+      Fin: p.fecha(cierre.fin),
+      Resultado: p.seleccion(cierre.resultado),
+      Errores: p.texto(cierre.errores.join('\n')),
+      Lecturas: p.numero(cierre.lecturas),
+      Escrituras: p.numero(cierre.escrituras),
+      'Intentos bloqueados': p.numero(cierre.intentosBloqueados),
+      'Proveedor y modelo': p.texto(cierre.proveedorModelo),
+    });
+    await this.escritor.agregarParrafos(id, cierre.notas);
   }
 }

@@ -13,7 +13,8 @@ El agente levanta el **servidor MCP oficial de Notion** ([`@notionhq/notion-mcp-
 | `src/main.ts` | Punto de entrada: conecta con Notion y corre el bucle |
 | `src/ciclo.ts` | Bucle de solicitudes y registro en Ejecuciones |
 | `src/config.ts` | IDs de las bases y lectura del entorno |
-| `src/notion/` | Cliente MCP (con reintentos) y `EspacioNotion`, el acceso a las bases |
+| `src/notion/` | Cliente MCP (con reintentos), `EspacioNotion` (lecturas) y `Escritor`, el único punto de escritura: `guardar`, `actualizar` y `archivar` |
+| `src/guards/` | Reglas en código: confianza, estados prohibidos, trazabilidad, ediciones del PM, datos personales y claves |
 | `src/stages/` | Etapa 0 (verificar espacio) y el registro de etapas |
 | `src/schemas/` | Formatos de lo que se lee de Notion (Zod) |
 | `test/` | Pruebas con Vitest, incluida una de integración con el servidor MCP real y una API de Notion falsa |

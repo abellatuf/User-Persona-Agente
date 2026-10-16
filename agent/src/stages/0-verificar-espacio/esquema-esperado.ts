@@ -117,6 +117,7 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
       'Motivo de rechazo': t('rich_text'),
       'Aprobada por': t('people'),
       Atributos: t('relation'),
+      Clave: t('rich_text'),
     },
   },
   evidencia: {
@@ -132,6 +133,7 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
       'Método de investigación': t('select'),
       Muestra: t('rich_text'),
       Atributos: t('relation'),
+      Clave: t('rich_text'),
     },
   },
   atributos: {
@@ -146,6 +148,8 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
       Posturas: t('rich_text'),
       'Sugerencia del agente': t('rich_text'),
       'Supuesto a validar': t('relation'),
+      'Editado por el PM': t('checkbox'),
+      Clave: t('rich_text'),
     },
   },
   supuestos: {
@@ -157,6 +161,7 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
       'Perfil a contactar': t('rich_text'),
       'Preguntas sugeridas': t('rich_text'),
       Estado: t('status', ['Pendiente', 'En validación', 'Validado', 'Refutado']),
+      Clave: t('rich_text'),
     },
   },
 };

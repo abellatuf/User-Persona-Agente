@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ejecutarAgente, tituloEjecucion } from '../src/ciclo.js';
 import { BASES } from '../src/config.js';
+import { estado, relacion, titulo } from '../src/notion/propiedades.js';
 import { ETAPAS, type FuncionEtapa } from '../src/stages/registro.js';
 import { EspacioFalso } from './apoyo/espacio-falso.js';
 
@@ -134,6 +135,49 @@ describe('bucle de solicitudes', () => {
     await expect(correr(espacio)).rejects.toThrow(/Configuración/);
     expect(espacio.estadoDe('s1')).toBe('Pendiente');
     expect(espacio.ejecuciones[0]?.cierre).toMatchObject({ resultado: 'Error' });
+  });
+});
+
+describe('reglas en código dentro del bucle', () => {
+  it('una etapa que intenta aprobar una persona termina en Error, con el intento bloqueado registrado', async () => {
+    const espacio = new EspacioFalso();
+    espacio.agregarSolicitud({ id: 's1', etapa: 'Sintetizar' });
+    espacio.agregarSolicitud({ id: 's2', etapa: 'Repreguntar' });
+    const aprobar: FuncionEtapa = async ({ espacio: e }) => {
+      await e.escritor.guardar('personas', { Nombre: titulo('Ana'), Estado: estado('Aprobada') }, { clave: 'persona:ana' });
+      return { resultado: 'Lista', notas: [], errores: [], proveedorModelo: 'Ninguno (H1)' };
+    };
+
+    await correr(espacio, { ...ETAPAS, Sintetizar: aprobar });
+
+    expect(espacio.estadoDe('s1')).toBe('Error');
+    expect(espacio.ejecuciones[0]?.cierre?.intentosBloqueados).toBe(1);
+    expect(espacio.ejecuciones[0]?.cierre?.errores[0]).toMatch(/Escritura bloqueada en «User Personas».*solo lo puede poner el PM/);
+    expect(espacio.notion.escrituras()).toEqual([]);
+    // El bloqueo de una solicitud no se le cuenta a la siguiente.
+    expect(espacio.estadoDe('s2')).toBe('Lista');
+    expect(espacio.ejecuciones[1]?.cierre?.intentosBloqueados).toBe(0);
+  });
+
+  it('los avisos del Escritor quedan en las notas de la fila de Ejecuciones', async () => {
+    const espacio = new EspacioFalso();
+    espacio.agregarSolicitud({ id: 's1', etapa: 'Sintetizar' });
+    const conArchivo: FuncionEtapa = async ({ espacio: e }) => {
+      const { id } = await e.escritor.guardar(
+        'atributos',
+        { 'Afirmación': titulo('Viejo'), Evidencias: relacion(['e1']) },
+        { clave: 'atributo:viejo' },
+      );
+      await e.escritor.archivar('atributos', id, 'ya no surge de la evidencia');
+      return { resultado: 'Lista', notas: ['Síntesis lista.'], errores: [], proveedorModelo: 'Ninguno (H1)' };
+    };
+
+    await correr(espacio, { ...ETAPAS, Sintetizar: conArchivo });
+
+    const notas = espacio.ejecuciones[0]?.cierre?.notas ?? [];
+    expect(notas[0]).toBe('Etapa 0: espacio verificado.');
+    expect(notas).toContain('Síntesis lista.');
+    expect(notas.at(-1)).toMatch(/Archivada una fila de «Atributos».*ya no surge de la evidencia/);
   });
 });
 

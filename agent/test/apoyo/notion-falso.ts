@@ -2,6 +2,10 @@ import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { BASES, type ClaveBase } from '../../src/config.js';
 import { ESQUEMA_ESPERADO } from '../../src/stages/0-verificar-espacio/esquema-esperado.js';
+import { aFormatoLectura, textoDe } from './formato.js';
+
+export const ID_BOT = 'bot-agente';
+export const ID_PERSONA_PM = 'persona-pm';
 
 export interface PeticionRegistrada {
   metodo: string;
@@ -32,11 +36,14 @@ function dataSourceApi(clave: ClaveBase) {
 
 /**
  * API de Notion falsa, en memoria, para probar el agente con el servidor MCP real.
- * Implementa solo los endpoints que usa el H1.
+ * Implementa solo los endpoints que usa el agente.
  */
 export class NotionFalso {
   peticiones: PeticionRegistrada[] = [];
-  paginas = new Map<string, { parent: string; properties: Propiedades; hijos: unknown[] }>();
+  paginas = new Map<
+    string,
+    { parent: string; properties: Propiedades; hijos: unknown[]; editadaPor: string; creadaPor: string; enPapelera: boolean }
+  >();
   basesOcultas = new Set<string>();
   private servidor = http.createServer((req, res) => void this.atender(req, res));
   private siguienteId = 1;
@@ -48,10 +55,17 @@ export class NotionFalso {
     });
   }
 
-  crearPagina(dataSourceId: string, properties: Propiedades): string {
+  crearPagina(dataSourceId: string, properties: Propiedades, autor = ID_BOT): string {
     const id = `00000000-0000-4000-8000-${String(this.siguienteId++).padStart(12, '0')}`;
-    this.paginas.set(id, { parent: dataSourceId, properties, hijos: [] });
+    this.paginas.set(id, { parent: dataSourceId, properties, hijos: [], editadaPor: autor, creadaPor: autor, enPapelera: false });
     return id;
+  }
+
+  /** Simula que el PM editó la página desde Notion. */
+  editarComoPm(id: string, properties: Propiedades) {
+    const p = this.paginas.get(id)!;
+    Object.assign(p.properties, properties);
+    p.editadaPor = ID_PERSONA_PM;
   }
 
   crearSolicitud(titulo: string, etapa: string | null, estado = 'Pendiente'): string {
@@ -64,7 +78,12 @@ export class NotionFalso {
   }
 
   filasDe(dataSourceId: string) {
-    return [...this.paginas.entries()].filter(([, p]) => p.parent === dataSourceId);
+    return [...this.paginas.entries()].filter(([, p]) => p.parent === dataSourceId && !p.enPapelera);
+  }
+
+  /** Escrituras (crear o modificar páginas) que llegaron a la API. */
+  escrituras() {
+    return this.peticiones.filter((p) => (p.metodo === 'POST' && p.ruta === '/v1/pages') || p.metodo === 'PATCH');
   }
 
   async iniciar(): Promise<string> {
@@ -79,7 +98,15 @@ export class NotionFalso {
 
   private paginaApi(id: string) {
     const p = this.paginas.get(id)!;
-    return { object: 'page', id, parent: { type: 'data_source_id', data_source_id: p.parent }, properties: p.properties };
+    return {
+      object: 'page',
+      id,
+      parent: { type: 'data_source_id', data_source_id: p.parent },
+      created_by: { object: 'user', id: p.creadaPor },
+      last_edited_by: { object: 'user', id: p.editadaPor },
+      in_trash: p.enPapelera,
+      properties: aFormatoLectura(p.properties),
+    };
   }
 
   private async atender(req: http.IncomingMessage, res: http.ServerResponse) {
@@ -100,13 +127,18 @@ export class NotionFalso {
     let m: RegExpMatchArray | null;
     if ((m = ruta.match(/^\/v1\/data_sources\/([^/]+)\/query$/)) && metodo === 'POST') {
       const id = m[1]!;
-      const filtro = cuerpo?.['filter'] as { property: string; status: { equals: string } } | undefined;
+      const filtro = cuerpo?.['filter'] as
+        | { property: string; status?: { equals: string }; rich_text?: { equals: string } }
+        | undefined;
       let filas = this.filasDe(id);
-      if (filtro) {
+      if (filtro?.status) {
         filas = filas.filter(([, p]) => {
           const prop = p.properties[filtro.property] as { status?: { name: string } } | undefined;
-          return prop?.status?.name === filtro.status.equals;
+          return prop?.status?.name === filtro.status!.equals;
         });
+      }
+      if (filtro?.rich_text) {
+        filas = filas.filter(([, p]) => textoDe(p.properties[filtro.property]) === filtro.rich_text!.equals);
       }
       const max = Number(cuerpo?.['page_size'] ?? 100);
       return responder(200, {
@@ -121,6 +153,12 @@ export class NotionFalso {
       if (!clave || this.basesOcultas.has(m[1]!)) return noExiste();
       return responder(200, dataSourceApi(clave));
     }
+    if (ruta === '/v1/users/me' && metodo === 'GET') {
+      return responder(200, { object: 'user', id: ID_BOT, type: 'bot', bot: {} });
+    }
+    if ((m = ruta.match(/^\/v1\/pages\/([^/]+)$/)) && metodo === 'GET') {
+      return this.paginas.has(m[1]!) ? responder(200, this.paginaApi(m[1]!)) : noExiste();
+    }
     if (ruta === '/v1/pages' && metodo === 'POST') {
       const parent = cuerpo?.['parent'] as { data_source_id?: string } | undefined;
       if (!parent?.data_source_id) {
@@ -132,7 +170,9 @@ export class NotionFalso {
     if ((m = ruta.match(/^\/v1\/pages\/([^/]+)$/)) && metodo === 'PATCH') {
       const p = this.paginas.get(m[1]!);
       if (!p) return noExiste();
-      Object.assign(p.properties, cuerpo?.['properties'] as Propiedades);
+      Object.assign(p.properties, (cuerpo?.['properties'] as Propiedades | undefined) ?? {});
+      if (cuerpo?.['in_trash'] === true) p.enPapelera = true;
+      p.editadaPor = ID_BOT;
       return responder(200, this.paginaApi(m[1]!));
     }
     if ((m = ruta.match(/^\/v1\/blocks\/([^/]+)\/children$/)) && metodo === 'PATCH') {
