@@ -173,10 +173,10 @@ en otro caso:
 |-------|--------------------|
 | Trazabilidad | No se escribe ningún atributo con la relación Evidencias vacía. |
 | Estados prohibidos | Todas las escrituras pasan por una función que rechaza *En revisión*, *Aprobada* y *Rechazada* en personas, y *Confirmado* en el contexto. |
-| No pisar al PM | Antes de actualizar, se mira quién editó por última vez. Si no fue la integración del agente, no se modifica: se escribe en *Sugerencia del agente*. |
+| No pisar al PM | Antes de actualizar, se mira quién editó por última vez. Si no fue la integración del agente, o si la casilla *Editado por el PM* está marcada, no se modifica: se escribe en *Sugerencia del agente* y se marca la casilla (ajustado en el H2). |
 | URLs reales | Antes de guardar una evidencia pública, se abre la URL. Si no responde, se descarta. |
 | Datos personales | Antes de enviar texto al modelo, se reemplazan correos, teléfonos y números de documento por marcadores. |
-| Idempotencia | Cada elemento tiene una clave estable (por ejemplo, persona + afirmación normalizada), así que repetir una etapa actualiza en lugar de duplicar. |
+| Idempotencia | Cada elemento tiene una clave estable (por ejemplo, persona + afirmación normalizada), guardada en la propiedad *Clave*, así que repetir una etapa actualiza en lugar de duplicar. |
 
 ## Prompts
 

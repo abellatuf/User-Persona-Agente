@@ -8,7 +8,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 |------|--------|
 | H0. Preparación de cuentas y accesos | ✅ Cerrado |
 | H1. Esqueleto sin modelo | ✅ Cerrado |
-| H2. Reglas en código | 🔜 Próximo |
+| H2. Reglas en código | 🟡 Código listo, falta confirmar el CI |
 | H3. Capa de modelos | ⚪ Pendiente |
 | H4. Agente de contexto | ⚪ Pendiente |
 | H5. Entrevistas | ⚪ Pendiente |
@@ -154,3 +154,66 @@ El agente ya atiende las Solicitudes de Notion de punta a punta, **sin llamar a 
 > - El conector de GitHub no ve Actions, así que el resultado del CI lo confirma Abel.
 > - El primer commit se subió sin el `package-lock.json`. Antes de cada push, conviene listar los archivos y comparar los SHA de los blobs con los locales.
 > - El servidor MCP de Notion acepta `BASE_URL`. Eso permitió probarlo de punta a punta contra una API falsa, y la primera ejecución real funcionó sin ajustes.
+
+---
+
+## H2. Reglas en código (sin modelo)
+
+Las reglas que no pueden depender de que el modelo "se porte bien" ya están en el código y probadas. Todavía ninguna etapa las usa con datos reales: las van a usar las etapas 1 a 5, a partir del H4.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T2.1 Cálculo de confianza | 🤖 | ✅ `calcularConfianza` |
+| T2.2 Guardia de estados prohibidos | 🤖 | ✅ |
+| T2.3 Guardia de trazabilidad | 🤖 | ✅ |
+| T2.4 No pisar al PM | 🤖 | ✅ |
+| T2.5 Ocultar datos personales | 🤖 | ✅ `ocultarDatosPersonales`, se conecta a los modelos en el H3 |
+| T2.6 Idempotencia | 🤖 | ✅ Propiedad *Clave* |
+| Demo | 👤 | ⏳ CI en verde |
+
+### Decisiones de diseño (aprobadas por Abel)
+
+- **Un único punto de escritura:** el `Escritor` (`agent/src/notion/escritor.ts`). Ninguna etapa escribe en Notion por otro camino, y toda escritura pasa por las reglas de `agent/src/guards/escritura.ts` antes de llegar a la API. Tiene tres operaciones:
+  - **`guardar`:** con clave, busca la fila por *Clave* y la actualiza, o la crea si no existe. Sin clave, siempre crea, y eso solo se permite en Ejecuciones.
+  - **`actualizar`:** modifica una página conocida por su id, como el estado de una Solicitud o el cierre de una fila de Ejecuciones.
+  - **`archivar`:** manda la página a la papelera de Notion, de donde se puede recuperar durante 30 días, y deja el motivo en Ejecuciones. Se agregó a pedido de Abel, para que una re-síntesis pueda sacar atributos que ya no corresponden. **Nunca se elimina nada definitivamente.**
+- **Un intento bloqueado deja la solicitud en *Error*** con el motivo, y se cuenta en *Intentos bloqueados* de su fila de Ejecuciones. Un bloqueo es un bug o una manipulación, así que es más seguro frenar.
+- **Fuentes independientes:** dos filas distintas de Evidencia de tipo *Investigación propia* cuentan como fuentes independientes. Cuidar de no cargar el mismo estudio dos veces queda del lado del PM.
+- **Vincular es respaldar:** una evidencia vinculada a un atributo significa que lo respalda. La evidencia que lo contradice no se vincula: pasa a ser una divergencia. Así, "la información pública coincide con el equipo" se decide por código.
+- **Cambios en la plantilla:** *Clave* en Evidencia, Atributos, User Personas y Supuestos a validar, y *Editado por el PM* en Atributos. La etapa 0 ahora las exige.
+
+### Qué bloquea el código
+
+| Regla | Qué hace |
+|-------|----------|
+| Estados del PM | Bloquea escribir *En revisión*, *Aprobada* o *Rechazada* en una persona, y *Confirmado* en el contexto. |
+| Personas fuera de Borrador | Solo se modifican personas en *Borrador*. La única excepción es pasar una persona *Aprobada* a *Reemplazada*, sin tocar nada más. Tampoco se modifican los atributos de una persona que ya no está en Borrador. |
+| Contexto confirmado | No se modifica un contexto que el PM ya confirmó. |
+| Trazabilidad | No se crea un atributo sin evidencia, ni se lo deja sin evidencia. |
+| Clave obligatoria | No se crean filas sin clave en Evidencia, Atributos, User Personas ni Supuestos. |
+| Archivar | Solo en Atributos, Supuestos y Evidencia, y solo filas que creó el agente. No se archiva un atributo editado por el PM, ni un supuesto que el PM ya está validando. |
+| Otras bases | No se modifica una página que no pertenece a la base indicada. |
+
+**No pisar al PM.** Antes de actualizar un atributo, el agente mira quién lo editó por última vez. Si no fue él, o si *Editado por el PM* está marcada, no toca los campos: escribe lo que habría cambiado en *Sugerencia del agente* y marca *Editado por el PM*. Desde ese momento el atributo queda protegido.
+
+> **Ajuste respecto de la propuesta:** había propuesto que el PM pudiera **desmarcar** *Editado por el PM* para que el agente vuelva a actualizar. No funciona: al desmarcarla, el PM pasa a ser el último en editar, y el agente vuelve a protegerlo. Para eso haría falta guardar una "huella" de lo que escribió el agente, en una propiedad más. Por ahora la casilla queda fija y el PM incorpora las sugerencias a mano. Si más adelante hace falta, se agrega la huella.
+
+**Datos personales.** `ocultarDatosPersonales` reemplaza correos por `[CORREO]`, teléfonos por `[TELÉFONO]`, y DNI (solo si aparece la palabra) o CUIT/CUIL por `[DOCUMENTO]`. No toca fechas, años, rangos, montos, porcentajes ni versiones.
+
+### Pruebas
+
+`npm test` corre **101 pruebas**, sin red ni secretos:
+
+- **Confianza:** Alta, Media y Baja; la misma fila vinculada dos veces cuenta una sola vez; y el tope por divergencia.
+- **Reglas de escritura:** cada estado prohibido, las personas fuera de Borrador, la trazabilidad, la clave obligatoria, archivar y la sugerencia ante una edición del PM.
+- **Escritor**, con un Notion falso en memoria: un intento de aprobar no llega a Notion y queda contado; guardar dos veces con la misma clave deja una sola fila; una edición del PM queda protegida; y se archiva solo lo permitido.
+- **Datos personales y claves**, incluidos los casos que no se deben tocar.
+- **Integración con el servidor MCP real:** un intento de aprobar una persona no llega a la API y deja *Intentos bloqueados* = 1; repetir una escritura no duplica la fila; y una edición del PM no se pisa.
+
+Para confirmar que las pruebas detectan fallas, se sacó a propósito la regla de estados prohibidos: fallaron 6 pruebas. Con la regla restaurada, vuelven a pasar todas.
+
+### Demo de cierre del H2 (la hace Abel)
+
+1. Abrí la pestaña **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** y revisá que el workflow **CI** del último commit esté en ✅.
+2. **Opcional:** abrí la ejecución → paso **Pruebas** para ver el listado. Las pruebas de estados prohibidos están en `reglas-escritura.test.ts`, `escritor.test.ts` e `integracion-mcp.test.ts`.
+3. **Opcional:** ejecutá el workflow **Agente** con una Solicitud nueva. Tiene que seguir funcionando igual que en el H1, ahora verificando también las propiedades nuevas de la plantilla.

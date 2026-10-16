@@ -25,6 +25,8 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 - **Cada campo del contexto tiene su par "· fuente"** (por ejemplo, *Problema* y *Problema · fuente*). Así la trazabilidad del contexto se ve en la misma fila.
 - **La investigación propia se guarda en Evidencia**, con *Tipo = Investigación propia*, *Método de investigación* y *Muestra*.
 - **Agente activo empezó desmarcado**, porque el agente todavía no existía. Abel lo marcó en la demo del H1 (2026-10-16).
+- **Clave** (H2, 2026-10-16): propiedad de texto en Evidencia, Atributos, User Personas y Supuestos a validar. La usa el agente para no duplicar filas al repetir una etapa. Es técnica: se puede ocultar en las vistas y no hay que editarla.
+- **Editado por el PM** (H2, 2026-10-16): casilla en Atributos. La marca el agente cuando detecta que el PM editó el atributo. Desde ese momento el agente no lo cambia y deja sus propuestas en *Sugerencia del agente*.
 
 ## Pendiente
 
