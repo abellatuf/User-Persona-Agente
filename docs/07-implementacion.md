@@ -7,8 +7,8 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | Hito | Estado |
 |------|--------|
 | H0. Preparación de cuentas y accesos | ✅ Cerrado |
-| H1. Esqueleto sin modelo | 🟡 Código listo, falta la demo de Abel |
-| H2. Reglas en código | ⚪ Pendiente |
+| H1. Esqueleto sin modelo | ✅ Cerrado |
+| H2. Reglas en código | 🔜 Próximo |
 | H3. Capa de modelos | ⚪ Pendiente |
 | H4. Agente de contexto | ⚪ Pendiente |
 | H5. Entrevistas | ⚪ Pendiente |
@@ -103,12 +103,12 @@ El agente ya atiende las Solicitudes de Notion de punta a punta, **sin llamar a 
 |-------|-------|--------|
 | T1.1 Proyecto TypeScript en `agent/` | 🤖 | ✅ Node 24, TypeScript, Zod, Vitest y ESLint. `npm test` en verde |
 | T1.2 Plantilla de Notion | 🤖 + 👤 | ✅ Ver [notion-plantilla.md](notion-plantilla.md) |
-| T1.3 Cliente MCP hacia el servidor MCP de Notion | 🤖 | ✅ Probado con el servidor real y una API de Notion falsa. Falta la prueba con el token real (demo) |
+| T1.3 Cliente MCP hacia el servidor MCP de Notion | 🤖 | ✅ Probado con el servidor real, una API de Notion falsa y el token real (demo) |
 | T1.4 Etapa 0: verificar espacio | 🤖 | ✅ |
 | T1.5 Bucle de solicitudes | 🤖 | ✅ |
 | T1.6 Registro en Ejecuciones | 🤖 | ✅ |
-| T1.7 Workflow `agente.yml` | 🤖 | ✅ Falta la ejecución manual (demo) |
-| Demo | 👤 | ⏳ Pendiente |
+| T1.7 Workflow `agente.yml` | 🤖 | ✅ Ejecución manual OK (demo) |
+| Demo | 👤 | ✅ Cumplida el 2026-10-16 |
 
 ### Decisiones de diseño (aprobadas por Abel)
 
@@ -147,3 +147,10 @@ El agente ya atiende las Solicitudes de Notion de punta a punta, **sin llamar a 
 5. **Opcional:** volvé a ejecutar el workflow sin solicitudes pendientes. Aparece una fila *Sin pendientes*. Si desmarcás *Agente activo*, aparece una fila *Pausado*.
 
 > Si algo falla, abrí la ejecución en Actions: el paso **Ejecutar el agente** muestra qué pasó con cada solicitud. El token nunca aparece en el log.
+
+**Demo de cierre del H1:** CI en verde ✅, la solicitud de prueba pasó a *Lista* y apareció su fila en Ejecuciones, sin gastar tokens de IA. **Cumplida el 2026-10-16.** *Agente activo* queda marcado: desde ahora el programado diario deja una fila por día en Ejecuciones.
+
+> **Lecciones aprendidas:**
+> - El conector de GitHub no ve Actions, así que el resultado del CI lo confirma Abel.
+> - El primer commit se subió sin el `package-lock.json`. Antes de cada push, conviene listar los archivos y comparar los SHA de los blobs con los locales.
+> - El servidor MCP de Notion acepta `BASE_URL`. Eso permitió probarlo de punta a punta contra una API falsa, y la primera ejecución real funcionó sin ajustes.

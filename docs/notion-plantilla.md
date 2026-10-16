@@ -24,7 +24,7 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 - **Configuración es una base con una sola fila**, no una página suelta, porque Notion solo permite casillas como *Agente activo* dentro de una base.
 - **Cada campo del contexto tiene su par "· fuente"** (por ejemplo, *Problema* y *Problema · fuente*). Así la trazabilidad del contexto se ve en la misma fila.
 - **La investigación propia se guarda en Evidencia**, con *Tipo = Investigación propia*, *Método de investigación* y *Muestra*.
-- **Agente activo empieza desmarcado:** el agente todavía no existe. Se marca al cerrar el hito H1.
+- **Agente activo empezó desmarcado**, porque el agente todavía no existía. Abel lo marcó en la demo del H1 (2026-10-16).
 
 ## Pendiente
 

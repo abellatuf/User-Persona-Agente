@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 con el código listo y la demo pendiente |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, sigue el H2 |
 
 ---
 
@@ -96,10 +96,11 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-15 | 7 | **Se cierra el H0:** integración de Notion, claves de Gemini y OpenRouter, y los tres secretos cargados. *Verificar accesos* en verde. El primer intento dio 404 porque la página no estaba compartida con la integración. |
 | 2026-10-15 | 7 | Diseño del **H1** aprobado: servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) por stdio, interfaz `EspacioNotion` para probar sin Notion, una fila en Ejecuciones por corrida (también *Pausado* y *Sin pendientes*), hasta 10 solicitudes por ejecución, y `agente.yml` solo con `NOTION_TOKEN` para no gastar tokens. Se sube directo a `main`. |
 | 2026-10-15 | 7 | Código del H1 en `main`: etapa 0, bucle de solicitudes, registro en Ejecuciones, `agente.yml` y CI. 25 pruebas, incluida una de integración con el servidor MCP real y una API de Notion falsa. Las etapas 1 a 5 son marcadores sin modelo. Falta la demo de Abel. |
+| 2026-10-16 | 7 | **Se cierra el H1:** CI en verde, y en la demo la Solicitud pasó a *Lista* con su fila en Ejecuciones, sin gastar tokens. *Agente activo* queda marcado. |
 
 ### Próximo paso
 
-**Demo del H1** (la hace Abel, con el paso a paso de [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h1-la-hace-abel)): marcar *Agente activo* en Configuración, crear una Solicitud en *Pendiente*, ejecutar el workflow **Agente** a mano desde Actions y verla pasar a *Lista* con su fila en Ejecuciones. Con el OK de Abel se cierra el H1 y sigue el **H2: reglas en código**.
+**H2: reglas en código, sin modelo** (ver [docs/06-plan-de-tareas.md](docs/06-plan-de-tareas.md)): cálculo de confianza, guardia de estados prohibidos, guardia de trazabilidad, no pisar al PM, ocultar datos personales e idempotencia (T2.1 a T2.6), todo con pruebas unitarias. El asistente propone el diseño concreto antes de escribir código. **Demo:** las pruebas muestran que las reglas se cumplen, incluido el bloqueo de estados prohibidos.
 
 ### Cómo retomar en otro chat
 
