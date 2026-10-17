@@ -8,5 +8,6 @@ Workflows del agente, definidos en la [Fase 5](../../docs/05-diseno-tecnico.md):
 | `ci.yml` | Corre lint, tipos y pruebas del agente en cada cambio de `agent/`. No usa secretos. |
 | `evals.yml` | Ejecuta las evaluaciones, solo a mano, para cuidar la cuota. |
 | `verificar-accesos.yml` | Prueba los secretos de Notion, Gemini y OpenRouter sin mostrarlos. Solo a mano (hito H0). |
+| `probar-modelos.yml` | Hace una llamada de prueba a los modelos y deja una fila en Ejecuciones. Puede simular una falla de Gemini para ver el respaldo. Solo a mano (hito H3). |
 
-`agente.yml` y `ci.yml` se agregaron en el hito H1. `evals.yml` se agrega en el H9.
+`agente.yml` y `ci.yml` se agregaron en el hito H1, y `probar-modelos.yml` en el H3. `evals.yml` se agrega en el H9.

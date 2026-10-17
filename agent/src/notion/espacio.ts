@@ -23,6 +23,9 @@ export type ResultadoEjecucion = 'Lista' | 'Error' | 'Incompleta' | 'Pausado' | 
 
 export interface Configuracion {
   agenteActivo: boolean;
+  /** Vacío o ausente: se usa el modelo por defecto (src/config.ts). */
+  modeloPrincipal?: string;
+  modeloRespaldo?: string;
 }
 
 export interface Solicitud {
@@ -112,7 +115,11 @@ export class EspacioNotionMcp implements EspacioNotion {
     );
     const fila = r.results[0];
     if (!fila) throw new ErrorEspacio('La base Configuración no tiene ninguna fila.');
-    return { agenteActivo: p.leerCasilla(fila, 'Agente activo') };
+    return {
+      agenteActivo: p.leerCasilla(fila, 'Agente activo'),
+      modeloPrincipal: p.leerTexto(fila, 'Modelo principal').trim(),
+      modeloRespaldo: p.leerTexto(fila, 'Modelo de respaldo').trim(),
+    };
   }
 
   async solicitudesPendientes(maximo: number): Promise<Solicitud[]> {

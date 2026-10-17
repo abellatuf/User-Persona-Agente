@@ -1,0 +1,50 @@
+# Prueba la capa de modelos (hito H3): una llamada con respuesta validada y,
+# si se pide, una falla simulada de Gemini para ver el respaldo de OpenRouter.
+# Deja una fila en Ejecuciones de Notion. Solo manual, para cuidar la cuota.
+name: Probar modelos
+
+on:
+  workflow_dispatch:
+    inputs:
+      forzar_falla_gemini:
+        description: "Simular un límite de uso en Gemini (responde OpenRouter)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# No se cruza con una ejecución del agente.
+concurrency:
+  group: agente
+  cancel-in-progress: false
+
+jobs:
+  probar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Probar modelos
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          FORZAR_FALLA_GEMINI: ${{ inputs.forzar_falla_gemini }}
+        run: npm run probar-modelos

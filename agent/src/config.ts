@@ -48,3 +48,45 @@ export function leerEntorno(env: NodeJS.ProcessEnv): Entorno {
     ...(r.data.NOTION_BASE_URL ? { notionBaseUrl: r.data.NOTION_BASE_URL } : {}),
   };
 }
+
+/**
+ * Modelos por defecto, si en Configuración «Modelo principal» o «Modelo de respaldo»
+ * están vacíos (RNF-02). openrouter/free es el router de OpenRouter que elige entre
+ * sus modelos gratuitos: no depende de que un modelo gratuito puntual siga existiendo.
+ */
+export const MODELO_PRINCIPAL_POR_DEFECTO = 'gemini-3.8-flash';
+export const MODELO_RESPALDO_POR_DEFECTO = 'openrouter/free';
+
+const falta = (secreto: string) => `Falta el secreto ${secreto} (ver docs/07-implementacion.md, T0.4).`;
+
+const esquemaClavesModelos = z.object({
+  GEMINI_API_KEY: z.string({ error: falta('GEMINI_API_KEY') }).min(1, falta('GEMINI_API_KEY')),
+  OPENROUTER_API_KEY: z.string({ error: falta('OPENROUTER_API_KEY') }).min(1, falta('OPENROUTER_API_KEY')),
+  // Solo para pruebas: apuntan los adaptadores a APIs falsas.
+  GEMINI_BASE_URL: z.url().optional(),
+  OPENROUTER_BASE_URL: z.url().optional(),
+});
+
+export interface ClavesModelos {
+  geminiApiKey: string;
+  openrouterApiKey: string;
+  geminiBaseUrl?: string;
+  openrouterBaseUrl?: string;
+}
+
+/**
+ * Lee las claves de los modelos. Va aparte de leerEntorno: el workflow agente.yml
+ * no las recibe hasta que alguna etapa use un modelo (H4).
+ */
+export function leerClavesModelos(env: NodeJS.ProcessEnv): ClavesModelos {
+  const r = esquemaClavesModelos.safeParse(env);
+  if (!r.success) {
+    throw new Error(r.error.issues.map((i) => i.message).join(' '));
+  }
+  return {
+    geminiApiKey: r.data.GEMINI_API_KEY,
+    openrouterApiKey: r.data.OPENROUTER_API_KEY,
+    ...(r.data.GEMINI_BASE_URL ? { geminiBaseUrl: r.data.GEMINI_BASE_URL } : {}),
+    ...(r.data.OPENROUTER_BASE_URL ? { openrouterBaseUrl: r.data.OPENROUTER_BASE_URL } : {}),
+  };
+}
