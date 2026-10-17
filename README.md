@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, sigue el H3 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, H3 con el código listo y la demo pendiente |
 
 ---
 
@@ -44,7 +44,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 
 - **Spec Driven Development** fase por fase. No se avanza sin la aprobación explícita de Abel.
 - Todo se documenta en español: el README tiene el índice y esta bitácora, y cada fase vive en su archivo de `docs/`. Se sube a `main` después de cada cambio.
-- **Método de implementación** (confirmado): el asistente escribe y prueba el código en la carpeta de su sesión de Claude Code (que tiene Node.js) y lo sube a GitHub con el conector. Abel no necesita instalar nada. Además, un workflow de CI corre las pruebas en cada cambio.
+- **Método de implementación** (confirmado): el asistente escribe y prueba el código en la carpeta de su sesión de Claude Code y lo sube a GitHub con el conector. Abel no necesita instalar nada. Si la sesión corre en una PC sin Node.js, el asistente baja el Node portátil oficial a la carpeta de la sesión, con permiso de Abel y sin instalar nada en el sistema. Además, un workflow de CI corre las pruebas en cada cambio.
 - Abel define y decide. El asistente propone, cuestiona y redacta.
 - La base metodológica es *Inspired*, de Marty Cagan.
 
@@ -58,7 +58,8 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. También tiene **Workflows: Read and write**, para subir los archivos de `.github/workflows/`. |
 | Plantilla de Notion | [User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4) (privada), con 10 bases. El detalle y los IDs están en [docs/notion-plantilla.md](docs/notion-plantilla.md). |
 | Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente usa el servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) con el token de la integración *User-Persona Agente* (secreto `NOTION_TOKEN`). |
-| Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (programado a las 15 h de Argentina, y manual) y [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio). |
+| Modelos | Gemini (principal, por defecto `gemini-3.8-flash`) y OpenRouter (respaldo, por defecto `openrouter/free`). Se cambian desde la página Configuración de Notion. |
+| Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (programado a las 15 h de Argentina, y manual), [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio) y [`probar-modelos.yml`](.github/workflows/probar-modelos.yml) (prueba de modelos, solo manual). |
 
 ### Bitácora de decisiones
 
@@ -100,10 +101,15 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-16 | 7 | Diseño del **H2** aprobado: un único `Escritor` con `guardar` (con clave crea o actualiza), `actualizar` y `archivar` (agregada a pedido de Abel, va a la papelera y nunca elimina), siempre pasando por las reglas. Un intento bloqueado deja la solicitud en *Error*. Dos filas distintas de investigación propia cuentan como fuentes independientes. Se agregan *Clave* y *Editado por el PM* a la plantilla. |
 | 2026-10-16 | 7 | Código del H2 en `main`: confianza, estados prohibidos, trazabilidad, no pisar al PM, datos personales y claves. 101 pruebas. **Ajuste:** desmarcar *Editado por el PM* no vuelve a habilitar al agente (haría falta una "huella"). Por ahora la casilla queda fija. |
 | 2026-10-16 | 7 | **Se cierra el H2:** CI en verde con las 101 pruebas. |
+| 2026-10-16 | 7 | Diseño del **H3** aprobado: interfaz común `generar` con adaptadores de Gemini y OpenRouter sin SDK nuevos, datos personales ocultos dentro de `generar`, reintentos ante límites de uso y respaldo. Ante formato inválido: un reintento con corrección y después el respaldo. Los tokens van en las notas de Ejecuciones. La demo usa un workflow aparte, `probar-modelos.yml`, y `agente.yml` sigue sin las claves de los modelos hasta el H4. |
+| 2026-10-16 | 7 | La sesión del asistente corre en una PC con Windows sin Node.js. Con permiso de Abel, se usa el Node portátil oficial (24.22.0, verificado con SHASUMS) dentro de la carpeta de la sesión. |
+| 2026-10-16 | 7 | Código del H3 en `main`: capa de modelos, plantilla base de prompts y prueba de modelos. 134 pruebas. Al implementar: modelos por defecto `gemini-3.8-flash` y `openrouter/free`, editables desde Configuración; a Gemini se le pide JSON con el esquema en el prompt, a OpenRouter con `json_schema`, y Zod valida siempre; la falla forzada de la demo es simulada y no llama a Gemini. Falta la demo de Abel. |
 
 ### Próximo paso
 
-**H3: capa de modelos** (ver [docs/06-plan-de-tareas.md](docs/06-plan-de-tareas.md)): interfaz común de modelos, adaptadores de Gemini y OpenRouter con salida validada por Zod, reintentos y respaldo ante límites de uso, reintento por formato inválido y plantilla base de prompts (T3.1 a T3.5). Acá se conecta `ocultarDatosPersonales` antes de cada llamada. **Es el primer hito que gasta cuota gratuita.** El asistente propone el diseño concreto antes de escribir código. **Demo:** una llamada de prueba devuelve una respuesta validada y, si se fuerza un error en Gemini, responde OpenRouter y queda registrado.
+**Demo del H3** (ver [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h3-la-hace-abel)): CI en verde y el workflow *Probar modelos* ejecutado dos veces, una normal y otra con la falla de Gemini simulada, con sus filas en Ejecuciones. Abel revisa también las decisiones tomadas al implementar.
+
+Después sigue el **H4: agente de contexto** (T4.1 a T4.7): leer documentos adjuntos y URL, prompt y esquema del contexto con fuente por campo, escritura en *Por confirmar* y bloqueo de las etapas siguientes hasta que el PM confirme. En el H4, `agente.yml` empieza a recibir las claves de los modelos. El asistente propone el diseño concreto antes de escribir código.
 
 ### Cómo retomar en otro chat
 

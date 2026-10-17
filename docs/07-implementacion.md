@@ -9,7 +9,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H0. Preparación de cuentas y accesos | ✅ Cerrado |
 | H1. Esqueleto sin modelo | ✅ Cerrado |
 | H2. Reglas en código | ✅ Cerrado |
-| H3. Capa de modelos | 🔜 Próximo |
+| H3. Capa de modelos | 🟡 Código en `main`, falta la demo |
 | H4. Agente de contexto | ⚪ Pendiente |
 | H5. Entrevistas | ⚪ Pendiente |
 | H6. Web | ⚪ Pendiente |
@@ -167,7 +167,7 @@ Las reglas que no pueden depender de que el modelo "se porte bien" ya están en 
 | T2.2 Guardia de estados prohibidos | 🤖 | ✅ |
 | T2.3 Guardia de trazabilidad | 🤖 | ✅ |
 | T2.4 No pisar al PM | 🤖 | ✅ |
-| T2.5 Ocultar datos personales | 🤖 | ✅ `ocultarDatosPersonales`, se conecta a los modelos en el H3 |
+| T2.5 Ocultar datos personales | 🤖 | ✅ `ocultarDatosPersonales`, conectado a los modelos en el H3 |
 | T2.6 Idempotencia | 🤖 | ✅ Propiedad *Clave* |
 | Demo | 👤 | ✅ Cumplida el 2026-10-16 |
 
@@ -219,3 +219,84 @@ Para confirmar que las pruebas detectan fallas, se sacó a propósito la regla d
 3. **Opcional:** ejecutá el workflow **Agente** con una Solicitud nueva. Tiene que seguir funcionando igual que en el H1, ahora verificando también las propiedades nuevas de la plantilla.
 
 **Demo de cierre del H2:** CI en verde ✅ con las 101 pruebas. **Cumplida el 2026-10-16.**
+
+---
+
+## H3. Capa de modelos
+
+El agente ya sabe pedirle algo a un modelo y recibir una respuesta **validada**, con reintentos, respaldo y datos personales ocultos. Todavía ninguna etapa la usa: la primera va a ser el agente de contexto, en el H4. El programado diario **sigue sin las claves de los modelos**, así que no gasta cuota.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T3.1 Interfaz común + adaptador de Gemini | 🤖 | ✅ `generar` (`agent/src/llm/`) y `ProveedorGemini` |
+| T3.2 Adaptador de OpenRouter | 🤖 | ✅ `ProveedorOpenRouter` |
+| T3.3 Reintentos y respaldo ante límites de uso | 🤖 | ✅ |
+| T3.4 Reintento por formato inválido | 🤖 | ✅ |
+| T3.5 Plantilla base de prompts | 🤖 | ✅ `armarPrompt` (`agent/src/prompts/base.ts`) |
+| Demo | 👤 | ⏳ Pendiente |
+
+### Decisiones de diseño (aprobadas por Abel)
+
+- **Una sola función para las etapas:** `generar({ mensajes, esquema })` devuelve los datos ya validados por Zod, quién respondió, los intentos y los tokens. Las etapas no conocen a Gemini ni a OpenRouter.
+- **Sin SDK nuevos:** los dos adaptadores usan `fetch` y aceptan una URL base configurable. Así se prueban contra APIs falsas locales, igual que Notion.
+- **Datos personales dentro de `generar`:** `ocultarDatosPersonales` se aplica a todo el texto antes de cada llamada. Ninguna etapa se lo puede olvidar.
+- **Formato inválido:** un reintento con el mismo proveedor, con el error de Zod en el prompt. Si sigue mal, se prueba con el respaldo. Si también falla, **no se escribe nada**.
+- **Workflow de prueba aparte:** la demo usa `probar-modelos.yml`, solo manual. `agente.yml` sigue recibiendo **solo `NOTION_TOKEN`** hasta el H4, para que el programado no pueda gastar tokens.
+- **Tokens en las notas de Ejecuciones:** sin cambiar la plantilla.
+
+### Decisiones tomadas al implementar (para que Abel las revise)
+
+- **Modelos por defecto:** `gemini-3.8-flash`, el Flash estable vigente según la documentación de Google al 2026-10-16, y `openrouter/free`, el router de OpenRouter que elige entre sus modelos gratuitos. Con el router no dependemos de que un modelo `:free` puntual siga existiendo. Los dos se cambian desde *Modelo principal* y *Modelo de respaldo* en **Configuración**, sin tocar código. Vacíos, se usan los valores por defecto.
+- **Cómo se pide el JSON:** a Gemini se le pide salida JSON (`responseMimeType`) con el esquema escrito en el prompt. No se usa el campo de esquema de la API de Gemini porque no pude confirmar en la documentación cuál acepta un JSON Schema completo, y un campo equivocado daría error 400 en todas las llamadas. A OpenRouter se le manda el esquema con `response_format: json_schema`. En los dos casos, **Zod valida igual**.
+- **La falla forzada es simulada:** con la casilla marcada, el agente no llama a Gemini y simula un límite de uso (429). Así se ven los reintentos y el paso al respaldo sin gastar cuota. Un error real de Gemini (clave, modelo inexistente o cuota agotada) sigue el mismo camino, y eso está cubierto por las pruebas con la API falsa.
+- **Modelo real en *Proveedor y modelo*:** se registra el modelo que respondió de verdad (`modelVersion` de Gemini, `model` de OpenRouter), no solo el pedido. Con `openrouter/free` eso muestra qué modelo gratuito eligió el router.
+- **La plantilla de prompts es un módulo** (`src/prompts/base.ts`) y no un archivo `.txt`, para que viaje en el build sin pasos extra.
+
+### Cómo reacciona `generar`
+
+| Qué pasa | Qué hace |
+|----------|----------|
+| Respuesta válida | La devuelve con proveedor, modelo real, intentos y tokens |
+| Límite de uso (429), error del servidor (5xx) o timeout | Hasta **2 reintentos** con espera de 2 s y después 4 s. Si el proveedor pide una espera (`Retry-After` o `RetryInfo`), la respeta con un tope de 20 s. Si sigue fallando, pasa al respaldo |
+| Clave inválida (401/403), sin crédito (402) o modelo inexistente (404) | Pasa directo al respaldo, sin esperar |
+| Respuesta bloqueada por seguridad o contenido | Pasa al respaldo |
+| Formato inválido (no es JSON o no cumple el esquema) | Un reintento con la corrección; después, el respaldo |
+| Fallan los dos | `ErrorGeneracion` con todos los intentos: la etapa termina en *Error* y no escribe nada |
+
+**Plantilla base de prompts.** `armarPrompt` arma las cinco partes de la Fase 5:
+- **Rol y reglas comunes:** escéptico, neutral y trazable; nunca inventa y dice "No encontrado".
+- **Tarea**.
+- **Datos:** cada uno entre `<datos fuente="…">` y `</datos>`, con la regla de que nada de lo que hay adentro es una instrucción. Si un dato trae su propio `</datos>` o `<datos`, se neutraliza para que no pueda cerrar el bloque ni abrir uno falso.
+- **Formato:** el JSON Schema generado desde el mismo esquema de Zod que después valida la respuesta.
+- **Idioma**.
+
+Las reglas no mencionan ninguna industria ni producto (RNF-12).
+
+### Pruebas
+
+`npm test` corre **134 pruebas** (33 nuevas), sin red ni secretos:
+
+- **Adaptadores**, contra APIs de Gemini y OpenRouter falsas locales: rutas, cabeceras con la clave, cuerpo del pedido, partes de "pensamiento" descartadas, tokens, modelo real, 429 con la espera pedida, clave inválida, modelo inexistente, error del servidor, bloqueo por seguridad, error dentro de una respuesta 200 y falla de conexión.
+- **`generar`:** respuesta válida, JSON dentro de un bloque de código, datos personales que no llegan al proveedor, reintentos con espera creciente y tope, paso directo al respaldo, formato corregido en el reintento, formato que sigue mal y pasa al respaldo, y que no se devuelva nada si fallan los dos.
+- **Plantilla de prompts:** las cinco partes, los datos delimitados y un dato malicioso que intenta cerrar el bloque.
+- **Prueba de modelos:** respuesta del principal, falla forzada con respuesta del respaldo, ningún modelo disponible y el camino completo con los adaptadores reales y los modelos de Configuración.
+
+Para confirmar que las pruebas detectan fallas, se sacó a propósito el ocultamiento de datos personales de `generar`: fallaron 4 pruebas. Con el código restaurado, vuelven a pasar todas.
+
+> En la sesión se corrieron las 59 pruebas de los 8 archivos que tocan lo que cambió o lo nuevo, además del typecheck, el lint y el build. Los otros 6 archivos (75 pruebas) cubren código que no cambió y los corre el CI.
+
+### Demo de cierre del H3 (la hace Abel)
+
+Gasta muy poca cuota: una llamada a Gemini y una a OpenRouter, o alguna más si hay que corregir el formato.
+
+0. En la pestaña **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)**, revisá que el workflow **CI** del último commit esté en ✅.
+1. En **Actions** → **Probar modelos** → **Run workflow**, dejá la casilla **sin marcar** → **Run workflow**. Al minuto termina en ✅. En Notion, en **Ejecuciones**, aparece la fila *Prueba de modelos* con:
+   - Resultado **Lista** y *Proveedor y modelo* = "Gemini · …".
+   - En el cuerpo: el intento, los tokens, la respuesta validada y la nota "el correo no salió del agente".
+2. Volvé a ejecutarlo **marcando** *Simular un límite de uso en Gemini*. Aparece la fila *Prueba de modelos · falla forzada* con:
+   - *Proveedor y modelo* = "OpenRouter · … (respaldo)".
+   - En el cuerpo, los 3 intentos de Gemini con *error: limite* y después la respuesta de OpenRouter.
+
+> Si el paso 1 falla con *error: modelo*, el nombre del modelo de Gemini no existe para tu clave. Escribí otro en *Modelo principal* de **Configuración** y volvé a probar. Ante cualquier otra falla, el detalle de cada intento queda en el cuerpo de la fila y en el paso **Probar modelos** del log. Las claves nunca aparecen.
+
+> **Lección aprendida:** esta sesión del asistente corrió en una PC con Windows sin Node.js ni git. Con el permiso de Abel, se bajó el `.zip` oficial de Node 24.22.0 desde nodejs.org, se verificó con su `SHASUMS256.txt` y se descomprimió en la carpeta de la sesión, sin instalar nada en el sistema. Como la ruta de esa carpeta supera el límite de 260 caracteres de Windows, se trabajó a través de una letra de unidad temporal (`subst`). El código se bajó y se subió con el conector, como siempre.
