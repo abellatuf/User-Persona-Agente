@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, H3 con el código listo y la demo pendiente |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, H3 ✅, sigue el H4 |
 
 ---
 
@@ -58,7 +58,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | Conector de GitHub | Token de acceso fino con permiso **Contents: Read and write** sobre este repo. No puede crear repositorios ni leer `cobros-recurrentes`. También tiene **Workflows: Read and write**, para subir los archivos de `.github/workflows/`. |
 | Plantilla de Notion | [User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4) (privada), con 10 bases. El detalle y los IDs están en [docs/notion-plantilla.md](docs/notion-plantilla.md). |
 | Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente usa el servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) con el token de la integración *User-Persona Agente* (secreto `NOTION_TOKEN`). |
-| Modelos | Gemini (principal, por defecto `gemini-3.8-flash`) y OpenRouter (respaldo, por defecto `openrouter/free`). Se cambian desde la página Configuración de Notion. |
+| Modelos | Gemini (principal) y OpenRouter (respaldo). Se eligen desde la página Configuración de Notion: hoy `gemini-3.6-flash` y `openrouter/free`. Si los campos quedan vacíos, se usan los valores por defecto del código (`gemini-3.8-flash` y `openrouter/free`). |
 | Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (programado a las 15 h de Argentina, y manual), [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio) y [`probar-modelos.yml`](.github/workflows/probar-modelos.yml) (prueba de modelos, solo manual). |
 
 ### Bitácora de decisiones
@@ -104,12 +104,17 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-16 | 7 | Diseño del **H3** aprobado: interfaz común `generar` con adaptadores de Gemini y OpenRouter sin SDK nuevos, datos personales ocultos dentro de `generar`, reintentos ante límites de uso y respaldo. Ante formato inválido: un reintento con corrección y después el respaldo. Los tokens van en las notas de Ejecuciones. La demo usa un workflow aparte, `probar-modelos.yml`, y `agente.yml` sigue sin las claves de los modelos hasta el H4. |
 | 2026-10-16 | 7 | La sesión del asistente corre en una PC con Windows sin Node.js. Con permiso de Abel, se usa el Node portátil oficial (24.22.0, verificado con SHASUMS) dentro de la carpeta de la sesión. |
 | 2026-10-16 | 7 | Código del H3 en `main`: capa de modelos, plantilla base de prompts y prueba de modelos. 134 pruebas. Al implementar: modelos por defecto `gemini-3.8-flash` y `openrouter/free`, editables desde Configuración; a Gemini se le pide JSON con el esquema en el prompt, a OpenRouter con `json_schema`, y Zod valida siempre; la falla forzada de la demo es simulada y no llama a Gemini. Falta la demo de Abel. |
+| 2026-10-17 | 7 | Abel aprueba las decisiones tomadas al implementar el H3. Instalar Node.js en su PC queda para más adelante; mientras tanto se usa el Node portátil. |
+| 2026-10-17 | 7 | Las primeras corridas de *Probar modelos* fallaron porque *Modelo de respaldo* en Configuración tenía el texto de relleno de la plantilla ("Por definir en H3…"). Con permiso de Abel, el asistente lo cambió a `openrouter/free`. *Modelo principal* queda en `gemini-3.6-flash`, elegido por Abel. |
+| 2026-10-17 | 7 | **Se cierra el H3:** CI en verde; sin falla forzada respondió Gemini (`gemini-3.6-flash`) y con falla forzada respondió OpenRouter (`openrouter/free` eligió `liquid/lfm-2.5-2.6b:free`). En las dos, el correo de prueba llegó al modelo como `[CORREO]`. |
 
 ### Próximo paso
 
-**Demo del H3** (ver [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h3-la-hace-abel)): CI en verde y el workflow *Probar modelos* ejecutado dos veces, una normal y otra con la falla de Gemini simulada, con sus filas en Ejecuciones. Abel revisa también las decisiones tomadas al implementar.
+**H4: agente de contexto** (T4.1 a T4.7): leer documentos adjuntos y URL, prompt y esquema del contexto con fuente por campo, escritura en *Por confirmar* y bloqueo de las etapas siguientes hasta que el PM confirme. En el H4, `agente.yml` empieza a recibir las claves de los modelos. El asistente propone el diseño concreto antes de escribir código.
 
-Después sigue el **H4: agente de contexto** (T4.1 a T4.7): leer documentos adjuntos y URL, prompt y esquema del contexto con fuente por campo, escritura en *Por confirmar* y bloqueo de las etapas siguientes hasta que el PM confirme. En el H4, `agente.yml` empieza a recibir las claves de los modelos. El asistente propone el diseño concreto antes de escribir código.
+Pendientes a tener en cuenta:
+- Al 2026-10-17, *Agente activo* en Configuración está **desmarcada**: el programado diario solo deja filas *Pausado*. Para la demo del H4 hay que marcarla.
+- Posible mejora: que la etapa 0 avise si *Modelo principal* o *Modelo de respaldo* tienen algo que no parece un nombre de modelo (ver la lección del H3).
 
 ### Cómo retomar en otro chat
 

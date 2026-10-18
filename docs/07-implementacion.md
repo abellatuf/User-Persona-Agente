@@ -9,8 +9,8 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H0. Preparación de cuentas y accesos | ✅ Cerrado |
 | H1. Esqueleto sin modelo | ✅ Cerrado |
 | H2. Reglas en código | ✅ Cerrado |
-| H3. Capa de modelos | 🟡 Código en `main`, falta la demo |
-| H4. Agente de contexto | ⚪ Pendiente |
+| H3. Capa de modelos | ✅ Cerrado |
+| H4. Agente de contexto | 🔜 Próximo |
 | H5. Entrevistas | ⚪ Pendiente |
 | H6. Web | ⚪ Pendiente |
 | H7. Síntesis | ⚪ Pendiente |
@@ -233,7 +233,7 @@ El agente ya sabe pedirle algo a un modelo y recibir una respuesta **validada**,
 | T3.3 Reintentos y respaldo ante límites de uso | 🤖 | ✅ |
 | T3.4 Reintento por formato inválido | 🤖 | ✅ |
 | T3.5 Plantilla base de prompts | 🤖 | ✅ `armarPrompt` (`agent/src/prompts/base.ts`) |
-| Demo | 👤 | ⏳ Pendiente |
+| Demo | 👤 | ✅ Cumplida el 2026-10-17 |
 
 ### Decisiones de diseño (aprobadas por Abel)
 
@@ -244,9 +244,9 @@ El agente ya sabe pedirle algo a un modelo y recibir una respuesta **validada**,
 - **Workflow de prueba aparte:** la demo usa `probar-modelos.yml`, solo manual. `agente.yml` sigue recibiendo **solo `NOTION_TOKEN`** hasta el H4, para que el programado no pueda gastar tokens.
 - **Tokens en las notas de Ejecuciones:** sin cambiar la plantilla.
 
-### Decisiones tomadas al implementar (para que Abel las revise)
+### Decisiones tomadas al implementar (aprobadas por Abel el 2026-10-17)
 
-- **Modelos por defecto:** `gemini-3.8-flash`, el Flash estable vigente según la documentación de Google al 2026-10-16, y `openrouter/free`, el router de OpenRouter que elige entre sus modelos gratuitos. Con el router no dependemos de que un modelo `:free` puntual siga existiendo. Los dos se cambian desde *Modelo principal* y *Modelo de respaldo* en **Configuración**, sin tocar código. Vacíos, se usan los valores por defecto.
+- **Modelos por defecto:** `gemini-3.8-flash`, el Flash estable vigente según la documentación de Google al 2026-10-16, y `openrouter/free`, el router de OpenRouter que elige entre sus modelos gratuitos. Con el router no dependemos de que un modelo `:free` puntual siga existiendo. Los dos se cambian desde *Modelo principal* y *Modelo de respaldo* en **Configuración**, sin tocar código. Vacíos, se usan los valores por defecto. Abel eligió `gemini-3.6-flash` como principal en Configuración.
 - **Cómo se pide el JSON:** a Gemini se le pide salida JSON (`responseMimeType`) con el esquema escrito en el prompt. No se usa el campo de esquema de la API de Gemini porque no pude confirmar en la documentación cuál acepta un JSON Schema completo, y un campo equivocado daría error 400 en todas las llamadas. A OpenRouter se le manda el esquema con `response_format: json_schema`. En los dos casos, **Zod valida igual**.
 - **La falla forzada es simulada:** con la casilla marcada, el agente no llama a Gemini y simula un límite de uso (429). Así se ven los reintentos y el paso al respaldo sin gastar cuota. Un error real de Gemini (clave, modelo inexistente o cuota agotada) sigue el mismo camino, y eso está cubierto por las pruebas con la API falsa.
 - **Modelo real en *Proveedor y modelo*:** se registra el modelo que respondió de verdad (`modelVersion` de Gemini, `model` de OpenRouter), no solo el pedido. Con `openrouter/free` eso muestra qué modelo gratuito eligió el router.
@@ -290,7 +290,7 @@ Para confirmar que las pruebas detectan fallas, se sacó a propósito el ocultam
 Gasta muy poca cuota: una llamada a Gemini y una a OpenRouter, o alguna más si hay que corregir el formato.
 
 0. En la pestaña **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)**, revisá que el workflow **CI** del último commit esté en ✅.
-1. En **Actions** → **Probar modelos** → **Run workflow**, dejá la casilla **sin marcar** → **Run workflow**. Al minuto termina en ✅. En Notion, en **Ejecuciones**, aparece la fila *Prueba de modelos* con:
+1. En **Actions** → **Probar modelos** → **Run workflow** se abre un recuadro con la casilla *Simular un límite de uso en Gemini*. Dejala **sin marcar** y hacé clic en el botón verde **Run workflow**. Al minuto termina en ✅. En Notion, en **Ejecuciones**, aparece la fila *Prueba de modelos* con:
    - Resultado **Lista** y *Proveedor y modelo* = "Gemini · …".
    - En el cuerpo: el intento, los tokens, la respuesta validada y la nota "el correo no salió del agente".
 2. Volvé a ejecutarlo **marcando** *Simular un límite de uso en Gemini*. Aparece la fila *Prueba de modelos · falla forzada* con:
@@ -298,5 +298,13 @@ Gasta muy poca cuota: una llamada a Gemini y una a OpenRouter, o alguna más si 
    - En el cuerpo, los 3 intentos de Gemini con *error: limite* y después la respuesta de OpenRouter.
 
 > Si el paso 1 falla con *error: modelo*, el nombre del modelo de Gemini no existe para tu clave. Escribí otro en *Modelo principal* de **Configuración** y volvé a probar. Ante cualquier otra falla, el detalle de cada intento queda en el cuerpo de la fila y en el paso **Probar modelos** del log. Las claves nunca aparecen.
+
+**Demo de cierre del H3:** CI en verde ✅ y las dos pruebas en *Lista*. **Cumplida el 2026-10-17.**
+- **Sin falla forzada:** respondió *Gemini · gemini-3.6-flash* en el primer intento, con 580 tokens, y el correo de prueba llegó al modelo como `[CORREO]`.
+- **Con falla forzada:** 3 intentos simulados de Gemini con *error: limite* y después respondió *OpenRouter · liquid/lfm-2.5-2.6b:free (respaldo)*, el modelo gratuito que eligió `openrouter/free`, con 751 tokens.
+
+> **Lecciones aprendidas:**
+> - Las primeras corridas fallaron con *"Ningún modelo devolvió una respuesta válida"*. La causa: en **Configuración**, *Modelo principal* y *Modelo de respaldo* tenían el texto de relleno de la plantilla ("Por definir en H3…"), y el agente lo tomó como nombre de modelo. OpenRouter respondió 400 (*not a valid model ID*). Se corrigió en Notion (`openrouter/free`) sin tocar código. El agente se comportó como debía: no inventó nada, registró cada intento y no escribió nada. **Posible mejora para más adelante:** que la etapa 0 avise si esos campos tienen algo que no parece un nombre de modelo.
+> - La casilla de la falla forzada está en el recuadro de **Run workflow** de GitHub, no en Notion. Las primeras corridas se hicieron con la casilla marcada, así que Gemini no se llamaba. El título de la fila (*"· falla forzada"*) permite distinguirlas.
 
 > **Lección aprendida:** esta sesión del asistente corrió en una PC con Windows sin Node.js ni git. Con el permiso de Abel, se bajó el `.zip` oficial de Node 24.22.0 desde nodejs.org, se verificó con su `SHASUMS256.txt` y se descomprimió en la carpeta de la sesión, sin instalar nada en el sistema. Como la ruta de esa carpeta supera el límite de 260 caracteres de Windows, se trabajó a través de una letra de unidad temporal (`subst`). El código se bajó y se subió con el conector, como siempre.
