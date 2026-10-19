@@ -10,6 +10,7 @@ import type {
 } from '../../src/notion/espacio.js';
 import { Contador } from '../../src/notion/contador.js';
 import { EscritorNotion } from '../../src/notion/escritor.js';
+import { EspacioNotionMcp } from '../../src/notion/espacio.js';
 import { ESQUEMA_ESPERADO } from '../../src/stages/0-verificar-espacio/esquema-esperado.js';
 import { LlamadorFalso } from './llamador-falso.js';
 
@@ -43,6 +44,21 @@ export class EspacioFalso implements EspacioNotion {
   /** Notion falso detrás del Escritor que usan las etapas. */
   readonly notion = new LlamadorFalso();
   readonly escritor = new EscritorNotion(this.notion, this.contador);
+  /** Id de la fila de contexto sembrada, si la hay. */
+  contextoId: string | undefined;
+
+  /**
+   * Por defecto, el espacio tiene una fila de contexto Confirmada, para que las etapas 2 a 5
+   * pasen la precondición. Con { contexto: null } arranca sin ninguna.
+   */
+  constructor(opciones: { contexto?: Record<string, Record<string, unknown>> | null } = {}) {
+    if (opciones.contexto !== null) {
+      this.contextoId = this.notion.sembrar(
+        BASES.contexto,
+        opciones.contexto ?? { Nombre: { title: [] }, Estado: { status: { name: 'Confirmado' } } },
+      );
+    }
+  }
 
   agregarSolicitud(s: Partial<Solicitud> & { id: string }) {
     this.solicitudes.push({ titulo: s.id, etapa: 'Armar contexto', opciones: '', estado: 'Pendiente', ...s });
@@ -72,6 +88,12 @@ export class EspacioFalso implements EspacioNotion {
       .filter((s) => s.estado === 'Pendiente')
       .slice(0, maximo)
       .map((s) => ({ id: s.id, titulo: s.titulo, etapa: s.etapa, opciones: s.opciones }));
+  }
+
+  /** Lee las filas de contexto del Notion falso con el mismo código que en producción. */
+  async leerContextos() {
+    this.contador.lecturas++;
+    return new EspacioNotionMcp(this.notion).leerContextos();
   }
 
   async leerEsquema(id: string) {

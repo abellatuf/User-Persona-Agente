@@ -1,19 +1,34 @@
 import { ejecutarAgente } from './ciclo.js';
-import { leerEntorno } from './config.js';
+import { leerClavesModelos, leerEntorno, type ClavesModelos } from './config.js';
+import { crearModelos } from './llm/index.js';
 import { conReintentos, conectarNotionMcp } from './notion/cliente-mcp.js';
 import { EspacioNotionMcp } from './notion/espacio.js';
 import { ETAPAS } from './stages/registro.js';
 
+/** Las claves de los modelos, o el motivo por el que faltan (las etapas que no usan modelo siguen igual). */
+function clavesDeModelos(): ClavesModelos | string {
+  try {
+    return leerClavesModelos(process.env);
+  } catch (e) {
+    return e instanceof Error ? e.message : String(e);
+  }
+}
+
 /** Punto de entrada: lo ejecuta el workflow agente.yml. */
 async function main(): Promise<number> {
   const entorno = leerEntorno(process.env);
+  const claves = clavesDeModelos();
   const conexion = await conectarNotionMcp({
     token: entorno.notionToken,
     ...(entorno.notionBaseUrl ? { baseUrl: entorno.notionBaseUrl } : {}),
   });
   try {
     const espacio = new EspacioNotionMcp(conReintentos(conexion));
-    const resumen = await ejecutarAgente({ espacio, etapas: ETAPAS });
+    const resumen = await ejecutarAgente({
+      espacio,
+      etapas: ETAPAS,
+      modelos: (configuracion) => crearModelos(claves, configuracion),
+    });
     const { lecturas, escrituras } = espacio.contadores();
     console.log(`Resultado: ${resumen.resultado}. Lecturas: ${lecturas}. Escrituras: ${escrituras}.`);
     for (const falla of resumen.fallasDeRegistro) console.error(`❌ ${falla}`);

@@ -38,9 +38,11 @@ jobs:
       - name: Compilar
         run: npm run build
 
-      # En el H1 solo recibe el token de Notion: sin las claves de los modelos,
-      # el agente no puede gastar tokens de IA.
+      # Desde el H4 recibe también las claves de los modelos. Solo se gasta cuota
+      # si hay una solicitud que use un modelo (por ejemplo, «Armar contexto» con fuentes).
       - name: Ejecutar el agente
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: npm start

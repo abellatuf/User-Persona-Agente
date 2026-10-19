@@ -36,6 +36,19 @@ export interface Solicitud {
   opciones: string;
 }
 
+/** Una fila de Contexto del producto, con lo que necesitan las etapas. */
+export interface FilaContexto {
+  id: string;
+  titulo: string;
+  estado: string | null;
+  /** Archivos de «Documentos fuente». */
+  documentos: Array<{ nombre: string; url: string }>;
+  /** «URL fuente», o null si está vacía. */
+  urlFuente: string | null;
+  /** Texto de cada propiedad de texto (Problema, Problema · fuente, Idioma…). */
+  textos: Record<string, string>;
+}
+
 /** Esquema de una base: propiedad → tipo y, si es selección o estado, sus opciones. */
 export interface EsquemaBase {
   titulo: string;
@@ -67,6 +80,8 @@ export interface CierreEjecucion {
 export interface EspacioNotion {
   leerConfiguracion(): Promise<Configuracion>;
   solicitudesPendientes(maximo: number): Promise<Solicitud[]>;
+  /** Filas de Contexto del producto (debería haber una sola). */
+  leerContextos(): Promise<FilaContexto[]>;
   /** Devuelve null si la base no existe o no está compartida con la integración. */
   leerEsquema(dataSourceId: string): Promise<EsquemaBase | null>;
   marcarSolicitud(id: string, estado: EstadoSolicitud): Promise<void>;
@@ -136,6 +151,28 @@ export class EspacioNotionMcp implements EspacioNotion {
       titulo: p.leerTexto(fila, 'Solicitud'),
       etapa: p.leerSeleccion(fila, 'Etapa'),
       opciones: p.leerTexto(fila, 'Opciones'),
+    }));
+  }
+
+  async leerContextos(): Promise<FilaContexto[]> {
+    const r = resultadoConsulta.parse(
+      await this.leer('API-query-data-source', {
+        data_source_id: BASES.contexto,
+        sorts: [{ timestamp: 'created_time', direction: 'ascending' }],
+        page_size: 10,
+      }),
+    );
+    return r.results.map((fila) => ({
+      id: fila.id,
+      titulo: p.leerTexto(fila, 'Nombre'),
+      estado: p.leerSeleccion(fila, 'Estado'),
+      documentos: p.leerArchivos(fila, 'Documentos fuente'),
+      urlFuente: p.leerUrl(fila, 'URL fuente'),
+      textos: Object.fromEntries(
+        Object.entries(fila.properties)
+          .filter(([, v]) => v.type === 'rich_text')
+          .map(([nombre]) => [nombre, p.leerTexto(fila, nombre)]),
+      ),
     }));
   }
 

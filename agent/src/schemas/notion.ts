@@ -16,6 +16,18 @@ export const valorPropiedad = z
     select: z.object({ name: z.string() }).loose().nullable().optional(),
     status: z.object({ name: z.string() }).loose().nullable().optional(),
     relation: z.array(z.object({ id: z.string() }).loose()).optional(),
+    url: z.string().nullable().optional(),
+    files: z
+      .array(
+        z
+          .object({
+            name: z.string(),
+            file: z.object({ url: z.string() }).loose().optional(),
+            external: z.object({ url: z.string() }).loose().optional(),
+          })
+          .loose(),
+      )
+      .optional(),
   })
   .loose();
 

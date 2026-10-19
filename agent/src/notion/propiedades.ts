@@ -47,3 +47,16 @@ export function leerSeleccion(pagina: Pagina, nombre: string): string | null {
   const p = prop(pagina, nombre);
   return p?.select?.name ?? p?.status?.name ?? null;
 }
+
+export function leerUrl(pagina: Pagina, nombre: string): string | null {
+  const url = prop(pagina, nombre)?.url?.trim();
+  return url ? url : null;
+}
+
+/** Archivos de una propiedad de tipo files: subidos a Notion (enlace temporal) o externos. */
+export function leerArchivos(pagina: Pagina, nombre: string): Array<{ nombre: string; url: string }> {
+  return (prop(pagina, nombre)?.files ?? []).flatMap((f) => {
+    const url = f.file?.url ?? f.external?.url;
+    return url ? [{ nombre: f.name, url }] : [];
+  });
+}

@@ -19,10 +19,11 @@ Las etapas piden una generación con `generar` (`src/llm/`) y reciben datos ya v
 | `src/ciclo.ts` | Bucle de solicitudes y registro en Ejecuciones |
 | `src/config.ts` | IDs de las bases, modelos por defecto y lectura del entorno |
 | `src/notion/` | Cliente MCP (con reintentos), `EspacioNotion` (lecturas) y `Escritor`, el único punto de escritura: `guardar`, `actualizar` y `archivar` |
-| `src/llm/` | Interfaz común de modelos, adaptadores de Gemini y OpenRouter, y `generar` con reintentos, respaldo y validación |
+| `src/llm/` | Interfaz común de modelos, adaptadores de Gemini y OpenRouter, `generar` con reintentos, respaldo y validación, y el control de los nombres de modelo de Configuración |
+| `src/fuentes/` | Lectura de fuentes: documentos (`.md`, `.txt`, `.csv`, `.pdf` con `unpdf`) y páginas web, con límites de tamaño y tiempo y sin direcciones privadas |
 | `src/prompts/` | Plantilla base de prompts: rol, reglas comunes, tarea, datos delimitados, formato e idioma |
 | `src/guards/` | Reglas en código: confianza, estados prohibidos, trazabilidad, ediciones del PM, datos personales y claves |
-| `src/stages/` | Etapa 0 (verificar espacio) y el registro de etapas |
+| `src/stages/` | Etapa 0 (verificar espacio), etapa 1 (agente de contexto, con la cita verificada por código) y el registro de etapas, con la precondición de contexto confirmado para las etapas 2 a 5 |
 | `src/diagnostico/` | Prueba de modelos (demo del H3) |
 | `src/schemas/` | Formatos de lo que se lee de Notion (Zod) |
 | `test/` | Pruebas con Vitest, incluida una de integración con el servidor MCP real y APIs falsas de Notion, Gemini y OpenRouter |
@@ -34,7 +35,7 @@ npm ci                  # instalar dependencias
 npm test                # pruebas (no usan red ni secretos)
 npm run lint            # lint
 npm run build           # compilar a dist/
-npm start               # ejecutar el agente (requiere NOTION_TOKEN)
+npm start               # ejecutar el agente (requiere NOTION_TOKEN; las etapas con modelo, también GEMINI_API_KEY y OPENROUTER_API_KEY)
 npm run probar-modelos  # prueba de modelos (requiere NOTION_TOKEN, GEMINI_API_KEY y OPENROUTER_API_KEY)
 ```
 

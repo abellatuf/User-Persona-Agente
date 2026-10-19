@@ -10,7 +10,7 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 |------|----------------|------------|
 | Configuración | `de3cb0ff-3f04-40b4-9cad-9342b177b12e` | — (una sola fila: *Configuración del agente*) |
 | Equipo | `a6565b62-6a72-42a3-8cb8-632a1b02314d` | ↔ Entrevistas |
-| Contexto del producto | `acf50bb3-01f8-4d02-b324-b6385022a556` | — |
+| Contexto del producto | `acf50bb3-01f8-4d02-b324-b6385022a556` | — (una sola fila por producto) |
 | Solicitudes | `2e3c1c30-d51d-4d54-b04e-d8ca6219de6b` | ↔ Ejecuciones |
 | Entrevistas | `2e12b4ac-b6c2-4335-a7d8-e23b15221f03` | ↔ Equipo (Miembro), ↔ Evidencia |
 | Ejecuciones | `19c0b3fc-666b-41f5-8d7d-2ff602222281` | ↔ Solicitudes |
@@ -27,8 +27,11 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 - **Agente activo empezó desmarcado**, porque el agente todavía no existía. Abel lo marcó en la demo del H1 (2026-10-16).
 - **Clave** (H2, 2026-10-16): propiedad de texto en Evidencia, Atributos, User Personas y Supuestos a validar. La usa el agente para no duplicar filas al repetir una etapa. Es técnica: se puede ocultar en las vistas y no hay que editarla.
 - **Editado por el PM** (H2, 2026-10-16): casilla en Atributos. La marca el agente cuando detecta que el PM editó el atributo. Desde ese momento el agente no lo cambia y deja sus propuestas en *Sugerencia del agente*.
+- **Modelos en Configuración** (H3, 2026-10-17): *Modelo principal* y *Modelo de respaldo* tenían un texto de relleno ("Por definir en H3…") que el agente tomaba como nombre de modelo. Se corrigieron (`gemini-3.6-flash` y `openrouter/free`), y desde el H4 el agente no usa un valor que no parezca un nombre de modelo.
+- **Aviso de privacidad** (H4, 2026-10-18): la descripción de la base Contexto del producto explica que hay una sola fila por producto, dónde van las fuentes y que **las fuentes se envían a un proveedor de IA gratuito** (HU-03, RNF-06).
+- **Formulario *Contexto manual*** (H4, 2026-10-18): vista de formulario sobre Contexto del producto, creada con el MCP de Notion, con *Nombre*, los seis campos e *Idioma* (HU-03b). Después de cargarlo, se pide *Armar contexto* sin fuentes y el agente marca la fuente de cada campo como «Cargado por el PM».
 
 ## Pendiente
 
-- **Formularios:** entrevista base (H5, cuando Abel apruebe las preguntas), investigación propia sobre Evidencia y contexto manual (H4).
+- **Formularios:** entrevista base (H5, cuando Abel apruebe las preguntas) e investigación propia sobre Evidencia.
 - **Vistas útiles:** por ejemplo, Solicitudes pendientes y personas por estado.

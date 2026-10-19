@@ -1,7 +1,9 @@
 import { MAX_SOLICITUDES_POR_EJECUCION, ZONA_HORARIA } from './config.js';
+import type { Generador } from './llm/index.js';
 import {
   ETAPAS_SOLICITABLES,
   type CierreEjecucion,
+  type Configuracion,
   type Contadores,
   type EspacioNotion,
   type EstadoSolicitud,
@@ -9,11 +11,16 @@ import {
   type Solicitud,
 } from './notion/espacio.js';
 import { verificarEspacio, type ResultadoVerificacion } from './stages/0-verificar-espacio/index.js';
-import type { FuncionEtapa, ResultadoEtapa } from './stages/registro.js';
+import type { ContextoEtapa, FuncionEtapa, ResultadoEtapa } from './stages/registro.js';
+
+/** Acceso a los modelos para las etapas: un generador, o el motivo por el que no hay. */
+export type Modelos = { generar: Generador } | { sinModelo: string };
 
 export interface Dependencias {
   espacio: EspacioNotion;
   etapas: Record<EtapaSolicitable, FuncionEtapa>;
+  /** Arma el acceso a los modelos con la Configuración. Armarlo no llama a ningún modelo. */
+  modelos?: (configuracion: Configuracion) => Modelos;
   verificar?: (espacio: EspacioNotion) => Promise<ResultadoVerificacion>;
   reloj?: () => Date;
   log?: (mensaje: string) => void;
@@ -116,9 +123,14 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
   }
   log(verificacion.ok ? 'Etapa 0: espacio OK.' : `Etapa 0: faltan ${verificacion.faltantes.length} elementos.`);
 
+  const modelos: Modelos = deps.modelos
+    ? deps.modelos(configuracion)
+    : { sinModelo: 'Esta ejecución no tiene acceso a modelos de lenguaje.' };
+  const acceso: Pick<ContextoEtapa, 'generar' | 'sinModelo'> = 'generar' in modelos ? { generar: modelos.generar } : { sinModelo: modelos.sinModelo };
+
   const solicitudes: ResumenEjecucion['solicitudes'] = [];
   for (const solicitud of pendientes) {
-    const r = await atenderSolicitud(solicitud, verificacion, corte, { espacio, etapas, reloj, log, fallasDeRegistro });
+    const r = await atenderSolicitud(solicitud, verificacion, corte, { espacio, etapas, acceso, reloj, log, fallasDeRegistro });
     corte = espacio.contadores();
     solicitudes.push({ id: solicitud.id, titulo: solicitud.titulo, resultado: r });
   }
@@ -132,12 +144,13 @@ async function atenderSolicitud(
   deps: {
     espacio: EspacioNotion;
     etapas: Record<EtapaSolicitable, FuncionEtapa>;
+    acceso: Pick<ContextoEtapa, 'generar' | 'sinModelo'>;
     reloj: () => Date;
     log: (m: string) => void;
     fallasDeRegistro: string[];
   },
 ): Promise<ResultadoEtapa['resultado']> {
-  const { espacio, etapas, reloj, log, fallasDeRegistro } = deps;
+  const { espacio, etapas, acceso, reloj, log, fallasDeRegistro } = deps;
   const inicio = reloj();
   const etapa = esEtapaSolicitable(solicitud.etapa) ? solicitud.etapa : undefined;
   const nombre = solicitud.titulo || '(sin título)';
@@ -169,7 +182,7 @@ async function atenderSolicitud(
           : 'La solicitud no tiene Etapa: elegí una y volvé a dejarla en Pendiente.',
       ];
     } else {
-      r = await etapas[etapa]({ solicitud, espacio });
+      r = await etapas[etapa]({ solicitud, espacio, ...acceso });
       r.notas = ['Etapa 0: espacio verificado.', ...r.notas];
     }
   } catch (e) {
