@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, H3 ✅, sigue el H4 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, H3 ✅, H4 con el código listo y la demo pendiente |
 
 ---
 
@@ -107,14 +107,18 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-17 | 7 | Abel aprueba las decisiones tomadas al implementar el H3. Instalar Node.js en su PC queda para más adelante; mientras tanto se usa el Node portátil. |
 | 2026-10-17 | 7 | Las primeras corridas de *Probar modelos* fallaron porque *Modelo de respaldo* en Configuración tenía el texto de relleno de la plantilla ("Por definir en H3…"). Con permiso de Abel, el asistente lo cambió a `openrouter/free`. *Modelo principal* queda en `gemini-3.6-flash`, elegido por Abel. |
 | 2026-10-17 | 7 | **Se cierra el H3:** CI en verde; sin falla forzada respondió Gemini (`gemini-3.6-flash`) y con falla forzada respondió OpenRouter (`openrouter/free` eligió `liquid/lfm-2.5-2.6b:free`). En las dos, el correo de prueba llegó al modelo como `[CORREO]`. |
+| 2026-10-18 | 7 | Diseño del **H4** aprobado: una sola fila de contexto por espacio; fuentes en *Documentos fuente* (`.md`, `.txt`, `.csv` y `.pdf` con `unpdf`) y *URL fuente* (una página, sin direcciones privadas); **cita textual verificada por código** en la fuente; el agente solo completa campos vacíos o en "No encontrado"; contexto manual sin modelo; bloqueo de las etapas 2 a 5 hasta que el PM confirme. GitHub (*could*) queda para el final del MVP. |
+| 2026-10-18 | 7 | Código del H4 en `main`: lectura de fuentes, etapa 1, precondición de contexto confirmado y control de los nombres de modelo de Configuración. `agente.yml` recibe las claves de los modelos. 165 pruebas. En Notion: aviso de privacidad en la base Contexto y formulario *Contexto manual*. Falta la demo de Abel. |
 
 ### Próximo paso
 
-**H4: agente de contexto** (T4.1 a T4.7): leer documentos adjuntos y URL, prompt y esquema del contexto con fuente por campo, escritura en *Por confirmar* y bloqueo de las etapas siguientes hasta que el PM confirme. En el H4, `agente.yml` empieza a recibir las claves de los modelos. El asistente propone el diseño concreto antes de escribir código.
+**Demo del H4** (ver [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h4-la-hace-abel)): subir `cobros-recurrentes-spec.md` a *Documentos fuente*, pedir *Armar contexto*, revisar el contexto en *Por confirmar* con la fuente y la cita de cada campo, comprobar que *Repreguntar* sin confirmar termina en *Error*, y confirmar el contexto anotando qué hubo que corregir (T4.7).
+
+Después sigue el **H5: entrevistas y repreguntas** (T5.1 a T5.5). El asistente propone el diseño concreto antes de escribir código.
 
 Pendientes a tener en cuenta:
 - Al 2026-10-17, *Agente activo* en Configuración está **desmarcada**: el programado diario solo deja filas *Pausado*. Para la demo del H4 hay que marcarla.
-- Posible mejora: que la etapa 0 avise si *Modelo principal* o *Modelo de respaldo* tienen algo que no parece un nombre de modelo (ver la lección del H3).
+- T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 
 ### Cómo retomar en otro chat
 

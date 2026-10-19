@@ -20,7 +20,7 @@ describe('lectura de fuentes (T4.1 y T4.2)', () => {
 
   beforeAll(async () => {
     await servidor.iniciar();
-    servidor.archivos.set('/spec.md', { tipo: 'text/markdown', cuerpo: '\\uFEFF# Producto\r\n\r\nLos usuarios **olvidan** pagar.' });
+    servidor.archivos.set('/spec.md', { tipo: 'text/markdown', cuerpo: '﻿# Producto\r\n\r\nLos usuarios **olvidan** pagar.' });
     servidor.archivos.set('/spec.pdf', { tipo: 'application/pdf', cuerpo: pdfConTexto('Los usuarios olvidan pagar a tiempo') });
     servidor.archivos.set('/largo.txt', { tipo: 'text/plain', cuerpo: 'a'.repeat(MAX_CARACTERES_FUENTE + 10) });
     servidor.archivos.set('/pagina', {

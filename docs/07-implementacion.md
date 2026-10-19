@@ -10,7 +10,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H1. Esqueleto sin modelo | ✅ Cerrado |
 | H2. Reglas en código | ✅ Cerrado |
 | H3. Capa de modelos | ✅ Cerrado |
-| H4. Agente de contexto | 🔜 Próximo |
+| H4. Agente de contexto | 🟡 Código en `main`, falta la demo |
 | H5. Entrevistas | ⚪ Pendiente |
 | H6. Web | ⚪ Pendiente |
 | H7. Síntesis | ⚪ Pendiente |
@@ -308,3 +308,63 @@ Gasta muy poca cuota: una llamada a Gemini y una a OpenRouter, o alguna más si 
 > - La casilla de la falla forzada está en el recuadro de **Run workflow** de GitHub, no en Notion. Las primeras corridas se hicieron con la casilla marcada, así que Gemini no se llamaba. El título de la fila (*"· falla forzada"*) permite distinguirlas.
 
 > **Lección aprendida:** esta sesión del asistente corrió en una PC con Windows sin Node.js ni git. Con el permiso de Abel, se bajó el `.zip` oficial de Node 24.22.0 desde nodejs.org, se verificó con su `SHASUMS256.txt` y se descomprimió en la carpeta de la sesión, sin instalar nada en el sistema. Como la ruta de esa carpeta supera el límite de 260 caracteres de Windows, se trabajó a través de una letra de unidad temporal (`subst`). El código se bajó y se subió con el conector, como siempre.
+
+---
+
+## H4. Etapa 1: agente de contexto
+
+El agente ya arma el contexto del producto a partir de las fuentes que indica el PM: lee documentos y una URL, le pide al modelo cada campo con su fuente y una **cita textual**, **verifica por código que la cita exista en la fuente**, y deja el contexto en *Por confirmar* sin pisar lo que cargó el PM. Las etapas 2 a 5 no arrancan hasta que el PM lo confirma.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T4.1 Leer documentos adjuntos en Notion | 🤖 | ✅ `.md`, `.txt`, `.csv` y `.pdf` (con `unpdf`) |
+| T4.2 Leer una URL pública | 🤖 | ✅ Una sola página, sin direcciones privadas |
+| T4.3 Prompt y esquema, con fuente por campo o "No encontrado" | 🤖 | ✅ Con cita verificada por código |
+| T4.4 Contexto en *Por confirmar* y bloqueo de las etapas siguientes | 🤖 | ✅ |
+| T4.5 Formulario de contexto manual | 🤖 | ✅ Vista de formulario *Contexto manual* |
+| T4.6 Lectura desde GitHub (*could*) | 🤖 | ⏸️ Queda para el final del MVP |
+| T4.7 Revisión de Abel con cobros-recurrentes | 👤 | ⏳ Pendiente (demo) |
+
+### Decisiones de diseño (aprobadas por Abel el 2026-10-18)
+
+- **Una sola fila de contexto por espacio**, como Configuración. Sin filas, o con más de una, la solicitud termina en *Error* con el motivo. Para otro producto se duplica la plantilla.
+- **Fuentes:** los archivos de *Documentos fuente* y la dirección de *URL fuente*, en la misma fila.
+  - Documentos: `.md`, `.txt` y `.csv` como texto; `.pdf` con [`unpdf`](https://github.com/unjs/unpdf) 1.8.1, la primera dependencia nueva desde el H1 (JavaScript puro; su paquete de dibujo es opcional y no se instala). Otros formatos se saltean con un aviso. Hasta 10 MB.
+  - URL: una sola página, sin seguir enlaces, solo `http` o `https`, hasta 2 MB y 20 s. Se rechazan las direcciones locales y privadas, también después de una redirección. El texto se saca del HTML con un extractor propio y simple.
+  - Tope de **60.000 caracteres por fuente**; si se recorta, queda anotado.
+- **Cita verificada por código:** por cada campo, el modelo devuelve *valor*, *fuente* y *cita*. El código acepta el campo solo si la fuente es una de las que se le pasaron y si la cita, de al menos 4 palabras, **aparece en el texto de esa fuente** (sin distinguir mayúsculas, acentos, signos ni formato Markdown). Si no, el campo queda en "No encontrado" y el motivo va a Ejecuciones. En la columna «· fuente» queda la fuente con la cita, por ejemplo `spec.md · «…»`.
+- **No pisar al PM:** el agente solo escribe los campos vacíos o en "No encontrado". Si un campo tiene otro valor, no lo toca y deja su propuesta en las notas de Ejecuciones. Para regenerar un campo, se vacía. El título (*Nombre*) solo se escribe si está vacío.
+- **Contexto Confirmado:** el agente no lo toca y termina en *Error* con el mensaje "pasalo a *Por confirmar* si querés rehacerlo".
+- **Contexto manual (HU-03b):** si no hay fuentes, el agente no llama a ningún modelo. Marca «Cargado por el PM» en la fuente de cada campo con valor, "No encontrado" en los vacíos, y deja todo en *Por confirmar*.
+- **Idioma:** se escribe en *Idioma* del contexto (si está vacío) y las etapas siguientes lo leen de ahí. *Idioma* de Configuración no se usa.
+- **Bloqueo de las etapas 2 a 5 (T4.4):** antes de *Repreguntar*, *Relevar la web*, *Sintetizar* y *Planificar validación*, el código exige el contexto *Confirmado*. Si no lo está, la solicitud termina en *Error* con el motivo.
+- **`agente.yml` recibe las claves de los modelos.** El generador se arma una vez por corrida y no llama a nada por sí solo: sin solicitudes que usen un modelo, no se gastan tokens. Si faltan las claves, solo fallan las etapas que las necesitan, con el motivo.
+- **Lección del H3:** si *Modelo principal* o *Modelo de respaldo* tienen algo que no parece un nombre de modelo (por ejemplo, un texto con espacios), no se llama y el motivo queda en Ejecuciones.
+- **Privacidad (HU-03):** la descripción de la base Contexto avisa que las fuentes se envían a un proveedor de IA gratuito. Además, los datos personales de las fuentes se ocultan antes del prompt, y la cita se verifica contra ese mismo texto.
+
+### Pruebas
+
+`npm test` corre **165 pruebas** (31 nuevas), sin red ni secretos:
+
+- **Fuentes**, con un servidor local: `.md` con BOM, PDF, recorte al tope, formato no soportado sin descargar nada, página HTML sin scripts ni estilos, redirecciones (y su límite), contenido que no es texto, 404, tamaño máximo, y el rechazo de `localhost`, `10.x`, `192.168.x`, `::1` y otras direcciones privadas.
+- **Etapa 1:** campos con fuente y cita, "No encontrado", cita inventada y fuente inventada rechazadas, correo oculto antes del modelo, no pisar al PM, contexto Confirmado intacto, contexto manual sin modelo, cero o dos filas, fuentes que no se pueden leer, sin modelo disponible, formato inválido sin escrituras y el camino por el bucle.
+- **Bloqueo:** *Repreguntar* sin contexto Confirmado termina en *Error*; con el contexto Confirmado, la etapa sigue.
+- **Modelos:** el texto de relleno de Configuración no se usa como modelo.
+
+Para confirmar que las pruebas detectan fallas, se sacó a propósito la verificación de la cita: fallaron 2 pruebas. Con el código restaurado, vuelven a pasar todas.
+
+> En la sesión se corrieron las 90 pruebas de los 10 archivos que tocan lo que cambió o lo nuevo, además del typecheck, el lint y el build. Los otros 6 archivos (75 pruebas) cubren código que no cambió y los corre el CI. La lectura de una URL real no se pudo probar en la sesión porque Node no tiene salida a internet en esta PC; la valida la demo.
+
+### Demo de cierre del H4 (la hace Abel)
+
+0. En **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** → **CI**, revisá que el último commit esté en ✅.
+1. En Notion, en **Configuración**, volvé a **marcar** *Agente activo*.
+2. En **Contexto del producto**, abrí la fila del producto (o creala). Subí `cobros-recurrentes-spec.md` en **Documentos fuente**. Dejá los campos vacíos y *Estado* en *Por confirmar*.
+3. En **Solicitudes**, creá una fila con *Etapa* = **Armar contexto** y *Estado* = **Pendiente**.
+4. En Actions → **Agente** → **Run workflow** → **Run workflow**.
+5. Al terminar, en **Contexto del producto**:
+   - *Estado* = **Por confirmar**.
+   - Cada campo con su valor y su «· fuente» con la cita, o "No encontrado".
+   - En **Ejecuciones**, la fila de la solicitud con el modelo que respondió y una nota por campo.
+6. **Bloqueo:** sin confirmar el contexto, creá otra solicitud con *Etapa* = **Repreguntar** y corré **Agente** otra vez. Tiene que terminar en **Error** con el motivo "el contexto del producto no está Confirmado".
+7. **T4.7:** revisá el contexto, completá lo que quedó en "No encontrado", anotá qué tuviste que corregir y marcalo como **Confirmado**.
