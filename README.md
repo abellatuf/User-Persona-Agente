@@ -122,7 +122,7 @@ El asistente le repite a Abel la guía desde el paso 2b, paso por paso.
 Después sigue el **H5: entrevistas y repreguntas** (T5.1 a T5.5). El asistente propone el diseño concreto antes de escribir código.
 
 Pendientes a tener en cuenta:
-- Al 2026-10-17, *Agente activo* en Configuración está **desmarcada**: el programado diario solo deja filas *Pausado*. Para la demo del H4 hay que marcarla.
+- Desde el 2026-10-21, *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
 - T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 
 ### Cómo retomar en otro chat
