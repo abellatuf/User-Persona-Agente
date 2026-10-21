@@ -112,7 +112,12 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 
 ### Próximo paso
 
-**Demo del H4** (ver [docs/07-implementacion.md](docs/07-implementacion.md#demo-de-cierre-del-h4-la-hace-abel)): subir `cobros-recurrentes-spec.md` a *Documentos fuente*, pedir *Armar contexto*, revisar el contexto en *Por confirmar* con la fuente y la cita de cada campo, comprobar que *Repreguntar* sin confirmar termina en *Error*, y confirmar el contexto anotando qué hubo que corregir (T4.7).
+**Demo del H4, a mitad de camino.** Seguí la guía paso a paso de [docs/demo-h4-guia.md](docs/demo-h4-guia.md) **desde el paso 2b**:
+- Los pasos 1 y 2 ya están hechos: *Agente activo* marcada y `cobros-recurrentes-spec.md` subida en *Documentos fuente*.
+- **Antes del paso 3**, hay que borrar una fila vacía de *Contexto del producto* (paso 2b): tiene que quedar una sola.
+- Después: pedir *Armar contexto*, revisar el contexto en *Por confirmar* con la fuente y la cita de cada campo, comprobar que *Repreguntar* sin confirmar termina en *Error*, y confirmar el contexto anotando qué hubo que corregir (T4.7).
+
+El asistente le repite a Abel la guía desde el paso 2b, paso por paso.
 
 Después sigue el **H5: entrevistas y repreguntas** (T5.1 a T5.5). El asistente propone el diseño concreto antes de escribir código.
 
