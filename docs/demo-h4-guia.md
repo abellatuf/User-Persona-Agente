@@ -4,11 +4,14 @@ Guía detallada para la demo de cierre del H4 (agente de contexto). El resumen e
 
 Todo se hace desde la página raíz **[User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4)**, donde están todas las bases, y desde la pestaña **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** de GitHub.
 
-## Estado al 2026-10-21
+## Estado: ✅ demo cumplida el 2026-10-24
 
-- ✅ **Paso 1:** *Agente activo* está marcada en [Configuración](https://app.notion.com/p/3fa245a35f2b81a7b2b0c49a13a22863). Modelos: `gemini-3.6-flash` y `openrouter/free`.
-- ✅ **Paso 2:** la spec está subida en *Documentos fuente* de la [fila del producto](https://app.notion.com/p/400245a35f2b809490ecd3eac460417e), con *Estado* = *Por confirmar* y los campos vacíos. El archivo quedó como `cobros-recurrentes-spec.md.md`, con la extensión repetida. No es un problema: se lee igual, y ese es el nombre que va a aparecer como fuente.
-- ⚠️ **Falta borrar una fila vacía:** en *Contexto del producto* hay **2 filas**. La segunda está vacía ([esta](https://app.notion.com/p/400245a35f2b80ee873bc8224a423e6c)) y probablemente se creó sin querer. Con dos filas, el agente se frena y pide que quede una sola. Ver el paso 2b.
+- ✅ **Pasos 1 a 2b:** *Agente activo* marcada, la spec subida en *Documentos fuente* y una sola fila de contexto.
+- ✅ **Pasos 3 a 5:** *Armar contexto* terminó en *Lista*. Respondió el respaldo, porque Gemini estaba saturado, y quedaron 4 de 6 campos con cita verificada.
+- ✅ **Paso 6:** *Repreguntar* sin contexto confirmado terminó en *Error* con el motivo esperado.
+- ✅ **Paso 7:** Abel completó *Problema* y *Competidores* y confirmó el contexto.
+
+El resultado completo y las lecciones están en la [Fase 7](07-implementacion.md#resultado-de-la-demo-del-h4). La guía queda como referencia para repetir la demo con otro producto.
 
 ## Paso 2b. Dejar una sola fila de contexto
 
@@ -65,6 +68,8 @@ Al terminar, pasale al asistente lo que anotaste en el paso 7. El asistente revi
 
 ## Si algo sale mal
 
-- **La solicitud termina en *Error* con "tiene 2 filas":** falta el paso 2b.
+- **La solicitud termina en *Error* con "tiene 2 filas":** falta el paso 2b. Ojo: al hacer clic en la tabla de Contexto, Notion puede crear una fila vacía sin querer. En la demo pasó dos veces.
+- **Ejecutaste el workflow y la solicitud sigue en *Pendiente*:** fijate si corriste **Probar modelos** en lugar de **Agente**. *Probar modelos* no atiende las Solicitudes. Si al hacer clic en *Run workflow* aparece la casilla *Simular un límite de uso en Gemini*, estás en el workflow equivocado.
+- **Para repetir una solicitud que terminó en *Error*:** volvé a poner su *Estado* en **Pendiente** y corré **Agente** otra vez.
 - **"No se pudo leer ninguna de las fuentes":** en Ejecuciones, la nota "Fuente salteada" dice por qué. Volvé a subir el archivo.
 - **"Ningún modelo devolvió una respuesta válida":** en el cuerpo de la fila de Ejecuciones está el detalle de cada intento.

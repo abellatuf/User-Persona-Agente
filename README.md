@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 ✅, H1 ✅, H2 ✅, H3 ✅, H4 con el código listo y la demo pendiente |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H4 ✅. Sigue el H5 |
 
 ---
 
@@ -109,20 +109,18 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-17 | 7 | **Se cierra el H3:** CI en verde; sin falla forzada respondió Gemini (`gemini-3.6-flash`) y con falla forzada respondió OpenRouter (`openrouter/free` eligió `liquid/lfm-2.5-2.6b:free`). En las dos, el correo de prueba llegó al modelo como `[CORREO]`. |
 | 2026-10-18 | 7 | Diseño del **H4** aprobado: una sola fila de contexto por espacio; fuentes en *Documentos fuente* (`.md`, `.txt`, `.csv` y `.pdf` con `unpdf`) y *URL fuente* (una página, sin direcciones privadas); **cita textual verificada por código** en la fuente; el agente solo completa campos vacíos o en "No encontrado"; contexto manual sin modelo; bloqueo de las etapas 2 a 5 hasta que el PM confirme. GitHub (*could*) queda para el final del MVP. |
 | 2026-10-18 | 7 | Código del H4 en `main`: lectura de fuentes, etapa 1, precondición de contexto confirmado y control de los nombres de modelo de Configuración. `agente.yml` recibe las claves de los modelos. 165 pruebas. En Notion: aviso de privacidad en la base Contexto y formulario *Contexto manual*. Falta la demo de Abel. |
+| 2026-10-21 | 7 | Demo del H4: *Armar contexto* terminó en *Lista*. Gemini respondió 503 (alta demanda) en los 3 intentos y contestó el respaldo (`openrouter/free` eligió `liquid/lfm-2.5-2.6b:free`). 4 de 6 campos quedaron con cita verificada. *Problema* quedó en "No encontrado" porque el código rechazó la cita, y *Competidores* porque la spec no los nombra. El bloqueo funcionó: *Repreguntar* sin contexto confirmado terminó en *Error* sin llamar a ningún modelo. |
+| 2026-10-21 | 7 | En Notion se crearon dos veces filas vacías en *Contexto del producto* sin querer, y el agente frenó con "tiene 2 filas", como estaba previsto. La segunda la mandó a la papelera el asistente, a pedido de Abel. |
+| 2026-10-24 | 7 | **Se cierra el H4:** Abel completó *Problema* y *Competidores* y confirmó el contexto. Retrabajo: 0 de los 4 campos que completó el agente necesitaron corrección. Quedan tres pendientes, sin tocar código: revisar la cita rechazada, ignorar las filas de contexto vacías y volver a probar con Gemini. |
 
 ### Próximo paso
 
-**Demo del H4, a mitad de camino.** Seguí la guía paso a paso de [docs/demo-h4-guia.md](docs/demo-h4-guia.md) **desde el paso 2b**:
-- Los pasos 1 y 2 ya están hechos: *Agente activo* marcada y `cobros-recurrentes-spec.md` subida en *Documentos fuente*.
-- **Antes del paso 3**, hay que borrar una fila vacía de *Contexto del producto* (paso 2b): tiene que quedar una sola.
-- Después: pedir *Armar contexto*, revisar el contexto en *Por confirmar* con la fuente y la cita de cada campo, comprobar que *Repreguntar* sin confirmar termina en *Error*, y confirmar el contexto anotando qué hubo que corregir (T4.7).
-
-El asistente le repite a Abel la guía desde el paso 2b, paso por paso.
-
-Después sigue el **H5: entrevistas y repreguntas** (T5.1 a T5.5). El asistente propone el diseño concreto antes de escribir código.
+**H5: entrevistas y repreguntas** (T5.1 a T5.5). Antes de escribir código, el asistente propone el diseño concreto y las preguntas del formulario base (hasta 15, agnósticas de producto) para que Abel los apruebe.
 
 Pendientes a tener en cuenta:
-- Desde el 2026-10-21, *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
+- *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
+- El contexto de cobros-recurrentes está **Confirmado**, así que las etapas 2 a 5 ya no se bloquean.
+- Pendientes de la demo del H4 (detalle en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h4)): investigar por qué se rechazó la cita de *Problema*, que el agente ignore las filas de contexto totalmente vacías y volver a probar con Gemini cuando no esté saturado.
 - T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 
 ### Cómo retomar en otro chat

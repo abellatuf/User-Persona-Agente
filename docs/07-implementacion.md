@@ -10,7 +10,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H1. Esqueleto sin modelo | ✅ Cerrado |
 | H2. Reglas en código | ✅ Cerrado |
 | H3. Capa de modelos | ✅ Cerrado |
-| H4. Agente de contexto | 🟡 Código en `main`, falta la demo |
+| H4. Agente de contexto | ✅ Cerrado |
 | H5. Entrevistas | ⚪ Pendiente |
 | H6. Web | ⚪ Pendiente |
 | H7. Síntesis | ⚪ Pendiente |
@@ -323,7 +323,8 @@ El agente ya arma el contexto del producto a partir de las fuentes que indica el
 | T4.4 Contexto en *Por confirmar* y bloqueo de las etapas siguientes | 🤖 | ✅ |
 | T4.5 Formulario de contexto manual | 🤖 | ✅ Vista de formulario *Contexto manual* |
 | T4.6 Lectura desde GitHub (*could*) | 🤖 | ⏸️ Queda para el final del MVP |
-| T4.7 Revisión de Abel con cobros-recurrentes | 👤 | ⏳ Pendiente (demo) |
+| T4.7 Revisión de Abel con cobros-recurrentes | 👤 | ✅ Cumplida el 2026-10-24 |
+| Demo | 👤 | ✅ Cumplida el 2026-10-24 |
 
 ### Decisiones de diseño (aprobadas por Abel el 2026-10-18)
 
@@ -357,6 +358,8 @@ Para confirmar que las pruebas detectan fallas, se sacó a propósito la verific
 
 ### Demo de cierre del H4 (la hace Abel)
 
+La guía detallada, paso por paso, está en [demo-h4-guia.md](demo-h4-guia.md).
+
 0. En **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** → **CI**, revisá que el último commit esté en ✅.
 1. En Notion, en **Configuración**, volvé a **marcar** *Agente activo*.
 2. En **Contexto del producto**, abrí la fila del producto (o creala). Subí `cobros-recurrentes-spec.md` en **Documentos fuente**. Dejá los campos vacíos y *Estado* en *Por confirmar*.
@@ -368,3 +371,38 @@ Para confirmar que las pruebas detectan fallas, se sacó a propósito la verific
    - En **Ejecuciones**, la fila de la solicitud con el modelo que respondió y una nota por campo.
 6. **Bloqueo:** sin confirmar el contexto, creá otra solicitud con *Etapa* = **Repreguntar** y corré **Agente** otra vez. Tiene que terminar en **Error** con el motivo "el contexto del producto no está Confirmado".
 7. **T4.7:** revisá el contexto, completá lo que quedó en "No encontrado", anotá qué tuviste que corregir y marcalo como **Confirmado**.
+
+**Demo de cierre del H4:** *Armar contexto* en *Lista*, el bloqueo funcionando y el contexto *Confirmado* por Abel. **Cumplida el 2026-10-24.**
+
+### Resultado de la demo del H4
+
+**Armar contexto (2026-10-21).** La solicitud terminó en *Lista*, con 15 lecturas, 6 escrituras y 0 intentos bloqueados. Gemini (`gemini-3.6-flash`) respondió **503 por alta demanda** en los 3 intentos, así que contestó el respaldo: `openrouter/free` eligió `liquid/lfm-2.5-2.6b:free`. Se usaron 5.919 tokens. La spec se leyó completa (9.376 caracteres).
+
+| Campo | Resultado del agente | Revisión de Abel |
+|-------|----------------------|------------------|
+| Nombre | "App de Cobros Recurrentes" | Sin cambios |
+| Propuesta de valor | Con fuente y cita verificada | Sin cambios |
+| Usuarios que creemos tener | Con fuente y cita verificada | Sin cambios |
+| Mercado | "Argentina, pesos (ARS)", con cita | Sin cambios |
+| Modelo de negocio | "Conciliación manual (Modelo A)…", con cita | Sin cambios |
+| Problema | "No encontrado": el código rechazó la cita | **Completado por el PM** |
+| Competidores | "No encontrado": la spec no los nombra | **Completado por el PM** |
+
+**Métrica de retrabajo del H4:** de los 6 campos, el agente completó 4 y **ninguno necesitó corrección**. Los otros 2 los completó el PM, sin que el agente inventara nada. El *Idioma* ("español") también lo detectó el agente.
+
+**Bloqueo (2026-10-21).** *Repreguntar* con el contexto en *Por confirmar* terminó en *Error* con el motivo "El contexto del producto no está Confirmado…", sin llamar a ningún modelo.
+
+**Confirmación (2026-10-24).** Abel completó *Problema* y *Competidores* (los dos con «Cargado por el PM» como fuente) y pasó el contexto a *Confirmado*.
+
+> **Lecciones aprendidas:**
+> - **El respaldo salvó la corrida, pero con un modelo chico.** Con Gemini saturado, respondió un modelo de 2.600 millones de parámetros. Las citas pasaron la verificación, pero la calidad baja: por ejemplo, *Usuarios que creemos tener* describe lo que hacen el emisor y el pagador, y no quiénes son. La verificación de citas protege contra lo inventado, no contra lo flojo.
+> - **Notion crea filas vacías con mucha facilidad.** Pasó dos veces en la demo: al hacer clic en la tabla de Contexto apareció una fila nueva sin datos, y el agente frenó con "tiene 2 filas". Se comportó como estaba previsto, pero es una fricción para el PM.
+> - **Se confundieron los workflows.** Se corrió *Probar modelos* en lugar de *Agente*, y la solicitud quedó en *Pendiente*. Se agregó a la guía cómo reconocerlo.
+> - **Para repetir una solicitud,** alcanza con volver a ponerla en *Pendiente*. Cada corrida deja su propia fila en Ejecuciones.
+> - **El MCP de Notion del asistente tiene un tope de consultas en el plan gratuito.** Se agotó durante la demo. Abrir las filas una por una sigue funcionando.
+
+### Pendientes que salieron de la demo (sin tocar código hasta que Abel apruebe)
+
+1. **Cita rechazada de *Problema*.** El modelo propuso "Un emisor (persona física o entidad chica) necesita cobrarle a un pagador un monto recurrente e indefinido (hasta que el pagador decida cancelar), sin exigirle login ni manejar datos sensibles de pago", y el código la rechazó, aunque la parte final casi igual se aceptó en *Propuesta de valor*. Hay que ver si el modelo cambió alguna palabra (la regla funcionó bien) o si la verificación tiene un falso negativo, por ejemplo con los paréntesis. Si es un falso negativo, se corrige con una prueba nueva.
+2. **Filas de contexto totalmente vacías.** Proponer que el agente las ignore al contar las filas, en lugar de frenar. Una fila con algún dato seguiría contando.
+3. **Calidad con Gemini.** Volver a probar *Armar contexto* cuando Gemini no esté saturado, para medir la calidad con el modelo principal. Se puede hacer en la evaluación del H9, sin repetir esta demo.
