@@ -11,7 +11,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H2. Reglas en código | ✅ Cerrado |
 | H3. Capa de modelos | ✅ Cerrado |
 | H4. Agente de contexto | ✅ Cerrado |
-| H5. Entrevistas | ⚪ Pendiente |
+| H5. Entrevistas | 🟡 Código en `main`, falta la demo |
 | H6. Web | ⚪ Pendiente |
 | H7. Síntesis | ⚪ Pendiente |
 | H8. Validación y persona viva | ⚪ Pendiente |
@@ -406,3 +406,105 @@ La guía detallada, paso por paso, está en [demo-h4-guia.md](demo-h4-guia.md).
 1. **Cita rechazada de *Problema*.** El modelo propuso "Un emisor (persona física o entidad chica) necesita cobrarle a un pagador un monto recurrente e indefinido (hasta que el pagador decida cancelar), sin exigirle login ni manejar datos sensibles de pago", y el código la rechazó, aunque la parte final casi igual se aceptó en *Propuesta de valor*. Hay que ver si el modelo cambió alguna palabra (la regla funcionó bien) o si la verificación tiene un falso negativo, por ejemplo con los paréntesis. Si es un falso negativo, se corrige con una prueba nueva.
 2. **Filas de contexto totalmente vacías.** Proponer que el agente las ignore al contar las filas, en lugar de frenar. Una fila con algún dato seguiría contando.
 3. **Calidad con Gemini.** Volver a probar *Armar contexto* cuando Gemini no esté saturado, para medir la calidad con el modelo principal. Se puede hacer en la evaluación del H9, sin repetir esta demo.
+
+---
+
+## H5. Etapa 2: entrevistas y repreguntas
+
+El agente ya procesa las entrevistas del equipo. Por cada miembro que respondió el formulario base: lo vincula con su fila de Equipo, guarda cada respuesta como **evidencia del equipo** y escribe **hasta 5 repreguntas** en el cuerpo de su página. Cuando el miembro responde y marca su entrevista *Completa*, el agente guarda también esas respuestas como evidencia.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T5.1 Formulario base agnóstico | 🤖 + 👤 aprueba | ✅ 13 preguntas, aprobadas por Abel el 2026-10-24. Vista de formulario *Entrevista base* |
+| T5.2 Respuestas como evidencia *Supuesto del equipo* | 🤖 | ✅ Una fila por respuesta, vinculada a la entrevista y al miembro |
+| T5.3 Prompt de repreguntas | 🤖 | ✅ Hasta 5 por miembro, cada una con su respuesta de origen |
+| T5.4 Estados de la entrevista y *avanzar sin las incompletas* | 🤖 | ✅ La regla para sintetizar queda lista para el H7 |
+| T5.5 Prueba con sombreros | 👤 | ⏳ Pendiente (demo) |
+
+### Formulario base (T5.1)
+
+13 preguntas, sin mencionar ninguna industria ni producto (RNF-12), más *Nombre del miembro* y *Rol del miembro*. Cada pregunta es una propiedad de texto de Entrevistas con su código adelante, por ejemplo *P01 · ¿Quiénes creés que son los usuarios principales del producto?…*.
+
+| # | Pregunta |
+|---|----------|
+| P01 | ¿Quiénes creés que son los usuarios principales del producto? Si hay más de un tipo, describí cada uno. |
+| P02 | Pensá en un usuario concreto, real o que te imagines con claridad. ¿Cómo es su día a día en lo que tiene que ver con el problema que resolvemos? |
+| P03 | ¿Qué problema o necesidad tiene ese usuario que el producto busca resolver? ¿Qué le pasa si no lo resuelve? |
+| P04 | ¿Cómo lo resuelve hoy, sin nuestro producto? (herramientas, personas, procesos, trucos) |
+| P05 | ¿Qué es lo que más le molesta o le cuesta de esa forma actual? |
+| P06 | ¿Qué tendría que pasar para que decida probar el producto? ¿Qué lo frenaría? |
+| P07 | ¿Qué resultado concreto espera lograr? ¿Cómo se daría cuenta de que el producto le sirvió? |
+| P08 | ¿En qué contexto lo usaría? (dónde, cuándo, con qué frecuencia, con quién) |
+| P09 | ¿Qué diferencias importantes hay entre los distintos tipos de usuario? ¿Alguno necesita algo muy distinto? |
+| P10 | ¿Quién decide usarlo, quién lo usa y quién paga? ¿Son la misma persona? |
+| P11 | ¿Qué creés que el resto del equipo da por sentado sobre los usuarios y vos no estás tan seguro? |
+| P12 | ¿En qué te basás para lo que respondiste? (charlas con usuarios, datos, experiencia propia, intuición) ¿Qué pesa más? |
+| P13 | Si pudieras hacerle una sola pregunta a un usuario real, ¿cuál sería? |
+
+### Decisiones de diseño (aprobadas por Abel el 2026-10-24)
+
+- **A. Las 13 preguntas**, tal como están arriba.
+- **B. El agente crea el miembro en Equipo** si no hay uno con el mismo nombre (sin distinguir mayúsculas ni acentos), y vincula la entrevista. Amplía los permisos de la etapa 2 a la base Equipo.
+- **C. Las repreguntas pueden tocar el mismo tema, pero nunca revelan lo que dijo otro miembro**, ni de forma anónima. Por ejemplo, "¿Podés contar un caso concreto en el que viste quién decide, quién usa y quién paga?", y no "Otra persona del equipo cree que…". Es más estricto que la HU-05, para no sesgar ni exponer a nadie.
+- **D. Las respuestas a las repreguntas pasan a evidencia** cuando la entrevista está *Completa* y se vuelve a pedir *Repreguntar*. La etapa *Sintetizar* del H7 va a hacer esta misma conversión antes de sintetizar.
+- **Conviene pedir *Repreguntar* cuando ya respondieron todos:** así el modelo compara las respuestas de cada miembro con las de los demás. Las de los otros llegan al prompt **sin nombre** ("Otro miembro 1…").
+
+### Cómo funciona *Repreguntar*
+
+1. Lee Entrevistas, Equipo y el contexto confirmado. Las entrevistas sin *Nombre del miembro* se saltean, con un aviso.
+2. **Por cada entrevista en *Pendiente* o *Base respondida*:**
+   - La vincula con su miembro de Equipo (o lo crea) y le pone título si no tiene: "Nombre (Rol)".
+   - Guarda una evidencia por respuesta: *Tipo* = *Supuesto del equipo*, título "P04 · Nombre (Rol)", extracto con la pregunta y la respuesta, y una *Clave* estable para no duplicar.
+   - Si el cuerpo de la página ya tiene repreguntas (por ejemplo, de una corrida que falló a mitad), no genera otras y pasa la entrevista a *Repreguntas pendientes*.
+   - Si no, le pide al modelo las repreguntas, las pasa por las reglas del código y las escribe en el cuerpo de la página. La entrevista pasa a *Repreguntas pendientes*. Si el modelo considera que las respuestas alcanzan, pasa a *Completa* y el motivo queda registrado (HU-05).
+3. **Por cada entrevista *Completa*:** lee las respuestas a las repreguntas y guarda cada una como evidencia ("R1 (sobre P04) · Nombre (Rol)"). Las que quedaron sin responder se anotan en Ejecuciones.
+
+**Lo controla el código, no el modelo:**
+
+| Regla | Si no se cumple |
+|-------|-----------------|
+| Hasta 5 repreguntas por miembro | Se descartan las que sobran |
+| Cada una vinculada a una pregunta que el miembro respondió | Se descarta |
+| No repite una pregunta del formulario | Se descarta |
+| No menciona a otros miembros, sus nombres, lo que dijeron ni un desacuerdo | Se descarta (decisión C) |
+| Sin repetidas | Se descarta |
+| Una entrevista *Completa* no vuelve a otro estado | La escritura se bloquea (regla nueva del Escritor) |
+
+Cada descarte queda en las notas de Ejecuciones con su motivo. Que las repreguntas sean abiertas y sin sesgo lo pide el prompt y lo va a medir la evaluación del H9: el código no lo puede juzgar bien.
+
+**Entrevistas para sintetizar (T5.4, HU-06).** Solo entran las *Completas*. Si falta alguna, la síntesis no arranca, salvo que la solicitud tenga en *Opciones* "avanzar sin las entrevistas incompletas". En ese caso se registra cuáles quedaron afuera. La regla está en `reglas.ts` y se conecta en el H7.
+
+### Decisiones tomadas al implementar
+
+- **Repreguntas con marcas fijas.** El servidor MCP de Notion (2.5.2) solo acepta párrafos y viñetas en el cuerpo de una página. Cada repregunta usa tres renglones: "❓ Repregunta 1 · sobre tu respuesta a P04 («…»)", el texto de la repregunta y "✍️ Tu respuesta:". El código lee la respuesta que está después de esa marca, en el mismo renglón o en los siguientes, hasta la próxima repregunta.
+- **El agente lee cada respuesta por el código de la pregunta** (P01…), que es la propiedad de Notion completa. La etapa 0 exige las 13 propiedades con su nombre exacto.
+- **"El resto del equipo" no se bloquea** en las repreguntas, porque es parte de la pregunta P11 y se puede repreguntar sobre eso.
+- **Sin modelo disponible no se escribe nada**, ni siquiera la evidencia: las repreguntas son la parte principal de la etapa.
+
+### Pruebas
+
+`npm test` corre **188 pruebas** (23 nuevas), sin red ni secretos:
+
+- **Formulario:** 13 preguntas, códigos únicos y la etapa 0 exigiendo cada propiedad.
+- **Cuerpo de la página:** el formato de las repreguntas y la lectura de las respuestas, en uno o varios renglones, ignorando lo que haya antes.
+- **Reglas:** el tope, el vínculo con una respuesta que existe, no repetir el formulario, las menciones a otros miembros (frases, nombres y desacuerdos), las repetidas y la excepción de P11.
+- **Entrevistas para sintetizar:** todas Completas, con incompletas sin la opción, con la opción y sin ninguna Completa.
+- **Etapa:** miembros creados y vinculados, evidencia por respuesta, repreguntas en la página, el modelo sin ver nombres ni correos de los otros miembros, descartes con su motivo, sin repreguntas → *Completa*, repetir sin duplicar, repreguntas ya escritas, evidencia de las respuestas a repreguntas, miembro existente, sin modelo sin escrituras, entrevista sin nombre y el camino por el bucle.
+- **Regla de escritura:** una entrevista *Completa* no vuelve atrás, pero se puede vincular.
+
+Para confirmar que las pruebas detectan fallas, se sacó a propósito la regla de "no mencionar a otros miembros": fallaron 2 pruebas. Con la regla restaurada, vuelven a pasar todas.
+
+> En la sesión se corrieron las 188 pruebas, el typecheck, el lint y el build, con el Node portátil. El código se subió en tres commits y se comparó el SHA de cada archivo subido con la copia local.
+
+### Demo de cierre del H5 (la hace Abel)
+
+La guía detallada, paso por paso, está en [demo-h5-guia.md](demo-h5-guia.md).
+
+0. En **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** → **CI**, revisá que el último commit ("H5 (3/3)…") esté en ✅. Los dos anteriores pueden aparecer en ❌, porque se subieron por partes.
+1. En **Entrevistas**, revisá el formulario *Entrevista base* y marcá *Nombre del miembro* y *Rol del miembro* como obligatorias.
+2. Respondé el formulario **3 veces**, como PM, Ingeniería y Negocio, con un nombre distinto por sombrero y **al menos 2 divergencias a propósito**. Medí el tiempo de cada uno.
+3. En **Solicitudes**, creá una fila con *Etapa* = **Repreguntar** y corré **Agente**.
+4. Revisá Equipo, Entrevistas (con hasta 5 repreguntas en cada página), Evidencia y Ejecuciones.
+5. Respondé las repreguntas debajo de cada "✍️ Tu respuesta:" y pasá cada entrevista a **Completa**.
+6. Volvé a pedir *Repreguntar* y corré **Agente**: aparecen las evidencias de las respuestas a las repreguntas.
+7. Pasale al asistente los minutos por sombrero, las divergencias que planteaste y qué te parecieron las repreguntas.
