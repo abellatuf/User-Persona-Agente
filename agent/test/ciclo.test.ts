@@ -143,7 +143,7 @@ describe('reglas en código dentro del bucle', () => {
   it('una etapa que intenta aprobar una persona termina en Error, con el intento bloqueado registrado', async () => {
     const espacio = new EspacioFalso();
     espacio.agregarSolicitud({ id: 's1', etapa: 'Sintetizar' });
-    espacio.agregarSolicitud({ id: 's2', etapa: 'Repreguntar' });
+    espacio.agregarSolicitud({ id: 's2', etapa: 'Relevar la web' });
     const aprobar: FuncionEtapa = async ({ espacio: e }) => {
       await e.escritor.guardar('personas', { Nombre: titulo('Ana'), Estado: estado('Aprobada') }, { clave: 'persona:ana' });
       return { resultado: 'Lista', notas: [], errores: [], proveedorModelo: 'Ninguno (H1)' };
