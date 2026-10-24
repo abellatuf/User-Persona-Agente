@@ -3,6 +3,22 @@ import { aFormatoLectura, textoDe } from './formato.js';
 
 type Propiedades = Record<string, Record<string, unknown>>;
 
+const parrafoFalso = (texto: string) => ({
+  object: 'block',
+  type: 'paragraph',
+  paragraph: { rich_text: [{ type: 'text', text: { content: texto } }] },
+});
+
+/** Bloque en el formato que devuelve la API al leer: cada fragmento con plain_text. */
+function aBloqueDeLectura(bloque: Record<string, unknown>) {
+  const tipo = bloque['type'] as string;
+  const contenido = bloque[tipo] as { rich_text?: Array<{ text?: { content?: string } }> } | undefined;
+  return {
+    ...bloque,
+    [tipo]: { ...contenido, rich_text: (contenido?.rich_text ?? []).map((t) => ({ ...t, plain_text: t.text?.content ?? '' })) },
+  };
+}
+
 export const ID_AGENTE = 'usuario-agente';
 export const ID_PM = 'usuario-pm';
 
@@ -21,7 +37,20 @@ interface PaginaFalsa {
 export class LlamadorFalso implements LlamadorHerramientas {
   paginas = new Map<string, PaginaFalsa>();
   llamadas: Array<{ herramienta: string; args: Record<string, unknown> }> = [];
+  /** Cuerpo de cada página: bloques en formato de escritura, con su id. */
+  bloques = new Map<string, Array<Record<string, unknown>>>();
   private siguiente = 1;
+
+  /** Texto plano del cuerpo de una página, un renglón por bloque. */
+  cuerpoDe(id: string): string[] {
+    return (this.bloques.get(id) ?? []).map((b) => textoDe(b[b['type'] as string]));
+  }
+
+  /** Simula que alguien escribió párrafos en el cuerpo de la página desde Notion. */
+  escribirEnCuerpo(id: string, ...textos: string[]) {
+    const nuevos = textos.map((t) => ({ ...parrafoFalso(t), id: `bloque-${this.siguiente++}` }));
+    this.bloques.set(id, [...(this.bloques.get(id) ?? []), ...nuevos]);
+  }
 
   /** Crea una página como si la hubiera creado alguien (por defecto, el agente). */
   sembrar(dataSourceId: string, properties: Propiedades, autor = ID_AGENTE): string {
@@ -87,8 +116,16 @@ export class LlamadorFalso implements LlamadorHerramientas {
         p.editadaPor = ID_AGENTE;
         return this.paginaApi(id);
       }
-      case 'API-patch-block-children':
-        return { object: 'list', results: [] };
+      case 'API-patch-block-children': {
+        const id = args['block_id'] as string;
+        const nuevos = (args['children'] as Array<Record<string, unknown>>).map((b) => ({ ...b, id: `bloque-${this.siguiente++}` }));
+        this.bloques.set(id, [...(this.bloques.get(id) ?? []), ...nuevos]);
+        return { object: 'list', results: nuevos };
+      }
+      case 'API-get-block-children': {
+        const bloques = this.bloques.get(args['block_id'] as string) ?? [];
+        return { object: 'list', results: bloques.map((b) => aBloqueDeLectura(b)), has_more: false };
+      }
       default:
         throw new Error(`LlamadorFalso: herramienta no simulada ${herramienta}`);
     }

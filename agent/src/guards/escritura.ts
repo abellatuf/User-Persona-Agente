@@ -32,7 +32,7 @@ export interface OperacionEscritura {
 export const BASES_CON_CLAVE: readonly ClaveBase[] = ['evidencia', 'atributos', 'personas', 'supuestos'];
 
 /** Bases en las que hay que leer la página antes de modificarla o archivarla. */
-export const BASES_CON_LECTURA_PREVIA: readonly ClaveBase[] = ['contexto', 'personas', 'atributos', 'evidencia', 'supuestos'];
+export const BASES_CON_LECTURA_PREVIA: readonly ClaveBase[] = ['contexto', 'entrevistas', 'personas', 'atributos', 'evidencia', 'supuestos'];
 
 /** Bases en las que el agente puede archivar filas. */
 const BASES_ARCHIVABLES: readonly ClaveBase[] = ['atributos', 'supuestos', 'evidencia'];
@@ -87,6 +87,15 @@ const contextoConfirmadoIntocable: Regla = (op) =>
     ? 'el contexto ya está Confirmado por el PM y el agente no lo modifica.'
     : null;
 
+/** El miembro cerró su entrevista: el agente puede vincularla, pero no la vuelve a abrir (HU-06). */
+const entrevistaCompletaNoVuelveAtras: Regla = (op) => {
+  if (op.base !== 'entrevistas' || op.accion !== 'actualizar' || op.actual?.estado !== 'Completa') return null;
+  const elegido = valorElegido(op.propiedades['Estado']);
+  return elegido !== null && elegido !== 'Completa'
+    ? `la entrevista ya está Completa y el agente no la pasa a «${elegido}».`
+    : null;
+};
+
 const atributoDePersonaCongelada: Regla = (op) =>
   op.base === 'atributos' && op.accion !== 'crear' && op.actual?.personaCongelada
     ? 'el atributo pertenece a una persona que ya no está en Borrador.'
@@ -125,6 +134,7 @@ const REGLAS: Regla[] = [
   estadosProhibidos,
   personaSoloEnBorrador,
   contextoConfirmadoIntocable,
+  entrevistaCompletaNoVuelveAtras,
   atributoDePersonaCongelada,
   archivoPermitido,
   trazabilidad,

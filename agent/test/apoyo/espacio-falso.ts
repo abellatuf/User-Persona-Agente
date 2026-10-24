@@ -46,6 +46,8 @@ export class EspacioFalso implements EspacioNotion {
   readonly escritor = new EscritorNotion(this.notion, this.contador);
   /** Id de la fila de contexto sembrada, si la hay. */
   contextoId: string | undefined;
+  /** Lecturas con el mismo código que en producción, contra el Notion falso (cuentan en sus propios contadores). */
+  private readonly mcp = new EspacioNotionMcp(this.notion);
 
   /**
    * Por defecto, el espacio tiene una fila de contexto Confirmada, para que las etapas 2 a 5
@@ -93,7 +95,22 @@ export class EspacioFalso implements EspacioNotion {
   /** Lee las filas de contexto del Notion falso con el mismo código que en producción. */
   async leerContextos() {
     this.contador.lecturas++;
-    return new EspacioNotionMcp(this.notion).leerContextos();
+    return this.mcp.leerContextos();
+  }
+
+  async leerEntrevistas() {
+    this.contador.lecturas++;
+    return this.mcp.leerEntrevistas();
+  }
+
+  async leerEquipo() {
+    this.contador.lecturas++;
+    return this.mcp.leerEquipo();
+  }
+
+  async leerTextoDelCuerpo(id: string) {
+    this.contador.lecturas++;
+    return this.mcp.leerTextoDelCuerpo(id);
   }
 
   async leerEsquema(id: string) {
