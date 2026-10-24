@@ -76,6 +76,15 @@ export const dataSource = z
   })
   .loose();
 
+/** Bloques del cuerpo de una página. Solo se lee el texto de los que tienen rich_text. */
+export const listaDeBloques = z
+  .object({
+    results: z.array(z.object({ id: z.string(), type: z.string() }).loose()),
+    has_more: z.boolean().optional(),
+    next_cursor: z.string().nullable().optional(),
+  })
+  .loose();
+
 export const paginaCreada = z.object({ object: z.literal('page'), id: z.string() }).loose();
 
 export const usuarioPropio = z.object({ object: z.literal('user'), id: z.string() }).loose();

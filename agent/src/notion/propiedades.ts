@@ -53,6 +53,12 @@ export function leerUrl(pagina: Pagina, nombre: string): string | null {
   return url ? url : null;
 }
 
+/** Texto plano de un bloque (párrafo, viñeta, título…). Los bloques sin texto devuelven "". */
+export function textoDeBloque(bloque: { type: string } & Record<string, unknown>): string {
+  const contenido = bloque[bloque.type] as { rich_text?: Array<{ plain_text?: string }> } | undefined;
+  return (contenido?.rich_text ?? []).map((t) => t.plain_text ?? '').join('');
+}
+
 /** Archivos de una propiedad de tipo files: subidos a Notion (enlace temporal) o externos. */
 export function leerArchivos(pagina: Pagina, nombre: string): Array<{ nombre: string; url: string }> {
   return (prop(pagina, nombre)?.files ?? []).flatMap((f) => {

@@ -1,6 +1,7 @@
 import type { Generador } from '../llm/index.js';
 import type { EspacioNotion, EtapaSolicitable, Solicitud } from '../notion/espacio.js';
 import { armarContexto } from './1-armar-contexto/index.js';
+import { repreguntarEtapa } from './2-repreguntar/index.js';
 
 export interface ContextoEtapa {
   solicitud: Solicitud;
@@ -53,7 +54,7 @@ export function conContextoConfirmado(etapa: string, funcion: FuncionEtapa): Fun
 
 export const ETAPAS: Record<EtapaSolicitable, FuncionEtapa> = {
   'Armar contexto': armarContexto,
-  Repreguntar: conContextoConfirmado('Repreguntar', marcador),
+  Repreguntar: conContextoConfirmado('Repreguntar', repreguntarEtapa),
   'Relevar la web': conContextoConfirmado('Relevar la web', marcador),
   Sintetizar: conContextoConfirmado('Sintetizar', marcador),
   'Planificar validación': conContextoConfirmado('Planificar validación', marcador),

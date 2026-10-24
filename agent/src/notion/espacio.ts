@@ -1,5 +1,6 @@
 import { BASES } from '../config.js';
-import { dataSource, resultadoConsulta } from '../schemas/notion.js';
+import { dataSource, listaDeBloques, resultadoConsulta, type Pagina } from '../schemas/notion.js';
+import { PREGUNTAS, propiedadDe } from '../stages/2-repreguntar/formulario.js';
 import { ErrorNotion, type LlamadorHerramientas } from './cliente-mcp.js';
 import { Contador, type Contadores } from './contador.js';
 import { EscritorNotion, type Escritor } from './escritor.js';
@@ -49,6 +50,26 @@ export interface FilaContexto {
   textos: Record<string, string>;
 }
 
+/** Una fila de Entrevistas: lo que respondió un miembro en el formulario base. */
+export interface FilaEntrevista {
+  id: string;
+  titulo: string;
+  estado: string | null;
+  nombreMiembro: string;
+  rolMiembro: string | null;
+  /** Filas de Equipo vinculadas en «Miembro». */
+  miembros: string[];
+  /** Respuesta de cada pregunta del formulario, por código (P01…). Vacía si no respondió. */
+  respuestas: Record<string, string>;
+}
+
+/** Una fila de Equipo. */
+export interface FilaMiembro {
+  id: string;
+  nombre: string;
+  rol: string | null;
+}
+
 /** Esquema de una base: propiedad → tipo y, si es selección o estado, sus opciones. */
 export interface EsquemaBase {
   titulo: string;
@@ -82,6 +103,10 @@ export interface EspacioNotion {
   solicitudesPendientes(maximo: number): Promise<Solicitud[]>;
   /** Filas de Contexto del producto (debería haber una sola). */
   leerContextos(): Promise<FilaContexto[]>;
+  leerEntrevistas(): Promise<FilaEntrevista[]>;
+  leerEquipo(): Promise<FilaMiembro[]>;
+  /** Texto de cada bloque del cuerpo de una página, en orden (los bloques sin texto quedan como ""). */
+  leerTextoDelCuerpo(paginaId: string): Promise<string[]>;
   /** Devuelve null si la base no existe o no está compartida con la integración. */
   leerEsquema(dataSourceId: string): Promise<EsquemaBase | null>;
   marcarSolicitud(id: string, estado: EstadoSolicitud): Promise<void>;
@@ -174,6 +199,61 @@ export class EspacioNotionMcp implements EspacioNotion {
           .map(([nombre]) => [nombre, p.leerTexto(fila, nombre)]),
       ),
     }));
+  }
+
+  private async todasLasFilas(dataSourceId: string) {
+    const filas: Pagina[] = [];
+    let cursor: string | undefined;
+    do {
+      const r = resultadoConsulta.parse(
+        await this.leer('API-query-data-source', {
+          data_source_id: dataSourceId,
+          sorts: [{ timestamp: 'created_time', direction: 'ascending' }],
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {}),
+        }),
+      );
+      filas.push(...r.results);
+      cursor = r.has_more && r.next_cursor ? r.next_cursor : undefined;
+    } while (cursor);
+    return filas;
+  }
+
+  async leerEntrevistas(): Promise<FilaEntrevista[]> {
+    return (await this.todasLasFilas(BASES.entrevistas)).map((fila) => ({
+      id: fila.id,
+      titulo: p.leerTexto(fila, 'Entrevista'),
+      estado: p.leerSeleccion(fila, 'Estado'),
+      nombreMiembro: p.leerTexto(fila, 'Nombre del miembro').trim(),
+      rolMiembro: p.leerSeleccion(fila, 'Rol del miembro'),
+      miembros: p.leerRelacion(fila, 'Miembro'),
+      respuestas: Object.fromEntries(PREGUNTAS.map((q) => [q.codigo, p.leerTexto(fila, propiedadDe(q)).trim()])),
+    }));
+  }
+
+  async leerEquipo(): Promise<FilaMiembro[]> {
+    return (await this.todasLasFilas(BASES.equipo)).map((fila) => ({
+      id: fila.id,
+      nombre: p.leerTexto(fila, 'Nombre').trim(),
+      rol: p.leerSeleccion(fila, 'Rol'),
+    }));
+  }
+
+  async leerTextoDelCuerpo(paginaId: string): Promise<string[]> {
+    const textos: string[] = [];
+    let cursor: string | undefined;
+    do {
+      const r = listaDeBloques.parse(
+        await this.leer('API-get-block-children', {
+          block_id: paginaId,
+          page_size: 100,
+          ...(cursor ? { start_cursor: cursor } : {}),
+        }),
+      );
+      textos.push(...r.results.map(p.textoDeBloque));
+      cursor = r.has_more && r.next_cursor ? r.next_cursor : undefined;
+    } while (cursor);
+    return textos;
   }
 
   async leerEsquema(dataSourceId: string): Promise<EsquemaBase | null> {

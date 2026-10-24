@@ -1,4 +1,5 @@
 import type { ClaveBase } from '../../config.js';
+import { ESTADOS_ENTREVISTA, PREGUNTAS, propiedadDe, ROLES } from '../2-repreguntar/formulario.js';
 
 /**
  * Estructura mínima que el agente necesita en Notion (modelo de datos de la Fase 5
@@ -36,7 +37,7 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
     nombre: 'Equipo',
     propiedades: {
       Nombre: t('title'),
-      Rol: t('select', ['PM', 'Diseño', 'Ingeniería', 'Negocio', 'Otro']),
+      Rol: t('select', ROLES),
       'Persona de Notion': t('people'),
       Entrevistas: t('relation'),
     },
@@ -80,8 +81,10 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
     propiedades: {
       Entrevista: t('title'),
       Miembro: t('relation'),
-      'Respuestas del formulario base': t('rich_text'),
-      Estado: t('status', ['Pendiente', 'Base respondida', 'Repreguntas pendientes', 'Completa']),
+      'Nombre del miembro': t('rich_text'),
+      'Rol del miembro': t('select', ROLES),
+      ...Object.fromEntries(PREGUNTAS.map((pregunta) => [propiedadDe(pregunta), t('rich_text')])),
+      Estado: t('status', ESTADOS_ENTREVISTA),
       Evidencia: t('relation'),
       Creada: t('created_time'),
     },
