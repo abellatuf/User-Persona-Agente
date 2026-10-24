@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H4 ✅. Sigue el H5 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H4 ✅, H5 con el código listo y la demo pendiente |
 
 ---
 
@@ -112,12 +112,18 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-21 | 7 | Demo del H4: *Armar contexto* terminó en *Lista*. Gemini respondió 503 (alta demanda) en los 3 intentos y contestó el respaldo (`openrouter/free` eligió `liquid/lfm-2.5-2.6b:free`). 4 de 6 campos quedaron con cita verificada. *Problema* quedó en "No encontrado" porque el código rechazó la cita, y *Competidores* porque la spec no los nombra. El bloqueo funcionó: *Repreguntar* sin contexto confirmado terminó en *Error* sin llamar a ningún modelo. |
 | 2026-10-21 | 7 | En Notion se crearon dos veces filas vacías en *Contexto del producto* sin querer, y el agente frenó con "tiene 2 filas", como estaba previsto. La segunda la mandó a la papelera el asistente, a pedido de Abel. |
 | 2026-10-24 | 7 | **Se cierra el H4:** Abel completó *Problema* y *Competidores* y confirmó el contexto. Retrabajo: 0 de los 4 campos que completó el agente necesitaron corrección. Quedan tres pendientes, sin tocar código: revisar la cita rechazada, ignorar las filas de contexto vacías y volver a probar con Gemini. |
+| 2026-10-24 | 7 | Diseño del **H5** aprobado: formulario base de **13 preguntas** agnósticas, más nombre y rol; una propiedad por pregunta en Entrevistas; la etapa *Repreguntar* vincula cada entrevista con su miembro (**lo crea en Equipo si no existe**), guarda cada respuesta como evidencia del equipo y escribe hasta 5 repreguntas en el cuerpo de la página. **Las repreguntas pueden tocar el mismo tema, pero nunca revelan lo que dijo otro miembro.** Las respuestas a las repreguntas pasan a evidencia cuando la entrevista está *Completa* y se vuelve a pedir *Repreguntar*. |
+| 2026-10-24 | 7 | En Notion: propiedades nuevas en Entrevistas y formulario *Entrevista base*. Código del H5 en `main`, con reglas en código para las repreguntas (tope, vínculo con la respuesta, sin repetir el formulario y sin mencionar a otros miembros), la regla de entrevistas para sintetizar (T5.4) y una regla de escritura: una entrevista *Completa* no vuelve atrás. 188 pruebas. Al implementar: el servidor MCP de Notion solo escribe párrafos, así que las repreguntas usan marcas fijas (❓ y ✍️). Falta la demo de Abel. |
 
 ### Próximo paso
 
-**H5: entrevistas y repreguntas** (T5.1 a T5.5). Antes de escribir código, el asistente propone el diseño concreto y las preguntas del formulario base (hasta 15, agnósticas de producto) para que Abel los apruebe.
+**Demo del H5.** Seguí la guía paso a paso de [docs/demo-h5-guia.md](docs/demo-h5-guia.md): responder el formulario como 3 sombreros (PM, Ingeniería y Negocio) con al menos 2 divergencias a propósito, pedir *Repreguntar*, responder las repreguntas y medir el tiempo de cada sombrero (T5.5).
+
+El asistente le repite a Abel la guía paso por paso, revisa en Notion cada resultado y, al final, cierra el H5. Después sigue el **H6: relevamiento web**, empezando por la propuesta de diseño.
 
 Pendientes a tener en cuenta:
+- Antes de la demo, revisar que el CI del último commit ("H5 (3/3)…") esté en ✅. Los dos commits anteriores del H5 pueden aparecer en ❌: se subieron por partes.
+- Las divergencias que plantee Abel en la demo se anotan, porque se usan en el H7 para verificar que la síntesis las detecte.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
 - El contexto de cobros-recurrentes está **Confirmado**, así que las etapas 2 a 5 ya no se bloquean.
 - Pendientes de la demo del H4 (detalle en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h4)): investigar por qué se rechazó la cita de *Problema*, que el agente ignore las filas de contexto totalmente vacías y volver a probar con Gemini cuando no esté saturado.
