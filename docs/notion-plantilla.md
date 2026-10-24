@@ -30,8 +30,11 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 - **Modelos en Configuración** (H3, 2026-10-17): *Modelo principal* y *Modelo de respaldo* tenían un texto de relleno ("Por definir en H3…") que el agente tomaba como nombre de modelo. Se corrigieron (`gemini-3.6-flash` y `openrouter/free`), y desde el H4 el agente no usa un valor que no parezca un nombre de modelo.
 - **Aviso de privacidad** (H4, 2026-10-18): la descripción de la base Contexto del producto explica que hay una sola fila por producto, dónde van las fuentes y que **las fuentes se envían a un proveedor de IA gratuito** (HU-03, RNF-06).
 - **Formulario *Contexto manual*** (H4, 2026-10-18): vista de formulario sobre Contexto del producto, creada con el MCP de Notion, con *Nombre*, los seis campos e *Idioma* (HU-03b). Después de cargarlo, se pide *Armar contexto* sin fuentes y el agente marca la fuente de cada campo como «Cargado por el PM».
+- **Entrevistas** (H5, 2026-10-24): una propiedad de texto por pregunta del formulario base, con su código adelante (*P01 · ¿Quiénes creés…?* a *P13 · …*), más *Nombre del miembro* y *Rol del miembro*. Se borró *Respuestas del formulario base*, que no se usaba. La descripción de la base explica el circuito y avisa que las respuestas se envían a un proveedor de IA gratuito. El agente lee cada respuesta por el código de la pregunta, así que el texto de la pregunta se puede ajustar si se actualiza también `agent/src/stages/2-repreguntar/formulario.ts`.
+- **Formulario *Entrevista base*** (H5, 2026-10-24): vista de formulario sobre Entrevistas, creada con el MCP de Notion. Desde el MCP no se pueden marcar preguntas como obligatorias ni agregar la descripción del formulario: se hace a mano desde Notion (ver [demo-h5-guia.md](demo-h5-guia.md), paso 1).
+- **Repreguntas en el cuerpo de la página** (H5, 2026-10-24): el servidor MCP de Notion solo escribe párrafos, así que cada repregunta usa renglones con marcas fijas (❓ y ✍️). El miembro responde debajo de «✍️ Tu respuesta:» y no tiene que borrar las marcas.
 
 ## Pendiente
 
-- **Formularios:** entrevista base (H5, cuando Abel apruebe las preguntas) e investigación propia sobre Evidencia.
+- **Formularios:** investigación propia sobre Evidencia.
 - **Vistas útiles:** por ejemplo, Solicitudes pendientes y personas por estado.
