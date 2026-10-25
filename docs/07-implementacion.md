@@ -11,7 +11,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H2. Reglas en código | ✅ Cerrado |
 | H3. Capa de modelos | ✅ Cerrado |
 | H4. Agente de contexto | ✅ Cerrado |
-| H5. Entrevistas | 🟡 Código en `main`, falta la demo |
+| H5. Entrevistas | ✅ Cerrado |
 | H6. Web | ⚪ Pendiente |
 | H7. Síntesis | ⚪ Pendiente |
 | H8. Validación y persona viva | ⚪ Pendiente |
@@ -403,9 +403,11 @@ La guía detallada, paso por paso, está en [demo-h4-guia.md](demo-h4-guia.md).
 
 ### Pendientes que salieron de la demo (sin tocar código hasta que Abel apruebe)
 
-1. **Cita rechazada de *Problema*.** El modelo propuso "Un emisor (persona física o entidad chica) necesita cobrarle a un pagador un monto recurrente e indefinido (hasta que el pagador decida cancelar), sin exigirle login ni manejar datos sensibles de pago", y el código la rechazó, aunque la parte final casi igual se aceptó en *Propuesta de valor*. Hay que ver si el modelo cambió alguna palabra (la regla funcionó bien) o si la verificación tiene un falso negativo, por ejemplo con los paréntesis. Si es un falso negativo, se corrige con una prueba nueva.
+> **Actualización del 2026-10-25:** los pendientes 1 y 3 quedaron resueltos (ver [Resultado de la demo del H5](#resultado-de-la-demo-del-h5), "Contexto rehecho con Gemini"). Sigue abierto el 2.
+
+1. **Cita rechazada de *Problema*.** ✅ *Resuelto el 2026-10-25: no era un falso negativo.* El modelo propuso "Un emisor (persona física o entidad chica) necesita cobrarle a un pagador un monto recurrente e indefinido (hasta que el pagador decida cancelar), sin exigirle login ni manejar datos sensibles de pago", y el código la rechazó, aunque la parte final casi igual se aceptó en *Propuesta de valor*. Hay que ver si el modelo cambió alguna palabra (la regla funcionó bien) o si la verificación tiene un falso negativo, por ejemplo con los paréntesis. Si es un falso negativo, se corrige con una prueba nueva.
 2. **Filas de contexto totalmente vacías.** Proponer que el agente las ignore al contar las filas, en lugar de frenar. Una fila con algún dato seguiría contando.
-3. **Calidad con Gemini.** Volver a probar *Armar contexto* cuando Gemini no esté saturado, para medir la calidad con el modelo principal. Se puede hacer en la evaluación del H9, sin repetir esta demo.
+3. **Calidad con Gemini.** ✅ *Hecho el 2026-10-25.* Volver a probar *Armar contexto* cuando Gemini no esté saturado, para medir la calidad con el modelo principal. Se puede hacer en la evaluación del H9, sin repetir esta demo.
 
 ---
 
@@ -419,7 +421,7 @@ El agente ya procesa las entrevistas del equipo. Por cada miembro que respondió
 | T5.2 Respuestas como evidencia *Supuesto del equipo* | 🤖 | ✅ Una fila por respuesta, vinculada a la entrevista y al miembro |
 | T5.3 Prompt de repreguntas | 🤖 | ✅ Hasta 5 por miembro, cada una con su respuesta de origen |
 | T5.4 Estados de la entrevista y *avanzar sin las incompletas* | 🤖 | ✅ La regla para sintetizar queda lista para el H7 |
-| T5.5 Prueba con sombreros | 👤 | ⏳ Pendiente (demo) |
+| T5.5 Prueba con sombreros | 👤 | ✅ Cumplida el 2026-10-25 (PM respondido por Abel; Ingeniería y Negocio simulados por el asistente, a pedido de Abel) |
 
 ### Formulario base (T5.1)
 
@@ -508,3 +510,61 @@ La guía detallada, paso por paso, está en [demo-h5-guia.md](demo-h5-guia.md).
 5. Respondé las repreguntas debajo de cada "✍️ Tu respuesta:" y pasá cada entrevista a **Completa**.
 6. Volvé a pedir *Repreguntar* y corré **Agente**: aparecen las evidencias de las respuestas a las repreguntas.
 7. Pasale al asistente los minutos por sombrero, las divergencias que planteaste y qué te parecieron las repreguntas.
+
+**Demo de cierre del H5:** formulario, repreguntas y evidencia funcionando de punta a punta con Gemini, y el ajuste del prompt subido. **Cumplida el 2026-10-25.**
+
+### Resultado de la demo del H5
+
+**Cómo se hizo.** Abel respondió el formulario como **PM** en **menos de 15 minutos**: cumple el objetivo de 30 minutos o menos por miembro. Los sombreros **Ingeniería** y **Negocio** los escribió el asistente, a pedido de Abel, con divergencias pensadas contra las respuestas del PM. Por eso esas dos entrevistas sirven para probar el agente, pero no reflejan conocimiento real del equipo, y la métrica de esfuerzo solo se midió con el PM.
+
+| Qué se probó | Resultado | Evidencia en Notion |
+|--------------|-----------|---------------------|
+| Formulario base | 3 entrevistas: PM (13 respuestas), Ingeniería (9) y Negocio (9) | [Abel PM](https://app.notion.com/p/404245a35f2b800dbb2fe340831daa4f), [Abel Ingeniería](https://app.notion.com/p/404245a35f2b81b7ad32ebd2597bcf85), [Abel Negocio](https://app.notion.com/p/404245a35f2b81548247f2fac452d102) |
+| *Repreguntar*, primera corrida | *Lista*. 3 miembros creados en Equipo y vinculados, **31 evidencias** del formulario base, **5 repreguntas por entrevista**, las 3 entrevistas en *Repreguntas pendientes*. 60 lecturas, 51 escrituras, 0 intentos bloqueados | [Ejecución 2026-10-25 20:16](https://app.notion.com/p/404245a35f2b8177b0f1c021e1e6d42d) |
+| Modelo | Respondió **Gemini** (`gemini-3.6-flash`) para las 3. En dos entrevistas dio 503 primero y los reintentos alcanzaron, sin pasar al respaldo. Unos 13.800 tokens en total | Misma ejecución |
+| Respuestas a las repreguntas | **13 evidencias "R…"**: 5 de Ingeniería, 5 de Negocio y 3 del PM. Las repreguntas 4 y 5 del PM, sin responder, quedaron anotadas. Sin llamar a ningún modelo | [Ejecución 20:35](https://app.notion.com/p/404245a35f2b81008290c2d832c4aed8), [Ejecución 20:41](https://app.notion.com/p/404245a35f2b8108b1dae8d3ee94e6a2) |
+| Idempotencia | La segunda corrida actualizó las 10 evidencias anteriores en lugar de duplicarlas | 13 filas "R…" en Evidencia |
+| Entrevista que no estaba *Completa* | Se esperó: "Esperando respuestas a las repreguntas: 1", sin leer sus respuestas | Ejecución 20:35 |
+
+**Calidad de las repreguntas.** En general, buenas: abiertas, piden ejemplos concretos o en qué se basa cada uno, y van a las divergencias (P01, P09 y P10 a Ingeniería; P06 y P10 a Negocio). Ninguna mencionó a otro miembro, así que el filtro no descartó ninguna. Pero **dos insinuaron la postura de otro miembro** sin nombrarlo:
+- A PM (repregunta 5): "¿qué diferencia a un profesional independiente de una pequeña entidad u organización?". La distinción la había hecho Negocio.
+- A Ingeniería (repregunta 3): "¿qué escenarios podrían darse donde el decisor, el usuario y quien paga no coincidan?". Es la postura de Negocio, y además presupone que esos escenarios existen.
+
+**Ajuste del prompt (aprobado por Abel el 2026-10-25).** Se agregó la regla "No introduce distinciones, tipos, casos ni alternativas que el miembro no mencionó. Repreguntá sobre lo que él dijo, con sus propias palabras". Una prueba nueva verifica que la regla llegue al modelo, y falló antes de aplicar el cambio: **189 pruebas**. El ajuste solo afecta a las entrevistas que se repregunten de ahora en adelante; su efecto se mide en la evaluación del H9.
+
+**Divergencias planteadas a propósito** (se usan en el H7 para verificar que la síntesis las detecte):
+
+| Pregunta | PM | Ingeniería | Negocio |
+|----------|----|------------|---------|
+| **P01** ¿Cuántos tipos de usuario? | 2: cobradores y pagadores | **1 solo:** el pagador no es usuario | **2 tipos de emisor** (profesional y organización) + pagadores |
+| **P09** Diferencias entre usuarios | Cobrador ≠ pagador | **Ninguna importante** | (en P01: organización ≠ profesional) |
+| **P10** ¿Quién decide, usa y paga? | El prestador | **La misma persona** | **No siempre:** la comisión decide, el tesorero usa, la organización paga |
+| **P06** ¿Qué lo empuja a probarlo? | Que el volumen haga inmanejable el Excel | — | **La plata que pierde por morosidad**, aunque tenga pocos pagadores |
+
+Además, P11 abre supuestos distintos: Ingeniería cree que el emisor va a pedir conciliación automática; Negocio duda de que quiera pagar por el servicio.
+
+**Contexto rehecho con Gemini (pendientes 1 y 3 del H4).** Antes de la demo se volvió a pedir *Armar contexto*, esta vez con el modelo principal ([Ejecución 2026-10-25 16:46](https://app.notion.com/p/404245a35f2b813199e0df6c17c57b2b)). Respondió `gemini-3.6-flash` al primer intento:
+
+| Campo | 21/10 (respaldo, modelo chico) | 25/10 (Gemini) |
+|-------|--------------------------------|----------------|
+| Usuarios que creemos tener | Lo que *hacen* emisor y pagador | **Mejor:** *quiénes son* (persona física o entidad chica, profesionales, sociedades de fomento) |
+| Mercado | "Argentina, pesos (ARS)" | Igual, un poco más completo |
+| Propuesta de valor | Completado, con cita | "No encontrado" |
+| Modelo de negocio | "Modelo A" de conciliación, con cita | "No encontrado" |
+
+Gemini es más conservador. En *Modelo de negocio* tiene razón: el "Modelo A" explica la conciliación, no cómo gana plata el producto. El modelo chico lo había completado con una cita real pero mal interpretada. Abel completó *Propuesta de valor* y *Modelo de negocio* ("Negocio B2B, para pequeños emprendedores") y volvió a confirmar el contexto.
+
+**El pendiente de la cita rechazada no era un falso negativo.** Gemini citó la spec textual: "Un emisor (persona física o entidad chica: particular, sociedad de fomento, profesional independiente, etc.)". La cita del 21/10 decía "(persona física o entidad chica)": el modelo chico recortó la frase, y la regla hizo bien en rechazarla. No hay que tocar código.
+
+> **Lecciones aprendidas:**
+> - **El filtro de código frena las menciones explícitas, no las sugerencias.** Una repregunta puede traer la idea de otro miembro sin nombrarlo. El ajuste del prompt lo reduce; la revisión humana y el H9 lo miden.
+> - **Hay que pasar la entrevista a *Completa*.** Si no, el agente no lee las respuestas a las repreguntas (pasó en la demo). La guía y la descripción de la base lo dicen.
+> - **El servidor MCP de Notion no deja marcar preguntas obligatorias** en un formulario. No hace falta: el agente saltea las entrevistas sin nombre y lo avisa.
+> - **Gemini sigue con picos de 503**, pero los reintentos alcanzaron en todas las llamadas de la demo.
+> - **El código del H5 ya corría en producción antes de la demo:** una corrida de *Repreguntar* sin entrevistas respondió "No hay entrevistas con el formulario base respondido", como estaba previsto.
+
+### Pendientes que salieron de la demo
+
+1. **Medir el efecto del ajuste del prompt** con entrevistas nuevas, en la evaluación del H9.
+2. **Esfuerzo por miembro con personas reales:** en el H5 solo se midió con el PM (menos de 15 minutos). Se puede medir en la prueba de aceptación del H9.
+3. Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías.
