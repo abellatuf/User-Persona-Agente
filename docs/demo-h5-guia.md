@@ -4,6 +4,10 @@ Guía detallada para la demo de cierre del H5 (entrevistas y repreguntas, T5.5).
 
 Todo se hace desde la página raíz **[User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4)** y desde la pestaña **[Actions](https://github.com/abellatuf/User-Persona-Agente/actions)** de GitHub.
 
+## Estado: ✅ demo cumplida el 2026-10-25
+
+Todos los pasos se cumplieron. Abel respondió el sombrero PM (en menos de 15 minutos) y el asistente simuló Ingeniería y Negocio, a pedido de Abel. El resultado, con los links a Notion, está en la [Fase 7](07-implementacion.md#resultado-de-la-demo-del-h5). La guía queda como referencia para repetir la demo con otro producto.
+
 Vas a responder el formulario **3 veces**, una por sombrero (PM, Ingeniería y Negocio), y vas a plantear **al menos 2 divergencias a propósito**. La demo gasta poca cuota: una llamada al modelo por entrevista.
 
 ## Antes de empezar
