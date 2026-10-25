@@ -114,6 +114,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-24 | 7 | **Se cierra el H4:** Abel completó *Problema* y *Competidores* y confirmó el contexto. Retrabajo: 0 de los 4 campos que completó el agente necesitaron corrección. Quedan tres pendientes, sin tocar código: revisar la cita rechazada, ignorar las filas de contexto vacías y volver a probar con Gemini. |
 | 2026-10-24 | 7 | Diseño del **H5** aprobado: formulario base de **13 preguntas** agnósticas, más nombre y rol; una propiedad por pregunta en Entrevistas; la etapa *Repreguntar* vincula cada entrevista con su miembro (**lo crea en Equipo si no existe**), guarda cada respuesta como evidencia del equipo y escribe hasta 5 repreguntas en el cuerpo de la página. **Las repreguntas pueden tocar el mismo tema, pero nunca revelan lo que dijo otro miembro.** Las respuestas a las repreguntas pasan a evidencia cuando la entrevista está *Completa* y se vuelve a pedir *Repreguntar*. |
 | 2026-10-24 | 7 | En Notion: propiedades nuevas en Entrevistas y formulario *Entrevista base*. Código del H5 en `main`, con reglas en código para las repreguntas (tope, vínculo con la respuesta, sin repetir el formulario y sin mencionar a otros miembros), la regla de entrevistas para sintetizar (T5.4) y una regla de escritura: una entrevista *Completa* no vuelve atrás. 188 pruebas. Al implementar: el servidor MCP de Notion solo escribe párrafos, así que las repreguntas usan marcas fijas (❓ y ✍️). Falta la demo de Abel. |
+| 2026-10-25 | 7 | **Contexto rehecho con Gemini** (pendiente 3 del H4): respondió `gemini-3.6-flash` al primer intento. Mejoró *Usuarios* (ahora dice quiénes son) y *Mercado*; dejó *Propuesta de valor* y *Modelo de negocio* en "No encontrado". El modelo chico había completado *Modelo de negocio* con el "Modelo A" de conciliación, que no es un modelo de negocio: la cita era real, pero la interpretación no. Abel completó los dos campos y volvió a confirmar el contexto. **Pendiente 1 resuelto:** la cita de *Problema* del 21/10 se rechazó porque el modelo chico recortó la frase de la spec, no por un falso negativo. No hay que tocar código. La corrida de *Repreguntar* de ese día (sin entrevistas todavía) confirmó que el código del H5 ya corre en producción. |
 
 ### Próximo paso
 
@@ -126,7 +127,7 @@ Pendientes a tener en cuenta:
 - Las divergencias que plantee Abel en la demo se anotan, porque se usan en el H7 para verificar que la síntesis las detecte.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
 - El contexto de cobros-recurrentes está **Confirmado**, así que las etapas 2 a 5 ya no se bloquean.
-- Pendientes de la demo del H4 (detalle en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h4)): investigar por qué se rechazó la cita de *Problema*, que el agente ignore las filas de contexto totalmente vacías y volver a probar con Gemini cuando no esté saturado.
+- Pendiente de la demo del H4 (detalle en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h4)): que el agente ignore las filas de contexto totalmente vacías. Los otros dos (la cita rechazada y volver a probar con Gemini) se resolvieron el 2026-10-25, y se pasan a la Fase 7 al cerrar el H5.
 - T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 
 ### Cómo retomar en otro chat
