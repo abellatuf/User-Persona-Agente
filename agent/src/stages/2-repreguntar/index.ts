@@ -35,6 +35,7 @@ const TAREA = [
   '- Pide situaciones reales, ejemplos concretos o en qué se basa.',
   '- No repite una pregunta del formulario.',
   '- Nunca menciona a otros miembros, sus roles ni lo que respondieron, y no dice que haya desacuerdo. Podés preguntar sobre el mismo tema, pero sin revelar la otra postura.',
+  '- No introduce distinciones, tipos, casos ni alternativas que el miembro no mencionó. Repreguntá sobre lo que él dijo, con sus propias palabras.',
   `Devolvé como máximo ${MAX_REPREGUNTAS} repreguntas, empezando por las más importantes. Si las respuestas ya son concretas y suficientes, devolvé una lista vacía y explicá por qué en "sinRepreguntas".`,
   'Para cada repregunta indicá:',
   '- "sobre": el código de la pregunta del formulario cuya respuesta la motiva (P01, P02…). Solo preguntas que este miembro respondió.',
