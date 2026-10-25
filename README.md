@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H4 ✅, H5 con el código listo y la demo pendiente |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H5 ✅. Sigue el H6 |
 
 ---
 
@@ -115,19 +115,20 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-24 | 7 | Diseño del **H5** aprobado: formulario base de **13 preguntas** agnósticas, más nombre y rol; una propiedad por pregunta en Entrevistas; la etapa *Repreguntar* vincula cada entrevista con su miembro (**lo crea en Equipo si no existe**), guarda cada respuesta como evidencia del equipo y escribe hasta 5 repreguntas en el cuerpo de la página. **Las repreguntas pueden tocar el mismo tema, pero nunca revelan lo que dijo otro miembro.** Las respuestas a las repreguntas pasan a evidencia cuando la entrevista está *Completa* y se vuelve a pedir *Repreguntar*. |
 | 2026-10-24 | 7 | En Notion: propiedades nuevas en Entrevistas y formulario *Entrevista base*. Código del H5 en `main`, con reglas en código para las repreguntas (tope, vínculo con la respuesta, sin repetir el formulario y sin mencionar a otros miembros), la regla de entrevistas para sintetizar (T5.4) y una regla de escritura: una entrevista *Completa* no vuelve atrás. 188 pruebas. Al implementar: el servidor MCP de Notion solo escribe párrafos, así que las repreguntas usan marcas fijas (❓ y ✍️). Falta la demo de Abel. |
 | 2026-10-25 | 7 | **Contexto rehecho con Gemini** (pendiente 3 del H4): respondió `gemini-3.6-flash` al primer intento. Mejoró *Usuarios* (ahora dice quiénes son) y *Mercado*; dejó *Propuesta de valor* y *Modelo de negocio* en "No encontrado". El modelo chico había completado *Modelo de negocio* con el "Modelo A" de conciliación, que no es un modelo de negocio: la cita era real, pero la interpretación no. Abel completó los dos campos y volvió a confirmar el contexto. **Pendiente 1 resuelto:** la cita de *Problema* del 21/10 se rechazó porque el modelo chico recortó la frase de la spec, no por un falso negativo. No hay que tocar código. La corrida de *Repreguntar* de ese día (sin entrevistas todavía) confirmó que el código del H5 ya corre en producción. |
+| 2026-10-25 | 7 | Demo del H5: Abel respondió el sombrero **PM** (en menos de 15 minutos) y pidió que el asistente simulara **Ingeniería** y **Negocio**, con divergencias a propósito en P01, P09, P10 y P06. *Repreguntar* con Gemini: 3 miembros creados, 31 evidencias y 5 repreguntas por entrevista ([ejecución](https://app.notion.com/p/404245a35f2b8177b0f1c021e1e6d42d)). Después, 13 evidencias de las respuestas a las repreguntas, sin modelo, sin duplicar y con las 2 sin responder anotadas ([ejecución](https://app.notion.com/p/404245a35f2b8108b1dae8d3ee94e6a2)). |
+| 2026-10-25 | 7 | Ninguna repregunta mencionó a otro miembro, pero dos **insinuaron su postura** sin nombrarlo. Abel aprueba un ajuste del prompt: no introducir distinciones ni alternativas que el miembro no mencionó. 189 pruebas. |
+| 2026-10-25 | 7 | **Se cierra el H5.** El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). |
 
 ### Próximo paso
 
-**Demo del H5.** Seguí la guía paso a paso de [docs/demo-h5-guia.md](docs/demo-h5-guia.md): responder el formulario como 3 sombreros (PM, Ingeniería y Negocio) con al menos 2 divergencias a propósito, pedir *Repreguntar*, responder las repreguntas y medir el tiempo de cada sombrero (T5.5).
-
-El asistente le repite a Abel la guía paso por paso, revisa en Notion cada resultado y, al final, cierra el H5. Después sigue el **H6: relevamiento web**, empezando por la propuesta de diseño.
+**H6: relevamiento web** (T6.1 a T6.4). Antes de escribir código, el asistente propone el diseño concreto para que Abel lo apruebe: búsqueda con Gemini y Google Search, verificación de cada URL antes de guardarla, evidencia pública con título, fecha y extracto (hasta 15 fuentes) y qué pasa si se agota la cuota.
 
 Pendientes a tener en cuenta:
-- Antes de la demo, revisar que el CI del último commit ("H5 (3/3)…") esté en ✅. Los dos commits anteriores del H5 pueden aparecer en ❌: se subieron por partes.
-- Las divergencias que plantee Abel en la demo se anotan, porque se usan en el H7 para verificar que la síntesis las detecte.
+- Las divergencias planteadas en la demo del H5 están en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). Se usan en el H7 para verificar que la síntesis las detecte.
+- Las entrevistas de Ingeniería y Negocio las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
-- El contexto de cobros-recurrentes está **Confirmado**, así que las etapas 2 a 5 ya no se bloquean.
-- Pendiente de la demo del H4 (detalle en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h4)): que el agente ignore las filas de contexto totalmente vacías. Los otros dos (la cita rechazada y volver a probar con Gemini) se resolvieron el 2026-10-25, y se pasan a la Fase 7 al cerrar el H5.
+- El contexto de cobros-recurrentes está **Confirmado** y las 3 entrevistas están **Completas**.
+- Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías. Del H5: medir el efecto del ajuste del prompt y el esfuerzo por miembro con personas reales, en el H9.
 - T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 
 ### Cómo retomar en otro chat
