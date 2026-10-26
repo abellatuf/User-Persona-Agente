@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H5 ✅. Sigue el H6 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H5 ✅, H6 con el código listo y la demo pendiente |
 
 ---
 
@@ -118,10 +118,16 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-25 | 7 | Demo del H5: Abel respondió el sombrero **PM** (en menos de 15 minutos) y pidió que el asistente simulara **Ingeniería** y **Negocio**, con divergencias a propósito en P01, P09, P10 y P06. *Repreguntar* con Gemini: 3 miembros creados, 31 evidencias y 5 repreguntas por entrevista ([ejecución](https://app.notion.com/p/404245a35f2b8177b0f1c021e1e6d42d)). Después, 13 evidencias de las respuestas a las repreguntas, sin modelo, sin duplicar y con las 2 sin responder anotadas ([ejecución](https://app.notion.com/p/404245a35f2b8108b1dae8d3ee94e6a2)). |
 | 2026-10-25 | 7 | Ninguna repregunta mencionó a otro miembro, pero dos **insinuaron su postura** sin nombrarlo. Abel aprueba un ajuste del prompt: no introducir distinciones ni alternativas que el miembro no mencionó. 189 pruebas. |
 | 2026-10-25 | 7 | **Se cierra el H5.** El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). |
+| 2026-10-26 | 7 | Diseño del **H6** aprobado: 4 búsquedas por tema (usuarios y problemas, cómo lo resuelven hoy, mercado, opiniones) con Gemini y Google Search; **las URL salen de los metadatos de la búsqueda**, no del texto del modelo; cada URL se abre y se guarda la dirección final; **cita verificada por código** en la página (decisión B); hasta 15 evidencias públicas por corrida y **las URL ya guardadas se saltean** (decisión D). **Si Gemini no puede buscar, la etapa queda Incompleta** (decisión C): el respaldo de OpenRouter no tiene búsqueda gratuita (su complemento web se paga, contra el RNF-01; queda como opción futura). |
+| 2026-10-26 | 7 | Código del H6 en `main`: búsqueda con Google en el adaptador de Gemini, buscador con reintentos, etapa *Relevar la web* y lectura de las URL de la evidencia pública ya guardada. Al implementar: una etapa *Incompleta* deja la solicitud en *Lista* (no en *Error*), con el motivo en Ejecuciones (T6.4: no falla el resto); las páginas van al modelo de a 5, recortadas a 20.000 caracteres; se leen hasta 20 páginas para quedarse con hasta 15. 200 pruebas. Falta la demo de Abel. |
 
 ### Próximo paso
 
-**H6: relevamiento web** (T6.1 a T6.4). Antes de escribir código, el asistente propone el diseño concreto para que Abel lo apruebe: búsqueda con Gemini y Google Search, verificación de cada URL antes de guardarla, evidencia pública con título, fecha y extracto (hasta 15 fuentes) y qué pasa si se agota la cuota.
+**Demo del H6.** Seguí la guía paso a paso de [docs/demo-h6-guia.md](docs/demo-h6-guia.md): pedir *Relevar la web*, revisar la evidencia pública, abrir 3 o 4 fuentes a mano para verificar URL y citas, repetir la etapa sin duplicar y, si querés, probar el caso de cuota agotada.
+
+El asistente le repite a Abel la guía paso por paso, revisa en Notion cada resultado, documenta las evidencias en la Fase 7 y cierra el H6. Después sigue el **H7: síntesis de personas**, empezando por la propuesta de diseño.
+
+No se pudo verificar desde la sesión si `gemini-3.6-flash` acepta la búsqueda de Google en la capa gratuita ni cuál es su cuota diaria: lo valida la demo.
 
 Pendientes a tener en cuenta:
 - Las divergencias planteadas en la demo del H5 están en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). Se usan en el H7 para verificar que la síntesis las detecte.
