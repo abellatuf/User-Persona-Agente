@@ -1,18 +1,20 @@
 import { MODELO_PRINCIPAL_POR_DEFECTO, MODELO_RESPALDO_POR_DEFECTO, type ClavesModelos } from '../config.js';
 import type { Configuracion } from '../notion/espacio.js';
+import { crearBuscador, type Buscador } from './buscar.js';
 import { crearGenerador, type Generador } from './generar.js';
 import { GEMINI_BASE_URL, ProveedorGemini } from './gemini.js';
 import { OPENROUTER_BASE_URL, ProveedorOpenRouter } from './openrouter.js';
 import type { Proveedor } from './tipos.js';
 
 export { crearGenerador, ErrorGeneracion, notasDeGeneracion, type Generador, type ResultadoGeneracion } from './generar.js';
+export { crearBuscador, ErrorBusqueda, type Buscador, type ResultadoBusqueda } from './buscar.js';
 export { ErrorModelo, type Proveedor } from './tipos.js';
 
 /** Gemini como principal y OpenRouter como respaldo, con los modelos de Configuración. */
 export function crearProveedores(
   claves: ClavesModelos,
   configuracion: Pick<Configuracion, 'modeloPrincipal' | 'modeloRespaldo'>,
-): { principal: Proveedor; respaldo: Proveedor } {
+): { principal: ProveedorGemini; respaldo: Proveedor } {
   return {
     principal: new ProveedorGemini(
       claves.geminiApiKey,
@@ -56,9 +58,14 @@ export function problemasDeModelos(configuracion: Pick<Configuracion, 'modeloPri
 export function crearModelos(
   claves: ClavesModelos | string,
   configuracion: Pick<Configuracion, 'modeloPrincipal' | 'modeloRespaldo'>,
-): { generar: Generador } | { sinModelo: string } {
+): { generar: Generador; buscar: Buscador } | { sinModelo: string } {
   if (typeof claves === 'string') return { sinModelo: claves };
   const problemas = problemasDeModelos(configuracion);
   if (problemas.length > 0) return { sinModelo: problemas.join(' ') };
-  return { generar: crearGenerador(crearProveedores(claves, configuracion)) };
+  const proveedores = crearProveedores(claves, configuracion);
+  return {
+    generar: crearGenerador(proveedores),
+    // Solo el principal busca: el respaldo de OpenRouter no tiene búsqueda web gratuita.
+    buscar: crearBuscador({ proveedor: proveedores.principal }),
+  };
 }

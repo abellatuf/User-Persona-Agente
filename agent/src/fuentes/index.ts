@@ -11,6 +11,12 @@ export interface Fuente {
   recortada: boolean;
 }
 
+/** Una página web leída: además del texto, la dirección final (después de las redirecciones) y su título. */
+export interface PaginaLeida extends Fuente {
+  urlFinal: string;
+  titulo: string;
+}
+
 export interface OpcionesFuentes {
   permitirLocal?: boolean;
 }
@@ -57,14 +63,14 @@ export async function leerDocumento(archivo: { nombre: string; url: string }, op
 }
 
 /** Lee una página web pública (T4.2): una sola página, sin seguir enlaces. */
-export async function leerPaginaWeb(url: string, opciones: OpcionesFuentes = {}): Promise<Fuente> {
-  const { bytes, tipo } = await descargar(url, { maxBytes: MAX_BYTES_PAGINA, timeoutMs: 20_000, ...opciones });
+export async function leerPaginaWeb(url: string, opciones: OpcionesFuentes = {}): Promise<PaginaLeida> {
+  const { bytes, tipo, urlFinal } = await descargar(url, { maxBytes: MAX_BYTES_PAGINA, timeoutMs: 20_000, ...opciones });
   const crudo = decodificar(bytes);
   if (tipo.includes('html') || (!tipo && /<html[\s>]/i.test(crudo))) {
     const { titulo, texto } = htmlATexto(crudo);
     if (!texto) throw new ErrorFuente('la página no tiene texto legible.');
-    return recortarFuente(url, titulo ? `${titulo}\n\n${texto}` : texto);
+    return { ...recortarFuente(url, titulo ? `${titulo}\n\n${texto}` : texto), urlFinal, titulo };
   }
-  if (tipo.startsWith('text/')) return recortarFuente(url, crudo);
+  if (tipo.startsWith('text/')) return { ...recortarFuente(url, crudo), urlFinal, titulo: '' };
   throw new ErrorFuente(`el contenido es de tipo ${tipo || 'desconocido'} y no se lee como página.`);
 }

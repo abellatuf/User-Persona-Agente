@@ -1,5 +1,15 @@
 import { z } from 'zod';
-import { ErrorModelo, pedir, tipoPorEstado, type PeticionProveedor, type Proveedor, type RespuestaProveedor } from './tipos.js';
+import {
+  ErrorModelo,
+  pedir,
+  tipoPorEstado,
+  type Mensajes,
+  type PeticionProveedor,
+  type Proveedor,
+  type ProveedorBusqueda,
+  type RespuestaBusqueda,
+  type RespuestaProveedor,
+} from './tipos.js';
 
 export const GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com';
 
@@ -14,6 +24,14 @@ const respuestaGemini = z
               .loose()
               .optional(),
             finishReason: z.string().optional(),
+            groundingMetadata: z
+              .object({
+                groundingChunks: z
+                  .array(z.object({ web: z.object({ uri: z.string(), title: z.string().optional() }).loose().optional() }).loose())
+                  .optional(),
+              })
+              .loose()
+              .optional(),
           })
           .loose(),
       )
@@ -58,7 +76,7 @@ const CORTES = new Set(['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT
  * Adaptador de Gemini (API generateContent). Pide la salida en JSON; el formato
  * exacto lo define el prompt y lo valida Zod en la capa común.
  */
-export class ProveedorGemini implements Proveedor {
+export class ProveedorGemini implements Proveedor, ProveedorBusqueda {
   readonly nombre = 'Gemini' as const;
 
   constructor(
@@ -68,14 +86,33 @@ export class ProveedorGemini implements Proveedor {
   ) {}
 
   async completar(peticion: PeticionProveedor): Promise<RespuestaProveedor> {
+    const { texto, modelo, tokens } = await this.generarContenido(peticion, {
+      generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+    });
+    return { texto, modelo, tokens };
+  }
+
+  /**
+   * Búsqueda con Google Search (H6). Las fuentes salen de los metadatos de la búsqueda,
+   * no del texto del modelo: así el modelo no puede inventar una dirección.
+   */
+  async buscar(mensajes: Mensajes): Promise<RespuestaBusqueda> {
+    const { modelo, tokens, fuentes } = await this.generarContenido(mensajes, {
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.2 },
+    });
+    return { fuentes, modelo, tokens };
+  }
+
+  private async generarContenido(mensajes: Mensajes, extra: Record<string, unknown>) {
     const url = `${this.baseUrl}/v1beta/models/${encodeURIComponent(this.modelo)}:generateContent`;
     const r = await pedir(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': this.apiKey },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: peticion.sistema }] },
-        contents: [{ role: 'user', parts: [{ text: peticion.usuario }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
+        systemInstruction: { parts: [{ text: mensajes.sistema }] },
+        contents: [{ role: 'user', parts: [{ text: mensajes.usuario }] }],
+        ...extra,
       }),
     });
     const cuerpo: unknown = await r.json().catch(() => undefined);
@@ -108,10 +145,15 @@ export class ProveedorGemini implements Proveedor {
       .map((p) => p.text ?? '')
       .join('');
 
+    const fuentes = (candidato?.groundingMetadata?.groundingChunks ?? []).flatMap((c) =>
+      c.web ? [{ url: c.web.uri, titulo: c.web.title?.trim() ?? '' }] : [],
+    );
+
     const entrada = usageMetadata?.promptTokenCount ?? 0;
     const salida = (usageMetadata?.candidatesTokenCount ?? 0) + (usageMetadata?.thoughtsTokenCount ?? 0);
     return {
       texto,
+      fuentes,
       modelo: modelVersion ?? this.modelo,
       tokens: { entrada, salida, total: usageMetadata?.totalTokenCount ?? entrada + salida },
     };

@@ -28,6 +28,25 @@ export interface RespuestaProveedor {
   tokens: Tokens;
 }
 
+/** Una fuente que devolvió la búsqueda web: la dirección (todavía sin verificar) y su título. */
+export interface FuenteEncontrada {
+  url: string;
+  titulo: string;
+}
+
+export interface RespuestaBusqueda {
+  fuentes: FuenteEncontrada[];
+  modelo: string;
+  tokens: Tokens;
+}
+
+/** Proveedor que puede buscar en la web (solo Gemini, con Google Search). */
+export interface ProveedorBusqueda {
+  readonly nombre: NombreProveedor;
+  readonly modelo: string;
+  buscar(mensajes: Mensajes): Promise<RespuestaBusqueda>;
+}
+
 export type NombreProveedor = 'Gemini' | 'OpenRouter';
 
 export interface Proveedor {

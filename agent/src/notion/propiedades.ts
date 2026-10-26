@@ -17,6 +17,9 @@ export const numero = (valor: number) => ({ number: valor });
 export const seleccion = (nombre: string) => ({ select: { name: nombre } });
 export const estado = (nombre: string) => ({ status: { name: nombre } });
 export const fecha = (valor: Date) => ({ date: { start: valor.toISOString() } });
+/** Solo el día (AAAA-MM-DD), sin hora: por ejemplo, la fecha de consulta de una fuente. */
+export const dia = (valor: string) => ({ date: { start: valor } });
+export const url = (valor: string) => ({ url: valor });
 export const relacion = (ids: string[]) => ({ relation: ids.map((id) => ({ id })) });
 
 export function parrafo(valor: string) {
