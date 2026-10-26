@@ -79,6 +79,40 @@ describe('adaptador de Gemini', () => {
     expect(e.message).toContain('RESOURCE_EXHAUSTED');
   });
 
+  it('un 429 dice qué cuota se superó y su límite, aunque el mensaje de Gemini sea largo', async () => {
+    api.responder({
+      estado: 429,
+      cuerpo: {
+        error: {
+          code: 429,
+          status: 'RESOURCE_EXHAUSTED',
+          message: `You exceeded your current quota. ${'x'.repeat(600)}`,
+          details: [
+            {
+              '@type': 'type.googleapis.com/google.rpc.QuotaFailure',
+              violations: [
+                {
+                  quotaMetric: 'generativelanguage.googleapis.com/search_grounding_request_count',
+                  quotaId: 'SearchGroundingRequestsPerDayPerProjectPerModel-FreeTier',
+                  quotaValue: '0',
+                },
+                { quotaMetric: 'generativelanguage.googleapis.com/generate_content_free_tier_requests' },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const e = await errorDe(gemini.completar(peticion));
+
+    expect(e.tipo).toBe('limite');
+    expect(e.message).toMatch(
+      /^Gemini respondió 429 \(RESOURCE_EXHAUSTED\) · cuota: SearchGroundingRequestsPerDayPerProjectPerModel-FreeTier, límite 0; generativelanguage\.googleapis\.com\/generate_content_free_tier_requests: You exceeded/,
+    );
+    expect(e.message.length).toBeLessThanOrEqual(500);
+  });
+
   it('clasifica clave inválida, modelo inexistente y error del servidor', async () => {
     api.responder(
       { estado: 403, cuerpo: { error: { code: 403, message: 'API key not valid' } } },

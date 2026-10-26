@@ -57,7 +57,23 @@ const errorGemini = z
         code: z.number().optional(),
         message: z.string().optional(),
         status: z.string().optional(),
-        details: z.array(z.object({ '@type': z.string().optional(), retryDelay: z.string().optional() }).loose()).optional(),
+        details: z
+          .array(
+            z
+              .object({
+                '@type': z.string().optional(),
+                retryDelay: z.string().optional(),
+                violations: z
+                  .array(
+                    z
+                      .object({ quotaId: z.string().optional(), quotaMetric: z.string().optional(), quotaValue: z.string().optional() })
+                      .loose(),
+                  )
+                  .optional(),
+              })
+              .loose(),
+          )
+          .optional(),
       })
       .loose(),
   })
@@ -67,6 +83,22 @@ const errorGemini = z
 function duracionMs(valor: string | undefined): number | undefined {
   const m = valor?.match(/^(\d+(?:\.\d+)?)s$/);
   return m ? Math.round(Number(m[1]) * 1000) : undefined;
+}
+
+type DetalleError = NonNullable<z.infer<typeof errorGemini>['error']['details']>;
+
+/**
+ * Qué cuota se superó en un 429, según el detalle QuotaFailure de Google
+ * ("cuota: GenerateRequestsPerDay…, límite 0"). Va antes del mensaje genérico,
+ * que es largo y se recorta.
+ */
+function cuotasSuperadas(detalles: DetalleError | undefined): string {
+  const violaciones = (detalles ?? []).filter((d) => d['@type']?.endsWith('QuotaFailure')).flatMap((d) => d.violations ?? []);
+  const textos = violaciones.map((v) => {
+    const nombre = v.quotaId ?? v.quotaMetric ?? 'sin nombre';
+    return v.quotaValue !== undefined ? `${nombre}, límite ${v.quotaValue}` : nombre;
+  });
+  return textos.length > 0 ? ` · cuota: ${textos.join('; ')}` : '';
 }
 
 // Motivos de corte que no son una respuesta normal.
@@ -121,7 +153,7 @@ export class ProveedorGemini implements Proveedor, ProveedorBusqueda {
       const e = errorGemini.safeParse(cuerpo);
       const detalle = e.success ? e.data.error : undefined;
       const espera = duracionMs(detalle?.details?.find((d) => d['@type']?.endsWith('RetryInfo'))?.retryDelay);
-      const mensaje = `Gemini respondió ${r.status}${detalle?.status ? ` (${detalle.status})` : ''}: ${detalle?.message ?? 'sin detalle'}`;
+      const mensaje = `Gemini respondió ${r.status}${detalle?.status ? ` (${detalle.status})` : ''}${cuotasSuperadas(detalle?.details)}: ${detalle?.message ?? 'sin detalle'}`;
       throw new ErrorModelo(mensaje.slice(0, 500), tipoPorEstado(r.status), {
         estadoHttp: r.status,
         ...(espera !== undefined ? { esperaMs: espera } : {}),
