@@ -62,16 +62,25 @@ const falta = (secreto: string) => `Falta el secreto ${secreto} (ver docs/07-imp
 const esquemaClavesModelos = z.object({
   GEMINI_API_KEY: z.string({ error: falta('GEMINI_API_KEY') }).min(1, falta('GEMINI_API_KEY')),
   OPENROUTER_API_KEY: z.string({ error: falta('OPENROUTER_API_KEY') }).min(1, falta('OPENROUTER_API_KEY')),
+  // Opcional: sin ella, solo «Relevar la web» queda Incompleta. GitHub pasa "" si el secreto no existe.
+  TAVILY_API_KEY: z.string().optional(),
   // Solo para pruebas: apuntan los adaptadores a APIs falsas.
   GEMINI_BASE_URL: z.url().optional(),
   OPENROUTER_BASE_URL: z.url().optional(),
+  TAVILY_BASE_URL: z.url().optional(),
 });
+
+/** Motivo para Ejecuciones cuando falta la clave del buscador. */
+export const FALTA_TAVILY = `${falta('TAVILY_API_KEY')} Sin ella no se puede buscar en la web.`;
 
 export interface ClavesModelos {
   geminiApiKey: string;
   openrouterApiKey: string;
+  /** Clave del buscador web (H6). Ausente si el secreto no está cargado. */
+  tavilyApiKey?: string;
   geminiBaseUrl?: string;
   openrouterBaseUrl?: string;
+  tavilyBaseUrl?: string;
 }
 
 /**
@@ -86,7 +95,9 @@ export function leerClavesModelos(env: NodeJS.ProcessEnv): ClavesModelos {
   return {
     geminiApiKey: r.data.GEMINI_API_KEY,
     openrouterApiKey: r.data.OPENROUTER_API_KEY,
+    ...(r.data.TAVILY_API_KEY?.trim() ? { tavilyApiKey: r.data.TAVILY_API_KEY.trim() } : {}),
     ...(r.data.GEMINI_BASE_URL ? { geminiBaseUrl: r.data.GEMINI_BASE_URL } : {}),
     ...(r.data.OPENROUTER_BASE_URL ? { openrouterBaseUrl: r.data.OPENROUTER_BASE_URL } : {}),
+    ...(r.data.TAVILY_BASE_URL ? { tavilyBaseUrl: r.data.TAVILY_BASE_URL } : {}),
   };
 }

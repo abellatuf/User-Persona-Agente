@@ -1,13 +1,14 @@
-import { MODELO_PRINCIPAL_POR_DEFECTO, MODELO_RESPALDO_POR_DEFECTO, type ClavesModelos } from '../config.js';
+import { FALTA_TAVILY, MODELO_PRINCIPAL_POR_DEFECTO, MODELO_RESPALDO_POR_DEFECTO, type ClavesModelos } from '../config.js';
 import type { Configuracion } from '../notion/espacio.js';
 import { crearBuscador, type Buscador } from './buscar.js';
 import { crearGenerador, type Generador } from './generar.js';
 import { GEMINI_BASE_URL, ProveedorGemini } from './gemini.js';
 import { OPENROUTER_BASE_URL, ProveedorOpenRouter } from './openrouter.js';
+import { ProveedorTavily, TAVILY_BASE_URL } from './tavily.js';
 import type { Proveedor } from './tipos.js';
 
 export { crearGenerador, ErrorGeneracion, notasDeGeneracion, type Generador, type ResultadoGeneracion } from './generar.js';
-export { crearBuscador, ErrorBusqueda, type Buscador, type ResultadoBusqueda } from './buscar.js';
+export { crearBuscador, ErrorBusqueda, notasDeBusqueda, type Buscador, type ResultadoBusqueda } from './buscar.js';
 export { ErrorModelo, type Proveedor } from './tipos.js';
 
 /** Gemini como principal y OpenRouter como respaldo, con los modelos de Configuración. */
@@ -58,14 +59,13 @@ export function problemasDeModelos(configuracion: Pick<Configuracion, 'modeloPri
 export function crearModelos(
   claves: ClavesModelos | string,
   configuracion: Pick<Configuracion, 'modeloPrincipal' | 'modeloRespaldo'>,
-): { generar: Generador; buscar: Buscador } | { sinModelo: string } {
+): { generar: Generador; buscar?: Buscador; sinBusqueda?: string } | { sinModelo: string } {
   if (typeof claves === 'string') return { sinModelo: claves };
   const problemas = problemasDeModelos(configuracion);
   if (problemas.length > 0) return { sinModelo: problemas.join(' ') };
-  const proveedores = crearProveedores(claves, configuracion);
-  return {
-    generar: crearGenerador(proveedores),
-    // Solo el principal busca: el respaldo de OpenRouter no tiene búsqueda web gratuita.
-    buscar: crearBuscador({ proveedor: proveedores.principal }),
-  };
+  const generar = crearGenerador(crearProveedores(claves, configuracion));
+  // El buscador es aparte del modelo (H6): sin su clave, solo «Relevar la web» se entera.
+  if (!claves.tavilyApiKey) return { generar, sinBusqueda: FALTA_TAVILY };
+  const tavily = new ProveedorTavily(claves.tavilyApiKey, claves.tavilyBaseUrl ?? TAVILY_BASE_URL);
+  return { generar, buscar: crearBuscador({ proveedor: tavily }) };
 }

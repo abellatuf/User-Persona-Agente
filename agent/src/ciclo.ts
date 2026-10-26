@@ -14,9 +14,9 @@ import { verificarEspacio, type ResultadoVerificacion } from './stages/0-verific
 import type { ContextoEtapa, FuncionEtapa, ResultadoEtapa } from './stages/registro.js';
 
 /** Acceso a los modelos para las etapas: un generador (y la búsqueda web), o el motivo por el que no hay. */
-export type Modelos = { generar: Generador; buscar?: Buscador } | { sinModelo: string };
+export type Modelos = { generar: Generador; buscar?: Buscador; sinBusqueda?: string } | { sinModelo: string };
 
-type Acceso = Pick<ContextoEtapa, 'generar' | 'buscar' | 'sinModelo'>;
+type Acceso = Pick<ContextoEtapa, 'generar' | 'buscar' | 'sinModelo' | 'sinBusqueda'>;
 
 export interface Dependencias {
   espacio: EspacioNotion;
@@ -130,7 +130,11 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
     : { sinModelo: 'Esta ejecución no tiene acceso a modelos de lenguaje.' };
   const acceso: Acceso =
     'generar' in modelos
-      ? { generar: modelos.generar, ...(modelos.buscar ? { buscar: modelos.buscar } : {}) }
+      ? {
+          generar: modelos.generar,
+          ...(modelos.buscar ? { buscar: modelos.buscar } : {}),
+          ...(modelos.sinBusqueda ? { sinBusqueda: modelos.sinBusqueda } : {}),
+        }
       : { sinModelo: modelos.sinModelo };
 
   const solicitudes: ResumenEjecucion['solicitudes'] = [];

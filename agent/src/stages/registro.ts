@@ -10,10 +10,12 @@ export interface ContextoEtapa {
   espacio: EspacioNotion;
   /** Acceso a los modelos. Ausente si faltan las claves o los modelos de Configuración no son válidos. */
   generar?: Generador;
-  /** Búsqueda web con Google (solo Gemini). Ausente en los mismos casos que `generar`. */
+  /** Búsqueda web (Tavily). Ausente si falta su clave o no hay modelo. */
   buscar?: Buscador;
   /** Por qué no hay modelo disponible, para explicarlo en Ejecuciones. */
   sinModelo?: string;
+  /** Por qué no hay búsqueda web (por ejemplo, falta TAVILY_API_KEY). */
+  sinBusqueda?: string;
 }
 
 export interface ResultadoEtapa {

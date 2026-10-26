@@ -3,7 +3,7 @@ import { ZONA_HORARIA } from '../../config.js';
 import { leerPaginaWeb, type OpcionesFuentes, type PaginaLeida } from '../../fuentes/index.js';
 import { claves, normalizarUrl } from '../../guards/claves.js';
 import { ocultarDatosPersonales } from '../../guards/datos-personales.js';
-import { ErrorBusqueda, ErrorGeneracion, notasDeGeneracion, type Generador } from '../../llm/index.js';
+import { ErrorBusqueda, ErrorGeneracion, notasDeBusqueda, notasDeGeneracion, type Generador } from '../../llm/index.js';
 import type { FuenteEncontrada } from '../../llm/tipos.js';
 import type { FilaContexto } from '../../notion/espacio.js';
 import * as p from '../../notion/propiedades.js';
@@ -15,7 +15,8 @@ import type { ContextoEtapa, FuncionEtapa, ResultadoEtapa } from '../registro.js
 /**
  * Etapa 3: relevamiento web (H6, HU-07, RNF-11).
  *
- * 1. Busca con Gemini y Google Search, por tema. Las URL salen de los metadatos de la búsqueda.
+ * 1. El modelo arma una consulta por tema y el buscador (Tavily) la busca. Las URL salen
+ *    de la respuesta del buscador, no del texto del modelo (decisión A).
  * 2. Abre cada URL y se queda con la dirección final; descarta las que no se pueden leer.
  * 3. Le pide al modelo un hallazgo y una cita textual por página, y verifica la cita por código.
  * 4. Guarda hasta 15 evidencias públicas, sin repetir las URL ya guardadas.
@@ -28,6 +29,8 @@ const MAX_PAGINAS = 20;
 const PAGINAS_POR_LLAMADA = 5;
 const MAX_CARACTERES_PAGINA = 20_000;
 const SIN_MODELO = 'Ninguno';
+/** Largo máximo de una consulta: es una búsqueda, no un prompt. */
+const MAX_CARACTERES_CONSULTA = 200;
 
 export const TEMAS = [
   { clave: 'usuarios', nombre: 'Usuarios y problemas', busca: 'quiénes tienen el problema que resuelve este producto y qué dicen de ese problema' },
@@ -38,6 +41,10 @@ export const TEMAS = [
 
 const NOMBRES_TEMAS = TEMAS.map((t) => t.nombre);
 
+export const esquemaConsultas = z.object({
+  consultas: z.array(z.object({ tema: z.string(), consulta: z.string() })),
+});
+
 export const esquemaHallazgos = z.object({
   hallazgos: z.array(z.object({ fuente: z.string(), hallazgo: z.string(), cita: z.string(), tema: z.string() })),
 });
@@ -47,20 +54,35 @@ function describirContexto(contexto: FilaContexto): string {
   return [`Nombre: ${contexto.titulo}`, ...campos].join('\n');
 }
 
-function pedidoDeBusqueda(contexto: FilaContexto, tema: (typeof TEMAS)[number], idioma: string) {
-  return {
-    sistema: [
-      'Sos un asistente de investigación de usuarios. Buscás información pública y verificable en la web.',
-      'Preferí fuentes con datos o testimonios concretos: estudios, notas periodísticas, foros, reseñas y sitios de las alternativas.',
-      `Respondé con un resumen breve en ${idioma}. Lo importante son las fuentes que consultes.`,
-    ].join('\n'),
-    usuario: [
-      'Producto sobre el que hay que buscar (contexto confirmado por el PM):',
-      describirContexto(contexto),
-      '',
-      `Tema: ${tema.nombre}. Buscá ${tema.busca}. Si el contexto indica un país o mercado, priorizá fuentes de ese lugar.`,
-    ].join('\n'),
-  };
+const TAREA_CONSULTAS = [
+  'Vas a preparar búsquedas web sobre el producto del contexto, para conocer a sus usuarios y su mercado.',
+  'Escribí una consulta de búsqueda para cada uno de estos temas:',
+  ...TEMAS.map((t) => `- ${t.nombre}: ${t.busca}.`),
+  'Cada consulta es lo que alguien escribiría en un buscador: de 4 a 12 palabras, sin comillas ni operadores.',
+  'Describí el problema y el tipo de usuario con palabras comunes; no uses el nombre del producto, que puede no existir en la web.',
+  'Si el contexto indica un país o mercado, incluilo en la consulta.',
+  `Devolvé "tema" con el nombre exacto del tema (${NOMBRES_TEMAS.join(', ')}) y "consulta".`,
+].join('\n');
+
+/** Pide una consulta por tema. Devuelve, en el orden de TEMAS, solo las que vinieron bien. */
+async function armarConsultas(generar: Generador, contexto: FilaContexto, idioma: string, notas: string[]) {
+  const mensajes = armarPrompt({
+    tarea: TAREA_CONSULTAS,
+    datos: [{ fuente: 'Contexto del producto (confirmado por el PM)', contenido: describirContexto(contexto) }],
+    idioma,
+    esquema: esquemaConsultas,
+  });
+  const generado = await generar({ mensajes, esquema: esquemaConsultas });
+  const consultas: Array<{ tema: (typeof TEMAS)[number]; consulta: string }> = [];
+  for (const tema of TEMAS) {
+    const consulta = generado.datos.consultas.find((c) => c.tema.trim() === tema.nombre)?.consulta.trim() ?? '';
+    if (!consulta || consulta.length > MAX_CARACTERES_CONSULTA) {
+      notas.push(`Búsqueda «${tema.nombre}»: el modelo no devolvió una consulta válida, se saltea.`);
+      continue;
+    }
+    consultas.push({ tema, consulta });
+  }
+  return { consultas, proveedorModelo: generado.proveedorModelo, notas: notasDeGeneracion(generado) };
 }
 
 const TAREA_EXTRACCION = [
@@ -98,13 +120,15 @@ export function crearRelevarWeb(opciones: OpcionesRelevarWeb = {}): FuncionEtapa
   const reloj = opciones.reloj ?? (() => new Date());
   const opcionesFuentes: OpcionesFuentes = opciones.permitirLocal ? { permitirLocal: true } : {};
 
-  return async ({ espacio, generar, buscar, sinModelo }: ContextoEtapa): Promise<ResultadoEtapa> => {
-    const motivoSinModelo = sinModelo ?? 'No hay un modelo de lenguaje disponible para esta ejecución.';
+  return async ({ espacio, generar, buscar, sinModelo, sinBusqueda }: ContextoEtapa): Promise<ResultadoEtapa> => {
     if (!buscar || !generar) {
+      const motivo = !generar
+        ? (sinModelo ?? 'No hay un modelo de lenguaje disponible para esta ejecución.')
+        : (sinBusqueda ?? 'No hay un buscador web disponible para esta ejecución.');
       return {
         resultado: 'Incompleta',
         notas: ['No se pudo buscar en la web: la síntesis va a aclarar que no hay evidencia pública.'],
-        errores: [motivoSinModelo],
+        errores: [motivo],
         proveedorModelo: SIN_MODELO,
       };
     }
@@ -119,21 +143,38 @@ export function crearRelevarWeb(opciones: OpcionesRelevarWeb = {}): FuncionEtapa
     const proveedores = new Set<string>();
     let incompleta = false;
 
-    // 1. Buscar por tema.
+    // 1. Armar una consulta por tema y buscarla.
+    let consultas: Awaited<ReturnType<typeof armarConsultas>>['consultas'];
+    try {
+      const armadas = await armarConsultas(generar, contexto, idioma, notas);
+      proveedores.add(armadas.proveedorModelo);
+      notasModelo.push(...armadas.notas);
+      consultas = armadas.consultas;
+    } catch (e) {
+      if (!(e instanceof ErrorGeneracion)) throw e;
+      return {
+        resultado: 'Incompleta',
+        notas: ['Relevamiento incompleto: no se pudieron armar las consultas, así que no se buscó nada.', ...notasDeGeneracion(e)],
+        errores: [`Consultas de búsqueda: ${e.message}`],
+        proveedorModelo: SIN_MODELO,
+      };
+    }
+    if (consultas.length < TEMAS.length) incompleta = true;
+
     const encontradas: FuenteEncontrada[] = [];
-    for (const tema of TEMAS) {
+    for (const { tema, consulta } of consultas) {
       try {
-        const r = await buscar(pedidoDeBusqueda(contexto, tema, idioma));
+        const r = await buscar(consulta);
         proveedores.add(r.proveedorModelo);
         encontradas.push(...r.fuentes);
-        notas.push(`Búsqueda «${tema.nombre}»: ${r.fuentes.length} fuente(s).`);
-        notasModelo.push(...notasDeGeneracion(r));
+        notas.push(`Búsqueda «${tema.nombre}» («${consulta}»): ${r.fuentes.length} fuente(s).`);
+        notasModelo.push(...notasDeBusqueda(r));
       } catch (e) {
         if (!(e instanceof ErrorBusqueda)) throw e;
         incompleta = true;
         errores.push(`Búsqueda «${tema.nombre}»: ${e.message}`);
-        notasModelo.push(...notasDeGeneracion(e));
-        // Sin cuota, sin clave o sin el modelo, las demás búsquedas también van a fallar.
+        notasModelo.push(...notasDeBusqueda(e));
+        // Sin créditos o sin clave, las demás búsquedas también van a fallar.
         if (['limite', 'credencial', 'modelo'].includes(e.tipo)) {
           notas.push('Se cortaron las búsquedas que faltaban: el problema afecta a todas.');
           break;

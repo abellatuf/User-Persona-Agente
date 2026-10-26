@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { ejecutarAgente } from '../src/ciclo.js';
-import { BASES } from '../src/config.js';
+import { BASES, FALTA_TAVILY, leerClavesModelos } from '../src/config.js';
 import { crearBuscador, ErrorBusqueda, type Buscador } from '../src/llm/buscar.js';
-import { ProveedorGemini } from '../src/llm/gemini.js';
 import { crearGenerador } from '../src/llm/generar.js';
-import { ErrorModelo, type FuenteEncontrada, type Mensajes } from '../src/llm/tipos.js';
+import { crearModelos } from '../src/llm/index.js';
+import { ProveedorTavily, RESULTADOS_POR_CONSULTA } from '../src/llm/tavily.js';
+import { ErrorModelo, type FuenteEncontrada } from '../src/llm/tipos.js';
 import { crearRelevarWeb, MAX_FUENTES, TEMAS } from '../src/stages/3-relevar-web/index.js';
 import { ETAPAS } from '../src/stages/registro.js';
 import { ApiModeloFalsa, ProveedorFalso, respuesta } from './apoyo/api-modelo-falsa.js';
@@ -27,22 +28,19 @@ const FRASE_C = 'Un tercio de los clubes de barrio declara atrasos en el cobro d
 
 /** Buscador falso: devuelve, en orden, las fuentes o el error programados para cada búsqueda. */
 function buscadorFalso(pasos: Array<FuenteEncontrada[] | ErrorBusqueda>) {
-  const recibidas: Mensajes[] = [];
-  const buscar: Buscador = async (mensajes) => {
-    recibidas.push(mensajes);
+  const recibidas: string[] = [];
+  const buscar: Buscador = async (consulta) => {
+    recibidas.push(consulta);
     const paso = pasos.shift() ?? [];
     if (paso instanceof ErrorBusqueda) throw paso;
-    return {
-      fuentes: paso,
-      proveedorModelo: 'Gemini · gemini-x',
-      intentos: [{ proveedor: 'Gemini', modelo: 'gemini-x', resultado: 'ok' }],
-      tokens: { entrada: 10, salida: 5, total: 15 },
-    };
+    return { fuentes: paso, proveedorModelo: 'Tavily', intentos: [{ proveedor: 'Tavily', modelo: 'búsqueda básica', resultado: 'ok' }] };
   };
   return { buscar, recibidas };
 }
 
-const sinCuota = () => new ErrorBusqueda('La búsqueda web no está disponible: Gemini respondió 429', 'limite', [], { entrada: 0, salida: 0, total: 0 });
+/** Respuesta del modelo con una consulta por tema. */
+const consultasOk = { consultas: TEMAS.map((t) => ({ tema: t.nombre, consulta: `consulta ${t.clave}` })) };
+const sinCuota = () => new ErrorBusqueda('La búsqueda web no está disponible: Tavily respondió 432: plan limit', 'limite', []);
 const hallazgo = (fuente: string, cita: string, tema = 'Usuarios y problemas') => ({ fuente, hallazgo: 'Aporta algo concreto.', cita, tema });
 
 describe('etapa 3: relevar la web (H6)', () => {
@@ -57,10 +55,10 @@ describe('etapa 3: relevar la web (H6)', () => {
   });
   afterAll(() => servidor.detener());
 
-  function preparar(busquedas: Array<FuenteEncontrada[] | ErrorBusqueda>, extracciones: unknown[] = []) {
+  function preparar(busquedas: Array<FuenteEncontrada[] | ErrorBusqueda>, extracciones: unknown[] = [], consultas: unknown = consultasOk) {
     const espacio = new EspacioFalso();
     const { buscar, recibidas } = buscadorFalso(busquedas);
-    const gemini = new ProveedorFalso('Gemini', 'gemini-x', extracciones.map((e) => respuesta(e)));
+    const gemini = new ProveedorFalso('Gemini', 'gemini-x', [consultas, ...extracciones].map((e) => respuesta(e)));
     const generar = crearGenerador({ principal: gemini, esperar: sinEspera });
     const correr = () => etapa({ solicitud: { id: 's', titulo: 's', etapa: 'Relevar la web', opciones: '' }, espacio, generar, buscar });
     const evidencia = () => espacio.notion.filasDe(BASES.evidencia).map(([, p]) => p.properties);
@@ -69,8 +67,8 @@ describe('etapa 3: relevar la web (H6)', () => {
 
   const fuente = (ruta: string, titulo = '') => ({ url: servidor.url(ruta), titulo });
 
-  it('busca por tema, verifica cada URL y guarda la evidencia pública con su cita', async () => {
-    const { correr, evidencia, recibidas } = preparar(
+  it('arma una consulta por tema, verifica cada URL y guarda la evidencia pública con su cita', async () => {
+    const { correr, evidencia, recibidas, gemini } = preparar(
       [[fuente('/a', 'a.com'), fuente('/no-existe', 'roto.com')], [fuente('/redir', 'c.com')], [], []],
       [{ hallazgos: [hallazgo('F1', 'cobran sus abonos mensuales con planillas'), hallazgo('F2', 'declara atrasos en el cobro de la cuota social', 'Mercado')] }],
     );
@@ -78,7 +76,12 @@ describe('etapa 3: relevar la web (H6)', () => {
     const r = await correr();
 
     expect(r.resultado).toBe('Lista');
-    expect(recibidas).toHaveLength(TEMAS.length);
+    // El buscador recibe las consultas del modelo; las URL salen del buscador.
+    expect(recibidas).toEqual(TEMAS.map((t) => `consulta ${t.clave}`));
+    const pedidoConsultas = gemini.recibidas[0]!;
+    expect(`${pedidoConsultas.sistema}\n${pedidoConsultas.usuario}`).toContain('Escribí una consulta de búsqueda para cada uno de estos temas');
+    expect(r.notas).toContain('Búsqueda «Usuarios y problemas» («consulta usuarios»): 2 fuente(s).');
+    expect(r.proveedorModelo).toBe('Gemini · modelo-real / Tavily');
     const ev = evidencia();
     expect(ev).toHaveLength(2);
     expect(textoDe(ev[0]!['Título'])).toBe('Estudio A');
@@ -116,17 +119,57 @@ describe('etapa 3: relevar la web (H6)', () => {
     expect(espacio.notion.escrituras()).toEqual([]);
   });
 
-  it('con la cuota agotada, corta las búsquedas, queda Incompleta y no llama al modelo para extraer (T6.4)', async () => {
+  it('sin la clave del buscador, queda Incompleta con el motivo y no llama al modelo', async () => {
+    const espacio = new EspacioFalso();
+    const gemini = new ProveedorFalso('Gemini', 'gemini-x', []);
+
+    const r = await etapa({
+      solicitud: { id: 's', titulo: 's', etapa: 'Relevar la web', opciones: '' },
+      espacio,
+      generar: crearGenerador({ principal: gemini, esperar: sinEspera }),
+      sinBusqueda: FALTA_TAVILY,
+    });
+
+    expect(r).toMatchObject({ resultado: 'Incompleta', errores: [FALTA_TAVILY] });
+    expect(gemini.recibidas).toHaveLength(0);
+    expect(espacio.notion.escrituras()).toEqual([]);
+  });
+
+  it('si no se pueden armar las consultas, queda Incompleta y no busca nada', async () => {
+    const { correr, recibidas, evidencia } = preparar([], [{ otra: 'cosa' }], { otra: 'cosa' });
+
+    const r = await correr();
+
+    expect(r.resultado).toBe('Incompleta');
+    expect(recibidas).toHaveLength(0);
+    expect(evidencia()).toHaveLength(0);
+    expect(r.errores[0]).toMatch(/^Consultas de búsqueda: Ningún modelo/);
+  });
+
+  it('un tema sin consulta válida se saltea y la etapa queda Incompleta', async () => {
+    const consultas = { consultas: [{ tema: 'Usuarios y problemas', consulta: 'cobro de cuotas en clubes de barrio Argentina' }, { tema: 'Mercado', consulta: '' }] };
+    const { correr, recibidas } = preparar([[], []], [], consultas);
+
+    const r = await correr();
+
+    expect(recibidas).toEqual(['cobro de cuotas en clubes de barrio Argentina']);
+    expect(r.resultado).toBe('Incompleta');
+    expect(r.notas).toContain('Búsqueda «Mercado»: el modelo no devolvió una consulta válida, se saltea.');
+  });
+
+  it('sin créditos en el buscador, corta las búsquedas, queda Incompleta y no llama al modelo para extraer (T6.4)', async () => {
     const { correr, recibidas, gemini, evidencia } = preparar([sinCuota()]);
 
     const r = await correr();
 
     expect(r.resultado).toBe('Incompleta');
     expect(recibidas).toHaveLength(1);
-    expect(gemini.recibidas).toHaveLength(0);
+    // Solo la llamada que arma las consultas.
+    expect(gemini.recibidas).toHaveLength(1);
     expect(evidencia()).toHaveLength(0);
-    expect(r.errores[0]).toMatch(/Búsqueda «Usuarios y problemas».*429/);
+    expect(r.errores[0]).toMatch(/Búsqueda «Usuarios y problemas».*432/);
     expect(r.notas[0]).toMatch(/no se guardó evidencia pública/);
+    expect(r.notas).toContain('Se cortaron las búsquedas que faltaban: el problema afecta a todas.');
   });
 
   it('si la cuota se agota a mitad de camino, guarda lo que encontró y queda Incompleta', async () => {
@@ -160,7 +203,8 @@ describe('etapa 3: relevar la web (H6)', () => {
     const r = await correr();
 
     expect(r.resultado).toBe('Lista');
-    expect(gemini.recibidas).toHaveLength(0);
+    // Solo la llamada que arma las consultas: la página ya guardada no se manda a extraer.
+    expect(gemini.recibidas).toHaveLength(1);
     expect(r.notas).toContain(`Ya estaba guardada, se saltea: ${servidor.url('/a')}`);
   });
 
@@ -189,7 +233,7 @@ describe('etapa 3: relevar la web (H6)', () => {
     await ejecutarAgente({
       espacio,
       etapas: { ...ETAPAS, 'Relevar la web': etapa },
-      modelos: () => ({ generar: crearGenerador({ principal: new ProveedorFalso('Gemini', 'g', []), esperar: sinEspera }), buscar }),
+      modelos: () => ({ generar: crearGenerador({ principal: new ProveedorFalso('Gemini', 'g', [respuesta(consultasOk)]), esperar: sinEspera }), buscar }),
       log: silencio,
     });
 
@@ -198,67 +242,97 @@ describe('etapa 3: relevar la web (H6)', () => {
   });
 });
 
-describe('búsqueda con Gemini y Google Search', () => {
+describe('buscador de Tavily', () => {
   const api = new ApiModeloFalsa();
-  let gemini: ProveedorGemini;
+  let tavily: ProveedorTavily;
 
   beforeAll(async () => {
-    gemini = new ProveedorGemini('clave-gemini', 'gemini-de-prueba', await api.iniciar());
+    tavily = new ProveedorTavily('tvly-prueba', await api.iniciar());
   });
   afterAll(() => api.detener());
   beforeEach(() => {
     api.peticiones = [];
   });
 
-  it('pide la herramienta de búsqueda y toma las fuentes de los metadatos, no del texto', async () => {
+  it('manda la consulta con la clave en la cabecera y toma las URL de los resultados', async () => {
     api.responder({
       estado: 200,
       cuerpo: {
-        candidates: [
-          {
-            content: { parts: [{ text: 'Resumen que menciona https://inventada.example' }] },
-            finishReason: 'STOP',
-            groundingMetadata: { groundingChunks: [{ web: { uri: 'https://redireccion.example/1', title: 'diario.com' } }, { retrievedContext: {} }] },
-          },
+        query: 'cobro de cuotas',
+        answer: 'Un resumen que menciona https://inventada.example',
+        results: [
+          { url: 'https://diario.example/nota', title: ' Nota del diario ', content: 'extracto', score: 0.9 },
+          { url: 'https://foro.example/hilo', content: 'otro extracto', score: 0.5 },
         ],
-        usageMetadata: { promptTokenCount: 50, candidatesTokenCount: 20, totalTokenCount: 70 },
-        modelVersion: 'gemini-de-prueba-001',
       },
     });
 
-    const r = await gemini.buscar({ sistema: 'reglas', usuario: 'tema' });
+    const fuentes = await tavily.buscar('cobro de cuotas');
 
-    expect(r).toEqual({ fuentes: [{ url: 'https://redireccion.example/1', titulo: 'diario.com' }], modelo: 'gemini-de-prueba-001', tokens: { entrada: 50, salida: 20, total: 70 } });
-    const cuerpo = api.peticiones[0]!.cuerpo as Record<string, unknown>;
-    expect(cuerpo['tools']).toEqual([{ google_search: {} }]);
-    expect(cuerpo['generationConfig']).not.toHaveProperty('responseMimeType');
+    expect(fuentes).toEqual([
+      { url: 'https://diario.example/nota', titulo: 'Nota del diario' },
+      { url: 'https://foro.example/hilo', titulo: '' },
+    ]);
+    const p = api.peticiones[0]!;
+    expect(p.ruta).toBe('/search');
+    expect(p.cabeceras['authorization']).toBe('Bearer tvly-prueba');
+    expect(p.cuerpo).toEqual({ query: 'cobro de cuotas', search_depth: 'basic', max_results: RESULTADOS_POR_CONSULTA, topic: 'general' });
+  });
+
+  it('clasifica clave inválida, créditos agotados y límite de pedidos', async () => {
+    api.responder(
+      { estado: 401, cuerpo: { detail: { error: 'Unauthorized: missing or invalid API key.' } } },
+      { estado: 432, cuerpo: { detail: { error: 'This request exceeds your plan\'s set usage limit.' } } },
+      { estado: 429, cuerpo: { detail: 'Too many requests' }, cabeceras: { 'retry-after': '4' } },
+    );
+
+    const credencial = await tavily.buscar('x').catch((e: unknown) => e as ErrorModelo);
+    const creditos = await tavily.buscar('x').catch((e: unknown) => e as ErrorModelo);
+    const limite = await tavily.buscar('x').catch((e: unknown) => e as ErrorModelo);
+
+    expect(credencial).toMatchObject({ tipo: 'credencial', message: 'Tavily respondió 401: Unauthorized: missing or invalid API key.' });
+    expect(creditos).toMatchObject({ tipo: 'limite', message: expect.stringMatching(/^Tavily respondió 432: This request exceeds/) });
+    expect(limite).toMatchObject({ tipo: 'limite', opciones: { estadoHttp: 429, esperaMs: 4000 } });
   });
 
   it('el buscador reintenta ante un límite de uso, oculta los datos personales y, si sigue fallando, avisa el tipo de error', async () => {
-    const recibidos: Mensajes[] = [];
+    const recibidas: string[] = [];
     let llamadas = 0;
     const proveedor = {
-      nombre: 'Gemini' as const,
-      modelo: 'g',
-      buscar: async (m: Mensajes) => {
-        recibidos.push(m);
+      nombre: 'Tavily',
+      modelo: 'búsqueda básica',
+      buscar: async (consulta: string) => {
+        recibidas.push(consulta);
         llamadas++;
         if (llamadas === 1) throw new ErrorModelo('429', 'limite');
-        return { fuentes: [{ url: 'https://x.example', titulo: 'x' }], modelo: 'g-001', tokens: { entrada: 1, salida: 1, total: 2 } };
+        return [{ url: 'https://x.example', titulo: 'x' }];
       },
     };
     const buscar = crearBuscador({ proveedor, esperar: sinEspera });
 
-    const r = await buscar({ sistema: 's', usuario: 'Escribile a ana@ejemplo.com' });
+    const r = await buscar('cobros de ana@ejemplo.com');
 
     expect(r.fuentes).toHaveLength(1);
+    expect(r.proveedorModelo).toBe('Tavily');
     expect(r.intentos.map((i) => i.resultado)).toEqual(['error: limite', 'ok']);
-    expect(recibidos[0]!.usuario).toBe('Escribile a [CORREO]');
+    expect(recibidas[0]).toBe('cobros de [CORREO]');
 
     const sinClave = crearBuscador({
-      proveedor: { ...proveedor, buscar: async () => Promise.reject(new ErrorModelo('403', 'credencial')) },
+      proveedor: { ...proveedor, buscar: async () => Promise.reject(new ErrorModelo('401', 'credencial')) },
       esperar: sinEspera,
     });
-    await expect(sinClave({ sistema: 's', usuario: 'u' })).rejects.toMatchObject({ name: 'ErrorBusqueda', tipo: 'credencial' });
+    await expect(sinClave('u')).rejects.toMatchObject({ name: 'ErrorBusqueda', tipo: 'credencial' });
+  });
+
+  it('la clave de Tavily es opcional: sin ella, hay modelo pero no búsqueda, con el motivo', () => {
+    const base = { NOTION_TOKEN: 'n', GEMINI_API_KEY: 'g', OPENROUTER_API_KEY: 'o' };
+    expect(leerClavesModelos({ ...base, TAVILY_API_KEY: '' })).not.toHaveProperty('tavilyApiKey');
+    expect(leerClavesModelos({ ...base, TAVILY_API_KEY: 'tvly-x' })).toMatchObject({ tavilyApiKey: 'tvly-x' });
+
+    const sin = crearModelos({ geminiApiKey: 'g', openrouterApiKey: 'o' }, {});
+    expect(sin).toMatchObject({ sinBusqueda: FALTA_TAVILY });
+    expect(sin).not.toHaveProperty('buscar');
+    const con = crearModelos({ geminiApiKey: 'g', openrouterApiKey: 'o', tavilyApiKey: 'tvly-x' }, {});
+    expect(con).toHaveProperty('buscar');
   });
 });

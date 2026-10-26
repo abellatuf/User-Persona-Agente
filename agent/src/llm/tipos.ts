@@ -34,17 +34,15 @@ export interface FuenteEncontrada {
   titulo: string;
 }
 
-export interface RespuestaBusqueda {
-  fuentes: FuenteEncontrada[];
-  modelo: string;
-  tokens: Tokens;
-}
-
-/** Proveedor que puede buscar en la web (solo Gemini, con Google Search). */
+/**
+ * Buscador web, separado del modelo de lenguaje (H6, decisión C revisada): recibe una
+ * consulta y devuelve las fuentes que encontró. No usa tokens.
+ */
 export interface ProveedorBusqueda {
-  readonly nombre: NombreProveedor;
+  readonly nombre: string;
+  /** Tipo de búsqueda, para el registro (por ejemplo, «búsqueda básica»). */
   readonly modelo: string;
-  buscar(mensajes: Mensajes): Promise<RespuestaBusqueda>;
+  buscar(consulta: string): Promise<FuenteEncontrada[]>;
 }
 
 export type NombreProveedor = 'Gemini' | 'OpenRouter';
