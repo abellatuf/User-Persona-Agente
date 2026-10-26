@@ -36,5 +36,6 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 
 ## Pendiente
 
+- **Aviso de privacidad del H6:** sumar a la descripción de la base *Contexto del producto* que las consultas de búsqueda de *Relevar la web* se envían a Tavily. Lo hace Abel a mano, porque el MCP de Notion no muestra esa descripción y pisarla sin verla borraría el aviso del H4.
 - **Formularios:** investigación propia sobre Evidencia.
 - **Vistas útiles:** por ejemplo, Solicitudes pendientes y personas por estado.

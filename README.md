@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H5 ✅, H6 con el código listo y la demo pendiente |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H5 ✅, H6 con la búsqueda pasada a Tavily y la demo pendiente |
 
 ---
 
@@ -59,6 +59,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | Plantilla de Notion | [User-Persona Agente](https://app.notion.com/p/3fa245a35f2b81f2afcec088c81678a4) (privada), con 10 bases. El detalle y los IDs están en [docs/notion-plantilla.md](docs/notion-plantilla.md). |
 | Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente usa el servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) con el token de la integración *User-Persona Agente* (secreto `NOTION_TOKEN`). |
 | Modelos | Gemini (principal) y OpenRouter (respaldo). Se eligen desde la página Configuración de Notion: hoy `gemini-3.6-flash` y `openrouter/free`. Si los campos quedan vacíos, se usan los valores por defecto del código (`gemini-3.8-flash` y `openrouter/free`). |
+| Buscador web | **Tavily**, plan gratuito *Researcher* (1.000 créditos por mes, sin tarjeta), cuenta de Abel. Secreto `TAVILY_API_KEY`. Solo lo usa la etapa *Relevar la web* (H6): 4 búsquedas básicas por corrida. |
 | Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (programado a las 15 h de Argentina, y manual), [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio) y [`probar-modelos.yml`](.github/workflows/probar-modelos.yml) (prueba de modelos, solo manual). |
 
 ### Bitácora de decisiones
@@ -120,16 +121,19 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-25 | 7 | **Se cierra el H5.** El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). |
 | 2026-10-26 | 7 | Diseño del **H6** aprobado: 4 búsquedas por tema (usuarios y problemas, cómo lo resuelven hoy, mercado, opiniones) con Gemini y Google Search; **las URL salen de los metadatos de la búsqueda**, no del texto del modelo; cada URL se abre y se guarda la dirección final; **cita verificada por código** en la página (decisión B); hasta 15 evidencias públicas por corrida y **las URL ya guardadas se saltean** (decisión D). **Si Gemini no puede buscar, la etapa queda Incompleta** (decisión C): el respaldo de OpenRouter no tiene búsqueda gratuita (su complemento web se paga, contra el RNF-01; queda como opción futura). |
 | 2026-10-26 | 7 | Código del H6 en `main`: búsqueda con Google en el adaptador de Gemini, buscador con reintentos, etapa *Relevar la web* y lectura de las URL de la evidencia pública ya guardada. Al implementar: una etapa *Incompleta* deja la solicitud en *Lista* (no en *Error*), con el motivo en Ejecuciones (T6.4: no falla el resto); las páginas van al modelo de a 5, recortadas a 20.000 caracteres; se leen hasta 20 páginas para quedarse con hasta 15. 200 pruebas. Falta la demo de Abel. |
+| 2026-10-26 | 7 | Primer intento de la demo del H6: la búsqueda con Google **no funciona en la capa gratuita**. *Relevar la web* quedó *Incompleta* 4 veces, sin tokens ni evidencia y con la solicitud en *Lista*: 429 con `gemini-3.6-flash` ([15:45](https://app.notion.com/p/405245a35f2b81b4ab6cd5e48c30a144) y [16:17](https://app.notion.com/p/405245a35f2b81459383d78ff9333604)) y con `gemini-3.8-flash` ([16:01](https://app.notion.com/p/405245a35f2b81679ff5edd4f7540d97)), y 404 con `gemini-2.5-flash` ([16:20](https://app.notion.com/p/405245a35f2b812c817addc1839f80c8): «no longer available to new users»). La generación sí funciona ([*Prueba de modelos* de las 15:56](https://app.notion.com/p/405245a35f2b81ea868edd4404e9265c)). Causa, según la [página de precios](https://ai.google.dev/gemini-api/docs/pricing): *Grounding with Google Search* figura «Not available» en la capa gratuita de los Gemini 3.x Flash, y solo los 2.5 lo traían gratis. Para diagnosticar, el 429 de Gemini registra el detalle de la cuota cuando Google lo manda (esta vez no lo mandó). *Modelo principal* volvió a `gemini-3.6-flash`. |
+| 2026-10-26 | 7 | Abel **confirma** que una etapa *Incompleta* deja la solicitud en *Lista*, con el motivo en Ejecuciones. |
+| 2026-10-26 | 7 | **Decisión C revisada: buscador separado del modelo, Tavily** (plan gratuito, 1.000 créditos por mes, sin tarjeta). Se evaluaron: facturación de Gemini (unos USD 1 a 3 por mes, pero cobra también la generación de todas las etapas, contra el RNF-01), búsqueda web de Claude con crédito prepago (USD 10 cada 1.000 búsquedas, unos USD 0,05 a 0,08 por corrida con Haiku) y Brave o Exa (crédito mensual, posiblemente con tarjeta). Quedan como mejora futura. Gemini arma una consulta por tema y Tavily la busca: **las URL salen del buscador**, así que la decisión A se mantiene; B y D no cambian. Sin `TAVILY_API_KEY`, solo *Relevar la web* queda *Incompleta*. Abel creó la cuenta y cargó el secreto. |
+| 2026-10-26 | 7 | Código con Tavily en `main`: adaptador nuevo, buscador por consulta, consultas armadas por el modelo y `agente.yml` con el secreto. Se quitó la búsqueda de Gemini, que queda en el historial de git. 206 pruebas. |
 
 ### Próximo paso
 
-**Demo del H6.** Seguí la guía paso a paso de [docs/demo-h6-guia.md](docs/demo-h6-guia.md): pedir *Relevar la web*, revisar la evidencia pública, abrir 3 o 4 fuentes a mano para verificar URL y citas, repetir la etapa sin duplicar y, si querés, probar el caso de cuota agotada.
+**Demo del H6 con Tavily.** Seguí la guía paso a paso de [docs/demo-h6-guia.md](docs/demo-h6-guia.md): revisar el CI, pedir *Relevar la web*, revisar la evidencia pública, abrir 3 o 4 fuentes a mano para verificar URL y citas, repetir la etapa sin duplicar y, si querés, probar el caso sin búsqueda.
 
-El asistente le repite a Abel la guía paso por paso, revisa en Notion cada resultado, documenta las evidencias en la Fase 7 y cierra el H6. Después sigue el **H7: síntesis de personas**, empezando por la propuesta de diseño.
-
-No se pudo verificar desde la sesión si `gemini-3.6-flash` acepta la búsqueda de Google en la capa gratuita ni cuál es su cuota diaria: lo valida la demo.
+El asistente le repite a Abel la guía paso por paso, revisa en Notion cada resultado, documenta las evidencias en la Fase 7 (sección completa del H6, con los intentos fallidos de hoy) y cierra el H6. Después sigue el **H7: síntesis de personas**, empezando por la propuesta de diseño.
 
 Pendientes a tener en cuenta:
+- **Aviso de privacidad:** sumar a la descripción de la base *Contexto del producto* que las consultas de búsqueda se envían a Tavily (el MCP de Notion no muestra esa descripción, así que lo hace Abel a mano).
 - Las divergencias planteadas en la demo del H5 están en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). Se usan en el H7 para verificar que la síntesis las detecte.
 - Las entrevistas de Ingeniería y Negocio las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
