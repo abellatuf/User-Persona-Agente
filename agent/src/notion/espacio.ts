@@ -105,6 +105,8 @@ export interface EspacioNotion {
   leerContextos(): Promise<FilaContexto[]>;
   leerEntrevistas(): Promise<FilaEntrevista[]>;
   leerEquipo(): Promise<FilaMiembro[]>;
+  /** URL de las filas de Evidencia de tipo «Pública» (para no volver a procesarlas). */
+  leerUrlsDeEvidenciaPublica(): Promise<string[]>;
   /** Texto de cada bloque del cuerpo de una página, en orden (los bloques sin texto quedan como ""). */
   leerTextoDelCuerpo(paginaId: string): Promise<string[]>;
   /** Devuelve null si la base no existe o no está compartida con la integración. */
@@ -237,6 +239,15 @@ export class EspacioNotionMcp implements EspacioNotion {
       nombre: p.leerTexto(fila, 'Nombre').trim(),
       rol: p.leerSeleccion(fila, 'Rol'),
     }));
+  }
+
+  async leerUrlsDeEvidenciaPublica(): Promise<string[]> {
+    return (await this.todasLasFilas(BASES.evidencia))
+      .filter((fila) => p.leerSeleccion(fila, 'Tipo') === 'Pública')
+      .flatMap((fila) => {
+        const url = p.leerUrl(fila, 'URL');
+        return url ? [url] : [];
+      });
   }
 
   async leerTextoDelCuerpo(paginaId: string): Promise<string[]> {

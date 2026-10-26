@@ -108,6 +108,11 @@ export class EspacioFalso implements EspacioNotion {
     return this.mcp.leerEquipo();
   }
 
+  async leerUrlsDeEvidenciaPublica() {
+    this.contador.lecturas++;
+    return this.mcp.leerUrlsDeEvidenciaPublica();
+  }
+
   async leerTextoDelCuerpo(id: string) {
     this.contador.lecturas++;
     return this.mcp.leerTextoDelCuerpo(id);
