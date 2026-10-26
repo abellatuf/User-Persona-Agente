@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H5 ✅, H6 con la búsqueda pasada a Tavily y la demo pendiente |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H6 ✅, H7 por diseñar |
 
 ---
 
@@ -125,15 +125,17 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-26 | 7 | Abel **confirma** que una etapa *Incompleta* deja la solicitud en *Lista*, con el motivo en Ejecuciones. |
 | 2026-10-26 | 7 | **Decisión C revisada: buscador separado del modelo, Tavily** (plan gratuito, 1.000 créditos por mes, sin tarjeta). Se evaluaron: facturación de Gemini (unos USD 1 a 3 por mes, pero cobra también la generación de todas las etapas, contra el RNF-01), búsqueda web de Claude con crédito prepago (USD 10 cada 1.000 búsquedas, unos USD 0,05 a 0,08 por corrida con Haiku) y Brave o Exa (crédito mensual, posiblemente con tarjeta). Quedan como mejora futura. Gemini arma una consulta por tema y Tavily la busca: **las URL salen del buscador**, así que la decisión A se mantiene; B y D no cambian. Sin `TAVILY_API_KEY`, solo *Relevar la web* queda *Incompleta*. Abel creó la cuenta y cargó el secreto. |
 | 2026-10-26 | 7 | Código con Tavily en `main`: adaptador nuevo, buscador por consulta, consultas armadas por el modelo y `agente.yml` con el secreto. Se quitó la búsqueda de Gemini, que queda en el historial de git. 206 pruebas. |
+| 2026-10-26 | 7 | Abel agregó a mano el aviso de privacidad de Tavily en la descripción de la base *Contexto del producto*. |
+| 2026-10-26 | 7 | Demo del H6 con Tavily: dos corridas en *Lista* ([16:53](https://app.notion.com/p/405245a35f2b813c8fb4f222b753c795) y [17:12](https://app.notion.com/p/405245a35f2b819c9f70d2813c00a7be)), **22 evidencias públicas** y ninguna repetida: la segunda salteó 2 URL ya guardadas (decisión D) y rechazó 2 citas que no estaban en la página (decisión B). **8 de 8 citas verificadas a mano** (5 el asistente, 3 Abel). Unas 11 de las 22 sirven; casi todas son de empresas que venden una solución, sin voces directas de usuarios. Qobra, Mercado Pago Suscripciones y Recaudo contradicen el campo *Competidores* del contexto. El detalle de la cuota mostró que `gemini-3.6-flash` tiene un **límite de 20 pedidos por día** en la capa gratuita, y OpenRouter respondió en la mitad de las extracciones. El paso 5 se salteó, a pedido de Abel. |
+| 2026-10-26 | 7 | **Se cierra el H6.** El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h6). Las fases 5 y 6 anotan el cambio de la búsqueda a Tavily. |
 
 ### Próximo paso
 
-**Demo del H6 con Tavily.** Seguí la guía paso a paso de [docs/demo-h6-guia.md](docs/demo-h6-guia.md): revisar el CI, pedir *Relevar la web*, revisar la evidencia pública, abrir 3 o 4 fuentes a mano para verificar URL y citas, repetir la etapa sin duplicar y, si querés, probar el caso sin búsqueda.
-
-El asistente le repite a Abel la guía paso por paso, revisa en Notion cada resultado, documenta las evidencias en la Fase 7 (sección completa del H6, con los intentos fallidos de hoy) y cierra el H6. Después sigue el **H7: síntesis de personas**, empezando por la propuesta de diseño.
+**H7: síntesis de personas.** El asistente arranca por la propuesta de diseño, para que Abel la apruebe antes de escribir código.
 
 Pendientes a tener en cuenta:
-- **Aviso de privacidad:** sumar a la descripción de la base *Contexto del producto* que las consultas de búsqueda se envían a Tavily (el MCP de Notion no muestra esa descripción, así que lo hace Abel a mano).
+- **Para el H7:** usar las divergencias de la demo del H5 y la contradicción de *Competidores* del H6 para verificar que la síntesis las detecte; tener en cuenta que la evidencia pública es casi toda de empresas que venden una solución, y que `gemini-3.6-flash` admite solo 20 pedidos por día (el respaldo de OpenRouter cubre el resto).
+- Del H6 quedan tres mejoras, sin tocar código hasta que Abel las apruebe: pasarle a Tavily el país del *Mercado*, sumar voces de usuarios (foros y reseñas) y no reintentar un límite diario de Gemini. El detalle está en la [Fase 7](docs/07-implementacion.md#pendientes-que-salieron-de-la-demo-1).
 - Las divergencias planteadas en la demo del H5 están en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h5). Se usan en el H7 para verificar que la síntesis las detecte.
 - Las entrevistas de Ingeniería y Negocio las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.

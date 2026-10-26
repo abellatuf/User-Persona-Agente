@@ -103,7 +103,7 @@ flowchart LR
 
 | ID | Tarea | Quién | Terminado cuando… | Cubre |
 |----|-------|-------|-------------------|-------|
-| T6.1 | Búsqueda con **Gemini + Google Search** | 🤖 | Devuelve hallazgos con URL | HU-07 |
+| T6.1 | Búsqueda web (planificada con **Gemini + Google Search**; desde el 2026-10-26, con **Tavily**) | 🤖 | Devuelve hallazgos con URL | HU-07 |
 | T6.2 | **Verificar cada URL** antes de guardarla | 🤖 | Las URL que no responden se descartan y se registran | RNF-11 |
 | T6.3 | Guardar la evidencia **pública** con título, fecha y extracto | 🤖 | Hasta 15 fuentes; si hay menos, sigue igual | HU-07 |
 | T6.4 | Manejar la **cuota agotada** | 🤖 | La etapa queda *Incompleta* y no falla el resto | HU-07 |

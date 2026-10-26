@@ -19,7 +19,8 @@ flowchart LR
     NMCP <--> SOL
     NMCP <--> CFG
     NMCP <--> DB
-    AG --> GEM[Gemini + búsqueda de Google]
+    AG --> GEM[Gemini]
+    AG --> TAV[Tavily: búsqueda web]
     AG -. respaldo .-> OR[OpenRouter]
     AG --> URL[Lectura de URLs]
 ```
@@ -31,7 +32,7 @@ flowchart LR
 | Lenguaje | **TypeScript** sobre Node.js (versión LTS) | Es el lenguaje de los otros proyectos de Abel y tiene buenos SDK para MCP y los modelos. |
 | Conexión con Notion | **Cliente MCP** (SDK oficial de MCP para TypeScript) conectado a un **servidor MCP de Notion** que corre dentro de la misma ejecución | Cumple la decisión de la Fase 2 (MCP). Se usa un servidor que funciona con un **token de integración**, porque en GitHub Actions no hay una persona que pueda iniciar sesión. El servidor exacto se confirma al implementar. |
 | Modelo principal | **Gemini** (capa gratuita), modelo de la familia *Flash* | Rápido, con buena calidad para tareas acotadas. El modelo concreto es configuración (RNF-02). |
-| Búsqueda web | **Búsqueda integrada de Gemini** (grounding con Google Search) | Devuelve las fuentes con su URL. Cada URL se verifica abriéndola antes de guardarla. |
+| Búsqueda web | **Tavily** (plan gratuito), separado del modelo. *Cambiado el 2026-10-26: la búsqueda integrada de Gemini no tiene capa gratuita en los modelos 3.x (ver [Fase 7, H6](07-implementacion.md#h6-etapa-3-relevamiento-web)).* | Devuelve las fuentes con su URL. Cada URL se verifica abriéndola antes de guardarla. |
 | Modelo de respaldo | **OpenRouter**, con un modelo gratuito | Usa una API compatible con OpenAI, así que el adaptador es simple. |
 | Validación | **Zod** | Define los formatos de respuesta del modelo y los valida antes de escribir. |
 | Pruebas | **Vitest** | Pruebas unitarias de las reglas en código. |
@@ -208,7 +209,7 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 
 ## Seguridad
 
-- **Claves:** `NOTION_TOKEN`, `GEMINI_API_KEY` y `OPENROUTER_API_KEY` se guardan como **secretos de GitHub Actions**. Nunca se suben al repositorio.
+- **Claves:** `NOTION_TOKEN`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY` y, desde el H6, `TAVILY_API_KEY` se guardan como **secretos de GitHub Actions**. Nunca se suben al repositorio.
 - **Notion:** la integración se comparte **solo con la página del proyecto** (RNF-10).
 - **Inyección de instrucciones:** el contenido de documentos y páginas web es **dato, no instrucción**. Además, cada etapa tiene herramientas limitadas y el código bloquea las escrituras prohibidas, así que aunque una fuente intente manipular al modelo, el daño posible es acotado.
 - **Repositorio:** queda **privado**. No hace falta que sea público para desarrollar ni para ejecutar el agente. Si en el futuro se hace público para el portfolio, las ejecuciones desde *forks* no reciben los secretos, así que nadie de afuera puede usar las claves.
@@ -218,6 +219,6 @@ Cada caso de prueba guarda en `evals/casos/` las entradas (spec del producto y r
 
 - [x] ~~**Lenguaje**~~: TypeScript.
 - [x] ~~**Ejecución**~~: panel de Solicitudes en Notion + GitHub Actions programado una vez por día, a las 15 h de Argentina, con pausa desde Notion.
-- [x] ~~**Búsqueda web**~~: búsqueda integrada de Gemini.
+- [x] ~~**Búsqueda web**~~: búsqueda integrada de Gemini. Reemplazada por Tavily el 2026-10-26 (decisión C revisada del H6).
 - [x] ~~**Repositorio**~~: el código va en este mismo repo, que **queda privado**.
 - [x] ~~**Pausa**~~: desde la casilla *Agente activo* de la página Configuración de Notion, o desactivando el workflow en GitHub. El paso a paso está más arriba.

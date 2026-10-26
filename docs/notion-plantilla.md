@@ -33,9 +33,9 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 - **Entrevistas** (H5, 2026-10-24): una propiedad de texto por pregunta del formulario base, con su código adelante (*P01 · ¿Quiénes creés…?* a *P13 · …*), más *Nombre del miembro* y *Rol del miembro*. Se borró *Respuestas del formulario base*, que no se usaba. La descripción de la base explica el circuito y avisa que las respuestas se envían a un proveedor de IA gratuito. El agente lee cada respuesta por el código de la pregunta, así que el texto de la pregunta se puede ajustar si se actualiza también `agent/src/stages/2-repreguntar/formulario.ts`.
 - **Formulario *Entrevista base*** (H5, 2026-10-24): vista de formulario sobre Entrevistas, creada con el MCP de Notion. Desde el MCP no se pueden marcar preguntas como obligatorias ni agregar la descripción del formulario: se hace a mano desde Notion (ver [demo-h5-guia.md](demo-h5-guia.md), paso 1).
 - **Repreguntas en el cuerpo de la página** (H5, 2026-10-24): el servidor MCP de Notion solo escribe párrafos, así que cada repregunta usa renglones con marcas fijas (❓ y ✍️). El miembro responde debajo de «✍️ Tu respuesta:» y no tiene que borrar las marcas.
+- **Aviso de privacidad del H6** (2026-10-26): Abel agregó a mano, en la descripción de la base Contexto del producto, que las consultas de búsqueda de *Relevar la web* se arman con el contexto y se envían a Tavily, con los datos personales ocultos. Se hizo a mano porque el MCP de Notion no muestra esa descripción y pisarla sin verla borraría el aviso del H4.
 
 ## Pendiente
 
-- **Aviso de privacidad del H6:** sumar a la descripción de la base *Contexto del producto* que las consultas de búsqueda de *Relevar la web* se envían a Tavily. Lo hace Abel a mano, porque el MCP de Notion no muestra esa descripción y pisarla sin verla borraría el aviso del H4.
 - **Formularios:** investigación propia sobre Evidencia.
 - **Vistas útiles:** por ejemplo, Solicitudes pendientes y personas por estado.

@@ -12,7 +12,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H3. Capa de modelos | ✅ Cerrado |
 | H4. Agente de contexto | ✅ Cerrado |
 | H5. Entrevistas | ✅ Cerrado |
-| H6. Web | ⚪ Pendiente |
+| H6. Web | ✅ Cerrado |
 | H7. Síntesis | ⚪ Pendiente |
 | H8. Validación y persona viva | ⚪ Pendiente |
 | H9. Evaluaciones y aceptación | ⚪ Pendiente |
@@ -568,3 +568,125 @@ Gemini es más conservador. En *Modelo de negocio* tiene razón: el "Modelo A" e
 1. **Medir el efecto del ajuste del prompt** con entrevistas nuevas, en la evaluación del H9.
 2. **Esfuerzo por miembro con personas reales:** en el H5 solo se midió con el PM (menos de 15 minutos). Se puede medir en la prueba de aceptación del H9.
 3. Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías.
+
+---
+
+## H6. Etapa 3: relevamiento web
+
+El agente ya busca información pública sobre los usuarios y el mercado del producto. Arma una consulta por tema, la busca con **Tavily**, abre cada página, le pide al modelo un hallazgo con una **cita textual que el código verifica** en la página y guarda hasta 15 **evidencias públicas** con URL, título, fecha de consulta y extracto.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T6.1 Búsqueda web | 🤖 | ✅ Con Tavily (planificada con Gemini + Google Search, ver la decisión C revisada) |
+| T6.2 Verificar cada URL | 🤖 | ✅ Se abre cada página, se guarda la dirección final y las que no responden se descartan con su motivo |
+| T6.3 Guardar la evidencia pública | 🤖 | ✅ Hasta 15 por corrida, sin repetir las URL ya guardadas |
+| T6.4 Manejar la cuota agotada | 🤖 | ✅ La etapa queda *Incompleta*, la solicitud en *Lista* y el motivo en Ejecuciones. Visto con errores reales el 2026-10-26 |
+
+### Decisiones de diseño (aprobadas por Abel el 2026-10-26)
+
+- **A. Las URL salen del buscador, no del texto del modelo.** El modelo nunca escribe una dirección que se guarde: así no puede inventar fuentes.
+- **B. Cita verificada por código.** Cada hallazgo trae una cita de 8 a 40 palabras, y el código comprueba que esté textual en el texto de la página (con la misma normalización que el H4). Si no está, el hallazgo se descarta y queda anotado.
+- **C. Si no se puede buscar, la etapa queda *Incompleta*** y no se inventa nada. El respaldo de OpenRouter no tiene búsqueda gratuita (su complemento web se paga, contra el RNF-01).
+- **D. Hasta 15 evidencias por corrida, y las URL ya guardadas se saltean** (comparando la dirección final normalizada). Repetir la etapa no duplica filas.
+
+**Decisión C revisada (aprobada por Abel el 2026-10-26): buscador separado del modelo, Tavily.** El diseño original buscaba con Gemini y Google Search. En la demo, esa búsqueda no funcionó en la capa gratuita (ver el resultado más abajo). Se evaluaron cuatro caminos:
+
+| Opción | Costo | Por qué no (por ahora) |
+|--------|-------|------------------------|
+| **Tavily**, plan *Researcher* | Gratis: 1.000 créditos por mes, sin tarjeta. 4 por corrida | **Elegida.** Cumple el RNF-01 y deja el resto del diseño igual |
+| Facturación de Gemini | Unos USD 1 a 3 por mes (5.000 búsquedas gratis, pero se cobra la generación de todas las etapas) | Choca con el RNF-01 y el gasto es variable |
+| Búsqueda web de Claude, con crédito prepago | USD 10 cada 1.000 búsquedas; unos USD 0,05 a 0,08 por corrida con Haiku | Un tercer proveedor, y deja de ser gratis |
+| Brave o Exa | Crédito mensual (Brave, posiblemente con tarjeta) | Tavily es más simple y no pide tarjeta |
+
+Con Tavily, **Gemini arma una consulta corta por tema** (con OpenRouter de respaldo, como en las demás etapas) y Tavily la busca. Las URL siguen saliendo del buscador, así que A se mantiene; B y D no cambian. La facturación de Gemini y la búsqueda de Claude quedan como mejora futura.
+
+### Cómo funciona *Relevar la web*
+
+1. Necesita el contexto **Confirmado** (precondición del H4). Sin modelo o sin `TAVILY_API_KEY` termina *Incompleta* con el motivo, sin escribir nada.
+2. **Consultas:** una llamada al modelo devuelve una consulta por tema (*Usuarios y problemas*, *Cómo lo resuelven hoy*, *Mercado* y *Opiniones*), de 4 a 12 palabras, sin el nombre del producto. Un tema sin consulta válida se saltea y la etapa queda *Incompleta*.
+3. **Búsqueda:** Tavily, búsqueda básica (1 crédito), 8 resultados por tema. Los datos personales se ocultan antes de enviar la consulta. Ante 429 reintenta; ante 401 o créditos agotados (432 o 433) corta las búsquedas que faltan.
+4. **Lectura:** abre hasta 20 de las primeras 30 URL (la misma lectura de páginas del H4: sin direcciones privadas, hasta 2 MB y 20 segundos), se queda con la dirección final y saltea las ya guardadas.
+5. **Hallazgos:** las páginas van al modelo de a 5, recortadas a 20.000 caracteres y con los datos personales ocultos. El código verifica cada cita (decisión B).
+6. **Guardado:** hasta 15 filas en Evidencia con *Tipo* = *Pública*, *URL*, *Fecha de consulta*, *Etapa que la creó* y un *Extracto* con la cita entre «comillas» y el hallazgo. La *Clave* se arma con la URL, así que repetir actualiza en lugar de duplicar.
+7. **Ejecuciones:** la consulta de cada tema y cuántas fuentes trajo, cada URL descartada y cada hallazgo descartado con su motivo, lo guardado, los intentos de cada llamada y los tokens.
+
+### Decisiones tomadas al implementar
+
+- **Una etapa *Incompleta* deja la solicitud en *Lista***, no en *Error*, con el motivo en Ejecuciones (T6.4: no falla el resto). **Confirmado por Abel el 2026-10-26.**
+- **Lotes de 5 páginas, recortadas a 20.000 caracteres**, para que cada llamada entre holgada en el contexto de los modelos gratuitos.
+- **Se leen hasta 20 páginas para quedarse con hasta 15**, porque algunas citas no se verifican.
+- **Con Tavily:** 432 y 433 (créditos del plan) se tratan como límite de uso; la clave es opcional, así que sin ella solo esta etapa se entera; se quitó la búsqueda de Gemini, que queda en el historial de git.
+- **El 429 de Gemini registra qué cuota se superó y su límite**, cuando Google manda el detalle `QuotaFailure`. Se agregó para diagnosticar la demo y sirvió en la última corrida.
+
+### Pruebas
+
+`npm test` corre **206 pruebas**, sin red ni secretos (200 con la búsqueda de Gemini; +1 por el detalle de la cuota; +5 netas con Tavily):
+
+- **Etapa:** consultas por tema y URL tomadas del buscador; dirección final después de una redirección; URL que no responde, descartada y anotada; cita que no está en la página y fuente inventada, descartadas; sin modelo y sin clave del buscador, *Incompleta* sin escrituras; consultas que no se pueden armar; tema sin consulta válida; créditos agotados al principio y a mitad de camino; extracción que falla; URL ya guardada (decisión D); tope de 15; y el camino por el bucle, con la solicitud en *Lista* y la ejecución en *Incompleta*.
+- **Tavily:** el pedido (cabecera, consulta, búsqueda básica y 8 resultados), las URL de los resultados aunque la respuesta traiga otro texto, y 401, 432 y 429 con `Retry-After`.
+- **Buscador:** reintento ante límite, datos personales ocultos en la consulta y el tipo de error.
+- **Claves:** `TAVILY_API_KEY` opcional (vacía cuenta como ausente) y el motivo cuando falta.
+- **Gemini:** el 429 con `QuotaFailure` pone la cuota y su límite al principio del mensaje, aunque el texto de Google sea largo.
+
+> En la sesión se corrieron las pruebas, el typecheck, el lint y el build con el Node portátil antes de cada subida, y se comparó el SHA de cada archivo subido con la copia local. Commits del H6: el código original (`1350601` a `1cdb9b4`, 200 pruebas), el detalle de la cuota (`8acbed2`, 201) y Tavily (`fd5869b`, 206).
+
+### Demo de cierre del H6 (la hace Abel)
+
+La guía detallada, paso por paso, está en [demo-h6-guia.md](demo-h6-guia.md): revisar el CI, pedir *Relevar la web*, revisar la evidencia, verificar 3 o 4 fuentes a mano, repetir sin duplicar y, de forma opcional, probar el caso sin búsqueda.
+
+**Demo de cierre del H6:** evidencia pública guardada con URL que abren y citas verificadas, sin duplicar al repetir. **Cumplida el 2026-10-26.** El paso 5 se salteó, a pedido de Abel: el caso sin búsqueda ya se había visto cuatro veces con errores reales.
+
+### Resultado de la demo del H6
+
+**Primer intento: la búsqueda con Google no está en la capa gratuita.** Con el diseño original, *Relevar la web* quedó *Incompleta* cuatro veces. En todas, la solicitud quedó en *Lista*, no se gastaron tokens y no se escribió evidencia: T6.4 funcionó con errores reales.
+
+| Corrida | Modelo | Resultado | Ejecución |
+|---------|--------|-----------|-----------|
+| 15:45 | `gemini-3.6-flash` | 429 en la primera búsqueda | [Ejecución](https://app.notion.com/p/405245a35f2b81b4ab6cd5e48c30a144) |
+| 15:56, *Probar modelos* | `gemini-3.6-flash` | **Generar sí funciona** (dos 503 y respuesta al tercer intento) | [Ejecución](https://app.notion.com/p/405245a35f2b81ea868edd4404e9265c) |
+| 16:01 | `gemini-3.8-flash` | 429 en la primera búsqueda | [Ejecución](https://app.notion.com/p/405245a35f2b81679ff5edd4f7540d97) |
+| 16:17 | `gemini-3.6-flash`, con el detalle de cuota | 429; Google no mandó el detalle esa vez | [Ejecución](https://app.notion.com/p/405245a35f2b81459383d78ff9333604) |
+| 16:20 | `gemini-2.5-flash` | 404: «no longer available to new users» | [Ejecución](https://app.notion.com/p/405245a35f2b812c817addc1839f80c8) |
+
+La [página de precios de la API de Gemini](https://ai.google.dev/gemini-api/docs/pricing) lo explica: *Grounding with Google Search* figura «Not available» en la capa gratuita de los Gemini 3.x Flash, y solo los 2.5 lo traían gratis (hasta 500 pedidos por día), pero ya no se ofrecen a usuarios nuevos. *Modelo principal* volvió a `gemini-3.6-flash` después de cada prueba.
+
+**Con Tavily: dos corridas en *Lista*, 22 evidencias públicas y sin duplicados.**
+
+| Qué se probó | Primera corrida | Segunda corrida (repetir) |
+|--------------|-----------------|---------------------------|
+| Ejecución | [2026-10-26 16:53](https://app.notion.com/p/405245a35f2b813c8fb4f222b753c795) | [2026-10-26 17:12](https://app.notion.com/p/405245a35f2b819c9f70d2813c00a7be) |
+| Consultas (Gemini) | 4, todas con sentido, por ejemplo «problemas para cobrar cuotas recurrentes emprendedores profesionales independientes argentina» | 4 distintas a las de la primera vez, así que trajeron otras fuentes |
+| Fuentes → páginas leídas → citas verificadas → guardadas | 32 → 18 → 11 → **11** | 32 → 19 → 11 → **11** |
+| URL descartadas | 11: 6 con 403 (Reddit, entre otras), 4 sin texto legible y 1 sin conexión | 8: con 403 o 401, sin texto o de más de 2 MB |
+| Decisión B | Ninguna cita rechazada | **2 citas rechazadas**: el modelo unió fragmentos con «…» |
+| Decisión D | — | **2 URL ya guardadas, salteadas** (Qobra y Rebill). Ninguna fila repetida |
+| Modelos de extracción | Gemini en 2 lotes y OpenRouter en 2, por 503 de Gemini | Gemini en 2 y OpenRouter en 2, por 503 y por el **límite diario** |
+| Tokens | Unos 65.000 | Unos 70.000 |
+| Créditos de Tavily | 4 | 4 |
+
+**Verificación a mano: 8 de 8 citas en su página.** El asistente abrió 5 fuentes ([Qobra](https://app.notion.com/p/405245a35f2b81e6a50bc0958a58cf13), [Mercado Pago Suscripciones](https://app.notion.com/p/405245a35f2b81649541df66ba689948), [Recurrente](https://app.notion.com/p/405245a35f2b81ec84d2ff34def51f7a), [Programa de Empleo Independiente](https://app.notion.com/p/405245a35f2b81c995caee2ed0a47130) y [Niveals](https://app.notion.com/p/405245a35f2b8131b097dc0850608dab)) y Abel otras 3 ([Recaudo](https://app.notion.com/p/405245a35f2b81c8a136d49e9a74c924), [Rebill: alternativas a Mercado Pago](https://app.notion.com/p/405245a35f2b811ab298cfcaf8142c2b) y [Stripe](https://app.notion.com/p/405245a35f2b819184e9fcdf4d129a60)). Las 8 páginas cargaron y las 8 citas estaban textuales.
+
+**Utilidad (lectura del asistente): unas 11 de las 22 evidencias sirven.**
+- **Útiles:** muestran cómo se cobra hoy y quiénes compiten. [Qobra](https://app.notion.com/p/405245a35f2b81e6a50bc0958a58cf13) (orquestador argentino de cuotas, con portal sin login, para colegios y clubes), [Mercado Pago Suscripciones](https://app.notion.com/p/405245a35f2b81649541df66ba689948) (link por WhatsApp, sin sitio web), [Recaudo](https://app.notion.com/p/405245a35f2b81c8a136d49e9a74c924) (cobrar por WhatsApp), [Talo](https://app.notion.com/p/405245a35f2b817cb378df6407c85ad8) (tarjeta recurrente con 10 a 15 % de fallos por mes, DEBIN, CVU fijo y links), [Bebot](https://app.notion.com/p/405245a35f2b81ed8b86eaf9e033e99b) (morosidad del 15 al 35 % por mes en Argentina), [Recurrente](https://app.notion.com/p/405245a35f2b81ec84d2ff34def51f7a), las dos de Rebill, [Aunoa](https://app.notion.com/p/405245a35f2b8139bb85f2f894dec745), [Niveals](https://app.notion.com/p/405245a35f2b8131b097dc0850608dab) y [Mercado Pago (herramientas)](https://app.notion.com/p/405245a35f2b81a7a7ecd8d28e808ef9).
+- **Flojas:** la cita existe, pero aportan poco o son de otro mercado: fichas de CB Insights (Wallbit, Prex, HSBC y Uelz), CoinMarketCap, el programa PEI, Stripe (e-commerce en general), Point Tap, Rankia, Mercado Pago **Colombia** y una pasarela de **Guatemala**.
+
+**Dos hallazgos para el H7:**
+1. **Qobra, Mercado Pago Suscripciones y Recaudo contradicen el campo *Competidores* del contexto**, que dice que no hay competidores directos. La síntesis tiene que mostrar esta divergencia entre el equipo y la evidencia pública.
+2. **Casi todas las fuentes son de empresas que venden una solución.** No quedó ninguna voz directa de usuarios: los foros bloquean la lectura (Reddit dio 403) y el tema *Opiniones* no guardó nada útil. Hay que tenerlo en cuenta al asignar la confianza de los atributos.
+
+**El límite diario de Gemini es bajo.** La última corrida mostró el detalle de la cuota: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, **límite 20** pedidos por día para `gemini-3.6-flash`. Hoy se gastaron entre las pruebas y las demos, y el respaldo de OpenRouter cubrió lo que faltaba. Una corrida de *Relevar la web* usa unos 5 pedidos.
+
+> **Lecciones aprendidas:**
+> - **Antes de diseñar sobre una función gratuita, hay que revisar la tabla de precios por modelo.** El H6 supuso que la búsqueda de Google venía con cualquier Gemini Flash gratuito, y no era así. La prueba de modelos del H3 no la cubría, porque solo generaba.
+> - **Separar el buscador del modelo hizo el cambio barato.** La interfaz `Buscador` permitió pasar a Tavily sin tocar la lectura, la verificación ni el guardado.
+> - **Registrar el detalle del error paga.** El detalle de la cuota no apareció cuando se lo buscaba, pero en la corrida siguiente mostró el límite diario de 20.
+> - **El respaldo de OpenRouter es parte normal de la etapa,** no una excepción: respondió en la mitad de las extracciones, entre los 503 y el límite diario de Gemini.
+> - **Que la cita sea real no la hace útil.** La decisión B garantiza que la cita existe; la utilidad la juzga el PM, y la mide la evaluación del H9.
+
+### Pendientes que salieron de la demo
+
+1. **País en la búsqueda:** pasarle a Tavily el país del campo *Mercado* (parámetro `country`), para evitar fuentes de otros mercados. Sin tocar código hasta que Abel lo apruebe.
+2. **Voces de usuarios:** buscar una forma de sumar foros y reseñas (Reddit y otros bloquean la lectura). Se puede revisar en el H9 o como mejora.
+3. **No reintentar un límite diario:** si el 429 dice que la cuota es por día, pasar directo al respaldo en lugar de esperar y reintentar.
+4. **Cuota diaria de Gemini (20 pedidos):** tenerla en cuenta al diseñar el H7, que va a necesitar varias llamadas por corrida.
+5. Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías.
