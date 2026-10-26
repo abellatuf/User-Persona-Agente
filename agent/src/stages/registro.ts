@@ -1,7 +1,8 @@
-import type { Generador } from '../llm/index.js';
+import type { Buscador, Generador } from '../llm/index.js';
 import type { EspacioNotion, EtapaSolicitable, Solicitud } from '../notion/espacio.js';
 import { armarContexto } from './1-armar-contexto/index.js';
 import { repreguntarEtapa } from './2-repreguntar/index.js';
+import { relevarWeb } from './3-relevar-web/index.js';
 
 export interface ContextoEtapa {
   solicitud: Solicitud;
@@ -9,6 +10,8 @@ export interface ContextoEtapa {
   espacio: EspacioNotion;
   /** Acceso a los modelos. Ausente si faltan las claves o los modelos de Configuración no son válidos. */
   generar?: Generador;
+  /** Búsqueda web con Google (solo Gemini). Ausente en los mismos casos que `generar`. */
+  buscar?: Buscador;
   /** Por qué no hay modelo disponible, para explicarlo en Ejecuciones. */
   sinModelo?: string;
 }
@@ -55,7 +58,7 @@ export function conContextoConfirmado(etapa: string, funcion: FuncionEtapa): Fun
 export const ETAPAS: Record<EtapaSolicitable, FuncionEtapa> = {
   'Armar contexto': armarContexto,
   Repreguntar: conContextoConfirmado('Repreguntar', repreguntarEtapa),
-  'Relevar la web': conContextoConfirmado('Relevar la web', marcador),
+  'Relevar la web': conContextoConfirmado('Relevar la web', relevarWeb),
   Sintetizar: conContextoConfirmado('Sintetizar', marcador),
   'Planificar validación': conContextoConfirmado('Planificar validación', marcador),
 };

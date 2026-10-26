@@ -1,5 +1,5 @@
 import { MAX_SOLICITUDES_POR_EJECUCION, ZONA_HORARIA } from './config.js';
-import type { Generador } from './llm/index.js';
+import type { Buscador, Generador } from './llm/index.js';
 import {
   ETAPAS_SOLICITABLES,
   type CierreEjecucion,
@@ -13,8 +13,10 @@ import {
 import { verificarEspacio, type ResultadoVerificacion } from './stages/0-verificar-espacio/index.js';
 import type { ContextoEtapa, FuncionEtapa, ResultadoEtapa } from './stages/registro.js';
 
-/** Acceso a los modelos para las etapas: un generador, o el motivo por el que no hay. */
-export type Modelos = { generar: Generador } | { sinModelo: string };
+/** Acceso a los modelos para las etapas: un generador (y la búsqueda web), o el motivo por el que no hay. */
+export type Modelos = { generar: Generador; buscar?: Buscador } | { sinModelo: string };
+
+type Acceso = Pick<ContextoEtapa, 'generar' | 'buscar' | 'sinModelo'>;
 
 export interface Dependencias {
   espacio: EspacioNotion;
@@ -126,7 +128,10 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
   const modelos: Modelos = deps.modelos
     ? deps.modelos(configuracion)
     : { sinModelo: 'Esta ejecución no tiene acceso a modelos de lenguaje.' };
-  const acceso: Pick<ContextoEtapa, 'generar' | 'sinModelo'> = 'generar' in modelos ? { generar: modelos.generar } : { sinModelo: modelos.sinModelo };
+  const acceso: Acceso =
+    'generar' in modelos
+      ? { generar: modelos.generar, ...(modelos.buscar ? { buscar: modelos.buscar } : {}) }
+      : { sinModelo: modelos.sinModelo };
 
   const solicitudes: ResumenEjecucion['solicitudes'] = [];
   for (const solicitud of pendientes) {
@@ -144,7 +149,7 @@ async function atenderSolicitud(
   deps: {
     espacio: EspacioNotion;
     etapas: Record<EtapaSolicitable, FuncionEtapa>;
-    acceso: Pick<ContextoEtapa, 'generar' | 'sinModelo'>;
+    acceso: Acceso;
     reloj: () => Date;
     log: (m: string) => void;
     fallasDeRegistro: string[];
@@ -188,7 +193,9 @@ async function atenderSolicitud(
   } catch (e) {
     r = { ...r, resultado: 'Error', errores: [...r.errores, mensajeDe(e)] };
   } finally {
-    const estadoFinal: EstadoSolicitud = r.resultado === 'Lista' ? 'Lista' : 'Error';
+    // Incompleta (por ejemplo, sin búsqueda web por cuota) guarda lo que pudo y lo explica en Ejecuciones:
+    // la solicitud queda Lista, no en Error (T6.4: no falla el resto).
+    const estadoFinal: EstadoSolicitud = r.resultado === 'Error' ? 'Error' : 'Lista';
     try {
       await espacio.marcarSolicitud(solicitud.id, estadoFinal);
     } catch (e) {
