@@ -101,8 +101,11 @@ async function guardarEvidenciaBase(espacio: EspacioNotion, entrevista: FilaEntr
   return guardadas;
 }
 
-/** Respuestas a las repreguntas de una entrevista Completa, como evidencia vinculada a la respuesta original. */
-async function guardarEvidenciaDeRepreguntas(espacio: EspacioNotion, entrevista: FilaEntrevista, notas: string[]): Promise<number> {
+/**
+ * Respuestas a las repreguntas de una entrevista Completa, como evidencia vinculada a la respuesta original.
+ * La usa también Sintetizar antes de sintetizar (decisión D del H5). Repetirla no duplica: cada fila tiene clave.
+ */
+export async function guardarEvidenciaDeRepreguntas(espacio: EspacioNotion, entrevista: FilaEntrevista, notas: string[]): Promise<number> {
   const repreguntas = leerRepreguntas(await espacio.leerTextoDelCuerpo(entrevista.id));
   let guardadas = 0;
   for (const r of repreguntas) {
