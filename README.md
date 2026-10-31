@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H6 ✅, H7 por diseñar |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H6 ✅, H7 con el código listo y la demo pendiente |
 
 ---
 
@@ -128,10 +128,14 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-10-26 | 7 | Abel agregó a mano el aviso de privacidad de Tavily en la descripción de la base *Contexto del producto*. |
 | 2026-10-26 | 7 | Demo del H6 con Tavily: dos corridas en *Lista* ([16:53](https://app.notion.com/p/405245a35f2b813c8fb4f222b753c795) y [17:12](https://app.notion.com/p/405245a35f2b819c9f70d2813c00a7be)), **22 evidencias públicas** y ninguna repetida: la segunda salteó 2 URL ya guardadas (decisión D) y rechazó 2 citas que no estaban en la página (decisión B). **8 de 8 citas verificadas a mano** (5 el asistente, 3 Abel). Unas 11 de las 22 sirven; casi todas son de empresas que venden una solución, sin voces directas de usuarios. Qobra, Mercado Pago Suscripciones y Recaudo contradicen el campo *Competidores* del contexto. El detalle de la cuota mostró que `gemini-3.6-flash` tiene un **límite de 20 pedidos por día** en la capa gratuita, y OpenRouter respondió en la mitad de las extracciones. El paso 5 se salteó, a pedido de Abel. |
 | 2026-10-26 | 7 | **Se cierra el H6.** El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h6). Las fases 5 y 6 anotan el cambio de la búsqueda a Tavily. |
+| 2026-10-31 | 7 | Diseño del **H7** aprobado: una llamada propone hasta **5 segmentos** y otra por persona propone hasta **10 atributos** (tope nuevo, para evitar atributos decorativos). Lo controla el código: **A.** cada evidencia citada (E1, E2…) existe y cada atributo tiene al menos una; **B.** la confianza la calcula `calcularConfianza`; **C.** hay divergencia solo con al menos dos posturas de **fuentes distintas** (miembros, el equipo contra la evidencia pública o el contexto), y **el autor y el rol los pone el código**; **D.** topes. El resumen (HU-11) y los controles los arma el código. Volver a sintetizar actualiza el *Borrador* sin pisar al PM; una *Rechazada* genera una **versión nueva** con el motivo; *En revisión* y *Aprobada* no se tocan (la versión por evidencia nueva es del H8). Formulario *Investigación propia* sobre Evidencia (HU-08). |
+| 2026-10-31 | 7 | Código del H7 en `main`: etapa *Sintetizar*, lecturas de evidencia, personas y atributos, y `archivarSiSePuede` (no archiva lo que editó el PM, sin contarlo como intento bloqueado). Antes de sintetizar, guarda las respuestas a repreguntas como evidencia. 218 pruebas; al sacar a propósito la regla de fuentes distintas, falló 1. Al implementar: una evidencia sin *Tipo* pero con *Método de investigación* cuenta como investigación propia; el nombre de una persona lo pone el agente solo al crearla. En Notion: formulario *Investigación propia* (el MCP solo deja ver la pregunta del título; las demás se revisan a mano). Falta la demo de Abel. |
 
 ### Próximo paso
 
-**H7: síntesis de personas.** El asistente arranca por la propuesta de diseño, para que Abel la apruebe antes de escribir código.
+**Demo del H7.** Seguí la guía paso a paso de [docs/demo-h7-guia.md](docs/demo-h7-guia.md): revisar el CI y el formulario, pedir *Sintetizar*, revisar personas, atributos, divergencias y resumen, editar un atributo y repetir, rechazar una persona y ver la versión 2 y, si querés, cargar investigación propia.
+
+El asistente revisa en Notion cada resultado, documenta las evidencias en la Fase 7 (sección completa del H7) y cierra el H7. Después sigue el **H8: validación y persona viva**.
 
 Pendientes a tener en cuenta:
 - **Para el H7:** usar las divergencias de la demo del H5 y la contradicción de *Competidores* del H6 para verificar que la síntesis las detecte; tener en cuenta que la evidencia pública es casi toda de empresas que venden una solución, y que `gemini-3.6-flash` admite solo 20 pedidos por día (el respaldo de OpenRouter cubre el resto).
