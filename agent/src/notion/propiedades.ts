@@ -46,6 +46,11 @@ export function leerRelacion(pagina: Pagina, nombre: string): string[] {
   return (prop(pagina, nombre)?.relation ?? []).map((r) => r.id);
 }
 
+export function leerNumero(pagina: Pagina, nombre: string): number | null {
+  const valor = (prop(pagina, nombre) as { number?: unknown } | undefined)?.number;
+  return typeof valor === 'number' ? valor : null;
+}
+
 export function leerSeleccion(pagina: Pagina, nombre: string): string | null {
   const p = prop(pagina, nombre);
   return p?.select?.name ?? p?.status?.name ?? null;

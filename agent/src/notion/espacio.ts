@@ -70,6 +70,43 @@ export interface FilaMiembro {
   rol: string | null;
 }
 
+/** Una fila de Evidencia, con lo que necesita la síntesis. */
+export interface FilaEvidencia {
+  id: string;
+  titulo: string;
+  /** «Tipo» tal como está en Notion; puede estar vacío en una carga manual. */
+  tipo: string | null;
+  extracto: string;
+  /** Entrevistas vinculadas (evidencia del equipo). */
+  entrevistas: string[];
+  url: string | null;
+  etapa: string | null;
+  metodo: string | null;
+  muestra: string;
+}
+
+/** Una fila de User Personas. */
+export interface FilaPersona {
+  id: string;
+  nombre: string;
+  estado: string | null;
+  version: number | null;
+  clave: string;
+  porQue: string;
+  motivoRechazo: string;
+  versionAnterior: string[];
+  versionSiguiente: string[];
+}
+
+/** Una fila de Atributos. */
+export interface FilaAtributo {
+  id: string;
+  afirmacion: string;
+  categoria: string | null;
+  personas: string[];
+  clave: string;
+}
+
 /** Esquema de una base: propiedad → tipo y, si es selección o estado, sus opciones. */
 export interface EsquemaBase {
   titulo: string;
@@ -107,6 +144,10 @@ export interface EspacioNotion {
   leerEquipo(): Promise<FilaMiembro[]>;
   /** URL de las filas de Evidencia de tipo «Pública» (para no volver a procesarlas). */
   leerUrlsDeEvidenciaPublica(): Promise<string[]>;
+  /** Toda la Evidencia (H7). */
+  leerEvidencias(): Promise<FilaEvidencia[]>;
+  leerPersonas(): Promise<FilaPersona[]>;
+  leerAtributos(): Promise<FilaAtributo[]>;
   /** Texto de cada bloque del cuerpo de una página, en orden (los bloques sin texto quedan como ""). */
   leerTextoDelCuerpo(paginaId: string): Promise<string[]>;
   /** Devuelve null si la base no existe o no está compartida con la integración. */
@@ -248,6 +289,44 @@ export class EspacioNotionMcp implements EspacioNotion {
         const url = p.leerUrl(fila, 'URL');
         return url ? [url] : [];
       });
+  }
+
+  async leerEvidencias(): Promise<FilaEvidencia[]> {
+    return (await this.todasLasFilas(BASES.evidencia)).map((fila) => ({
+      id: fila.id,
+      titulo: p.leerTexto(fila, 'Título').trim(),
+      tipo: p.leerSeleccion(fila, 'Tipo'),
+      extracto: p.leerTexto(fila, 'Extracto').trim(),
+      entrevistas: p.leerRelacion(fila, 'Entrevista'),
+      url: p.leerUrl(fila, 'URL'),
+      etapa: p.leerSeleccion(fila, 'Etapa que la creó'),
+      metodo: p.leerSeleccion(fila, 'Método de investigación'),
+      muestra: p.leerTexto(fila, 'Muestra').trim(),
+    }));
+  }
+
+  async leerPersonas(): Promise<FilaPersona[]> {
+    return (await this.todasLasFilas(BASES.personas)).map((fila) => ({
+      id: fila.id,
+      nombre: p.leerTexto(fila, 'Nombre').trim(),
+      estado: p.leerSeleccion(fila, 'Estado'),
+      version: p.leerNumero(fila, 'Versión'),
+      clave: p.leerTexto(fila, 'Clave').trim(),
+      porQue: p.leerTexto(fila, 'Por qué es un segmento distinto').trim(),
+      motivoRechazo: p.leerTexto(fila, 'Motivo de rechazo').trim(),
+      versionAnterior: p.leerRelacion(fila, 'Versión anterior'),
+      versionSiguiente: p.leerRelacion(fila, 'Versión siguiente'),
+    }));
+  }
+
+  async leerAtributos(): Promise<FilaAtributo[]> {
+    return (await this.todasLasFilas(BASES.atributos)).map((fila) => ({
+      id: fila.id,
+      afirmacion: p.leerTexto(fila, 'Afirmación').trim(),
+      categoria: p.leerSeleccion(fila, 'Categoría'),
+      personas: p.leerRelacion(fila, 'Persona'),
+      clave: p.leerTexto(fila, 'Clave').trim(),
+    }));
   }
 
   async leerTextoDelCuerpo(paginaId: string): Promise<string[]> {

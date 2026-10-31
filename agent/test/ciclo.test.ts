@@ -42,7 +42,7 @@ describe('bucle de solicitudes', () => {
 
   it('una solicitud pendiente pasa por En curso y termina Lista, con su fila en Ejecuciones', async () => {
     const espacio = new EspacioFalso();
-    espacio.agregarSolicitud({ id: 's1', titulo: 'Probar el esqueleto', etapa: 'Sintetizar' });
+    espacio.agregarSolicitud({ id: 's1', titulo: 'Probar el esqueleto', etapa: 'Planificar validación' });
 
     const resumen = await correr(espacio);
 
@@ -52,8 +52,8 @@ describe('bucle de solicitudes', () => {
       { id: 's1', estado: 'Lista' },
     ]);
     const fila = espacio.ejecuciones[0]!;
-    expect(fila.apertura).toMatchObject({ etapa: 'Sintetizar', solicitudId: 's1' });
-    expect(fila.apertura.titulo).toBe('2026-10-15 15:00 · Sintetizar · Probar el esqueleto');
+    expect(fila.apertura).toMatchObject({ etapa: 'Planificar validación', solicitudId: 's1' });
+    expect(fila.apertura.titulo).toBe('2026-10-15 15:00 · Planificar validación · Probar el esqueleto');
     expect(fila.cierre).toMatchObject({
       resultado: 'Lista',
       errores: [],
@@ -105,7 +105,7 @@ describe('bucle de solicitudes', () => {
   it('si la etapa falla, la solicitud no queda trabada En curso y las siguientes se atienden', async () => {
     const espacio = new EspacioFalso();
     espacio.agregarSolicitud({ id: 's1', etapa: 'Repreguntar' });
-    espacio.agregarSolicitud({ id: 's2', etapa: 'Sintetizar' });
+    espacio.agregarSolicitud({ id: 's2', etapa: 'Planificar validación' });
     const rota: FuncionEtapa = async () => {
       throw new Error('falla simulada');
     };

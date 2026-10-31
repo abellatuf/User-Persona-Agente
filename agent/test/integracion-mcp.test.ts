@@ -28,9 +28,9 @@ describe('integración con el servidor MCP de Notion', () => {
   });
 
   it('atiende una solicitud: En curso → Lista, con su fila en Ejecuciones', async () => {
-    // Sintetizar todavía es un marcador; necesita el contexto Confirmado (precondición del H4).
+    // Planificar validación todavía es un marcador; necesita el contexto Confirmado (precondición del H4).
     notion.crearPagina(BASES.contexto, { Estado: { type: 'status', status: { name: 'Confirmado' } } });
-    const solicitud = notion.crearSolicitud('Demo H1', 'Sintetizar');
+    const solicitud = notion.crearSolicitud('Demo H1', 'Planificar validación');
     const espacio = new EspacioNotionMcp(conexion);
 
     const resumen = await ejecutarAgente({ espacio, etapas: ETAPAS, log: () => {} });
@@ -43,7 +43,7 @@ describe('integración con el servidor MCP de Notion', () => {
     expect(ejecuciones).toHaveLength(1);
     const [, fila] = ejecuciones[0]!;
     expect(fila.properties).toMatchObject({
-      Etapa: { select: { name: 'Sintetizar' } },
+      Etapa: { select: { name: 'Planificar validación' } },
       Solicitud: { relation: [{ id: solicitud }] },
       Resultado: { select: { name: 'Lista' } },
       Lecturas: { number: 13 },

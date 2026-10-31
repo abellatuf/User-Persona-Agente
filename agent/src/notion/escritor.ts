@@ -40,6 +40,11 @@ export interface Escritor {
   actualizar(base: ClaveBase, id: string, propiedades: Propiedades): Promise<ResultadoEscritura>;
   /** Manda la página a la papelera de Notion (se puede recuperar) y registra el motivo. */
   archivar(base: ClaveBase, id: string, motivo: string): Promise<void>;
+  /**
+   * Como archivar, pero si las reglas no lo permiten (por ejemplo, el PM editó la fila)
+   * no la toca y devuelve el motivo, sin contarlo como intento bloqueado.
+   */
+  archivarSiSePuede(base: ClaveBase, id: string, motivo: string): Promise<string | null>;
   /** Agrega párrafos al cuerpo de una página. */
   agregarParrafos(id: string, parrafos: string[]): Promise<void>;
 }
@@ -165,6 +170,19 @@ export class EscritorNotion implements Escritor {
     const pagina = await this.leerPagina(id);
     const actual = pagina ? await this.estadoActual(base, pagina) : undefined;
     this.verificar({ accion: 'archivar', base, propiedades: {}, ...(actual ? { actual } : {}) });
+    await this.mandarAPapelera(base, id, motivo);
+  }
+
+  async archivarSiSePuede(base: ClaveBase, id: string, motivo: string): Promise<string | null> {
+    const pagina = await this.leerPagina(id);
+    const actual = pagina ? await this.estadoActual(base, pagina) : undefined;
+    const impedimento = evaluarEscritura({ accion: 'archivar', base, propiedades: {}, ...(actual ? { actual } : {}) });
+    if (impedimento) return impedimento;
+    await this.mandarAPapelera(base, id, motivo);
+    return null;
+  }
+
+  private async mandarAPapelera(base: ClaveBase, id: string, motivo: string) {
     paginaCreada.parse(await this.llamar('API-patch-page', { page_id: id, in_trash: true }));
     this.contador.avisar(`Archivada una fila de «${ESQUEMA_ESPERADO[base].nombre}» (${id}): ${motivo}`);
   }

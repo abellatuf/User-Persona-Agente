@@ -3,6 +3,7 @@ import type { EspacioNotion, EtapaSolicitable, Solicitud } from '../notion/espac
 import { armarContexto } from './1-armar-contexto/index.js';
 import { repreguntarEtapa } from './2-repreguntar/index.js';
 import { relevarWeb } from './3-relevar-web/index.js';
+import { sintetizarEtapa } from './4-sintetizar/index.js';
 
 export interface ContextoEtapa {
   solicitud: Solicitud;
@@ -61,6 +62,6 @@ export const ETAPAS: Record<EtapaSolicitable, FuncionEtapa> = {
   'Armar contexto': armarContexto,
   Repreguntar: conContextoConfirmado('Repreguntar', repreguntarEtapa),
   'Relevar la web': conContextoConfirmado('Relevar la web', relevarWeb),
-  Sintetizar: conContextoConfirmado('Sintetizar', marcador),
+  Sintetizar: conContextoConfirmado('Sintetizar', sintetizarEtapa),
   'Planificar validación': conContextoConfirmado('Planificar validación', marcador),
 };
