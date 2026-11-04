@@ -165,6 +165,54 @@ describe('etapa 4: sintetizar (H7)', () => {
     expect(textoDe(conContexto!['Posturas'])).toContain('Hay alternativas que cobran recurrente — Pública: Talo');
   });
 
+  it('pide contrastar cómo lo resuelve hoy con Competidores y no citar evidencia pública ajena (ajuste del H7)', async () => {
+    const espacio = new EspacioFalso({
+      contexto: {
+        Nombre: titulo('Producto'),
+        Estado: { status: { name: 'Confirmado' } },
+        Competidores: texto('No podemos nombrar competidores directos.'),
+      },
+    });
+    const ana = sembrarEntrevista(espacio, 'Ana', 'PM');
+    sembrarEvidencia(espacio, { titulo: 'P04 · Ana (PM)', extracto: 'Cobra con una planilla.', tipo: 'Supuesto del equipo', entrevista: ana });
+    const { correr, gemini } = preparar(espacio, [segmentos({ nombre: 'Emisores' }), persona([atributo('Algo', ['E1'])])]);
+
+    await correr();
+
+    const enviado = gemini.recibidas[1]!.usuario;
+    expect(enviado).toContain('Competidores: No podemos nombrar competidores directos.');
+    expect(enviado).toContain('incluí un atributo de categoría Comportamiento sobre cómo resuelve hoy el problema');
+    expect(enviado).toContain('alternativas que ponen en duda lo que dice ese campo');
+    expect(enviado).toContain('Si el campo dice "No encontrado", no hay desacuerdo.');
+    expect(enviado).toContain('Citá evidencia pública solo si trata sobre los usuarios, el problema o el mercado del contexto.');
+  });
+
+  it('el contexto contra varias evidencias públicas es divergencia, y solo con públicas la confianza queda Baja', async () => {
+    const { espacio } = espacioBase();
+    sembrarEvidencia(espacio, { titulo: 'Qobra', extracto: 'Orquesta el cobro de cuotas.', tipo: 'Pública' });
+    const { correr, filas } = preparar(espacio, [
+      segmentos({ nombre: 'Emisores' }),
+      persona([
+        atributo('Cómo resuelve hoy el cobro', [], {
+          categoria: 'Comportamiento',
+          posturas: [
+            { postura: 'No se pueden nombrar competidores directos', evidencias: [], delContexto: true },
+            { postura: 'Hay servicios que ya lo resuelven', evidencias: ['E3', 'E5'], delContexto: false },
+          ],
+        }),
+      ]),
+    ]);
+
+    await correr();
+
+    const [a] = filas('atributos').map(([, x]) => x);
+    expect(a!['Categoría']).toEqual({ select: { name: 'Comportamiento' } });
+    expect(a!['Divergencia']).toEqual({ checkbox: true });
+    expect(textoDe(a!['Posturas'])).toBe(`• No se pueden nombrar competidores directos — ${FUENTE_CONTEXTO}\n• Hay servicios que ya lo resuelven — Pública: Talo; Pública: Qobra`);
+    expect((a!['Evidencias'] as { relation: unknown[] }).relation).toHaveLength(2);
+    expect(a!['Confianza']).toEqual({ select: { name: 'Baja' } });
+  });
+
   it('dos investigaciones propias dan confianza Alta; una cargada con el formulario sin «Tipo» también cuenta', async () => {
     const { espacio } = espacioBase();
     sembrarEvidencia(espacio, { titulo: 'Encuesta a 30 clubes', extracto: 'El 40 % cobra por transferencia.', tipo: 'Investigación propia' });
