@@ -100,6 +100,19 @@ describe('generar: reintentos y respaldo ante límites de uso (T3.3)', () => {
     expect(openrouter.recibidas).toHaveLength(0);
   });
 
+  it('ante un 503 espera más que ante un límite, antes de pasar al respaldo', async () => {
+    const error = () => new ErrorModelo('503', 'transitorio');
+    const gemini = new ProveedorFalso('Gemini', 'g', [error(), error(), error()]);
+    const openrouter = new ProveedorFalso('OpenRouter', 'o', [respuesta(valido)]);
+    const { generar, esperas } = generador(gemini, openrouter);
+
+    const r = await generar({ mensajes, esquema });
+
+    expect(esperas).toEqual([10_000, 30_000]);
+    expect(gemini.recibidas).toHaveLength(3);
+    expect(r.usoRespaldo).toBe(true);
+  });
+
   it('respeta la espera que pide el proveedor, con un tope', async () => {
     const gemini = new ProveedorFalso('Gemini', 'g', [limite(7000), limite(60_000), respuesta(valido)]);
     const { generar, esperas } = generador(gemini);
@@ -129,7 +142,7 @@ describe('generar: reintentos y respaldo ante límites de uso (T3.3)', () => {
 
     const e = await fallaDe(generador(gemini, openrouter).generar({ mensajes, esquema }));
 
-    expect(e.message).toMatch(/No se escribió nada/);
+    expect(e.message).toBe('Ningún modelo devolvió una respuesta válida.');
     expect(e.intentos.map((i) => i.proveedor)).toEqual(['Gemini', 'OpenRouter']);
   });
 });
@@ -173,6 +186,38 @@ describe('generar: formato inválido (T3.4)', () => {
     expect(e.intentos).toHaveLength(4);
     expect(e.intentos.every((i) => i.resultado === 'formato inválido')).toBe(true);
     expect(e.tokens.total).toBe(60);
+  });
+});
+
+describe('generar: otro idioma (RNF-05)', () => {
+  const conChino = { suma: 5, texto: 'Cobra a muchos clientes,依赖手动跟踪Excel.' };
+
+  it('si la respuesta mezcla una escritura que no está en el prompt, la corrige como un formato inválido', async () => {
+    const gemini = new ProveedorFalso('Gemini', 'g', [respuesta(conChino), respuesta(valido)]);
+
+    const r = await generador(gemini).generar({ mensajes, esquema });
+
+    expect(r.datos).toEqual(valido);
+    expect(r.intentos.map((i) => i.resultado)).toEqual(['formato inválido', 'ok']);
+    expect(gemini.recibidas[1]!.usuario).toContain('escritura china o japonesa');
+  });
+
+  it('si el modelo insiste, pasa al respaldo', async () => {
+    const openrouter = new ProveedorFalso('OpenRouter', 'o', [respuesta(conChino), respuesta({ suma: 5, texto: 'Текст' })]);
+    const gemini = new ProveedorFalso('Gemini', 'g', [respuesta(conChino), respuesta(conChino)]);
+
+    const e = await fallaDe(generador(gemini, openrouter).generar({ mensajes, esquema }));
+
+    expect(e.intentos.every((i) => i.resultado === 'formato inválido')).toBe(true);
+    expect(e.intentos.at(-1)!.detalle).toContain('cirílica');
+  });
+
+  it('acepta esa escritura si ya estaba en los datos, y no confunde acentos ni símbolos', async () => {
+    const gemini = new ProveedorFalso('Gemini', 'g', [respuesta(conChino), respuesta({ suma: 5, texto: 'Cuánto: ñandú · «100 %» → π' })]);
+    const { generar } = generador(gemini);
+
+    await expect(generar({ mensajes: { sistema: 'Reglas', usuario: 'Dato: 依赖' }, esquema })).resolves.toMatchObject({ datos: conChino });
+    await expect(generar({ mensajes, esquema })).resolves.toMatchObject({ intentos: [{ resultado: 'ok' }] });
   });
 });
 

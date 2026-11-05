@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { normalizar } from '../../guards/claves.js';
 import { calcularConfianza, type Confianza, type TipoEvidencia } from '../../guards/confianza.js';
-import type { FilaEntrevista, FilaEvidencia } from '../../notion/espacio.js';
+import type { FilaContexto, FilaEntrevista, FilaEvidencia } from '../../notion/espacio.js';
 import { recortar } from '../../notion/propiedades.js';
+import { CAMPOS, estaLibre } from '../1-armar-contexto/campos.js';
 
 /**
  * Reglas de la síntesis que controla el código, no el modelo (H7, decisiones A a D):
@@ -36,7 +37,8 @@ export const esquemaPersona = z.object({
       afirmacion: z.string(),
       categoria: z.string(),
       evidencias: z.array(z.string()),
-      posturas: z.array(z.object({ postura: z.string(), evidencias: z.array(z.string()), delContexto: z.boolean() })),
+      posturas: z.array(z.object({ postura: z.string(), evidencias: z.array(z.string()), campoDelContexto: z.string().default('') })),
+      atributoExistente: z.string().default(''),
     }),
   ),
   informacionQueFalta: z.string(),
@@ -124,12 +126,25 @@ export interface AtributoValidado {
   /** Texto para «Posturas»: cada postura con sus fuentes, puestas por el código. */
   posturas: string;
   confianza: Confianza;
+  /** Referencia del atributo actual al que corresponde (A1…), tal como la mandó el modelo. */
+  existente: string;
+}
+
+/** Campos del contexto con contenido, por nombre normalizado: una postura del contexto los copia tal cual. */
+export function camposConTexto(contexto: FilaContexto | undefined): Map<string, { nombre: string; texto: string }> {
+  const campos = new Map<string, { nombre: string; texto: string }>();
+  for (const { propiedad } of CAMPOS) {
+    const texto = contexto?.textos[propiedad]?.trim();
+    if (texto && !estaLibre(texto)) campos.set(normalizar(propiedad), { nombre: propiedad, texto });
+  }
+  return campos;
 }
 
 /**
  * Valida los atributos que propuso el modelo para una persona:
  * - la categoría es una de las cuatro;
  * - cada evidencia citada existe (decisión A) y queda al menos una (trazabilidad);
+ * - una postura del contexto lleva el texto del campo, copiado por el código, no el del modelo;
  * - hay divergencia solo si al menos dos posturas tienen fuentes distintas, sin compartir ninguna (decisión C);
  * - la confianza la calcula el código (decisión B);
  * - hasta MAX_ATRIBUTOS, sin repetidos (decisión D).
@@ -139,6 +154,7 @@ export function validarAtributos(
   mapa: Map<string, EvidenciaPreparada>,
   persona: string,
   notas: string[],
+  campos: Map<string, { nombre: string; texto: string }>,
 ): AtributoValidado[] {
   const aceptados: AtributoValidado[] = [];
   const vistas = new Set<string>();
@@ -157,8 +173,19 @@ export function validarAtributos(
     const posturas = a.posturas.map((po) => {
       const evidencias = resolver(po.evidencias, mapa, donde, notas);
       const fuentes = new Set(evidencias.map((e) => e.fuente));
-      if (po.delContexto) fuentes.add(FUENTE_CONTEXTO);
-      return { texto: po.postura.trim(), evidencias, fuentes };
+      let texto = po.postura.trim();
+      const pedido = po.campoDelContexto.trim();
+      if (pedido) {
+        const campo = campos.get(normalizar(pedido));
+        if (campo) {
+          fuentes.add(FUENTE_CONTEXTO);
+          const literal = `Campo ${campo.nombre}: «${campo.texto}»`;
+          texto = evidencias.length > 0 && texto ? `${texto} · ${literal}` : literal;
+        } else {
+          notas.push(`${donde}: se descartó la fuente de contexto «${pedido}», que no es un campo con contenido.`);
+        }
+      }
+      return { texto, evidencias, fuentes };
     });
     const validas = posturas.filter((po) => po.texto && po.fuentes.size > 0);
     const evidencias = unicas([...respaldo, ...validas.flatMap((po) => po.evidencias)]);
@@ -193,6 +220,7 @@ export function validarAtributos(
       evidencias,
       divergencia,
       posturas: textoPosturas,
+      existente: a.atributoExistente,
       confianza: calcularConfianza(
         evidencias.map((e) => ({ id: e.id, tipo: e.tipo })),
         divergencia,

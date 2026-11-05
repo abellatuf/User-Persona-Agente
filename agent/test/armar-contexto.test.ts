@@ -197,7 +197,7 @@ describe('etapa 1: armar contexto (H4)', () => {
     const r = await correr();
 
     expect(r.resultado).toBe('Error');
-    expect(r.errores[0]).toMatch(/No se escribió nada/);
+    expect(r.errores[0]).toMatch(/Ningún modelo devolvió/);
     expect(espacio.notion.escrituras()).toEqual([]);
   });
 

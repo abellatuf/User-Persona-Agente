@@ -46,8 +46,14 @@ function sembrarEvidencia(espacio: EspacioFalso, props: { titulo: string; extrac
  * Espacio con 2 miembros Completos y 4 evidencias, en este orden:
  * E1 Ana (PM), E2 Beto (Ingeniería), E3 pública, E4 Ana (PM).
  */
-function espacioBase() {
-  const espacio = new EspacioFalso();
+function espacioBase(camposDelContexto: Record<string, string> = {}) {
+  const espacio = new EspacioFalso({
+    contexto: {
+      Nombre: titulo('Producto'),
+      Estado: { status: { name: 'Confirmado' } },
+      ...Object.fromEntries(Object.entries(camposDelContexto).map(([campo, valor]) => [campo, texto(valor)])),
+    },
+  });
   const ana = sembrarEntrevista(espacio, 'Ana', 'PM');
   const beto = sembrarEntrevista(espacio, 'Beto', 'Ingeniería');
   sembrarEvidencia(espacio, { titulo: 'P10 · Ana (PM)', extracto: 'Quien decide es la comisión.', tipo: 'Supuesto del equipo', entrevista: ana });
@@ -61,11 +67,12 @@ const segmentos = (...s: Array<{ nombre: string; personaExistente?: string }>) =
   segmentos: s.map((x) => ({ nombre: x.nombre, porQueDistinto: `Distinto: ${x.nombre}.`, evidencias: ['E1'], personaExistente: x.personaExistente ?? '' })),
   informacionQueFalta: 'Datos de uso real.',
 });
-const atributo = (afirmacion: string, evidencias: string[], extra: Partial<{ categoria: string; posturas: Array<{ postura: string; evidencias: string[]; delContexto: boolean }> }> = {}) => ({
+const atributo = (afirmacion: string, evidencias: string[], extra: Partial<{ categoria: string; posturas: Array<{ postura: string; evidencias: string[]; campoDelContexto?: string }>; atributoExistente: string }> = {}) => ({
   afirmacion,
   categoria: extra.categoria ?? 'Problema',
   evidencias,
   posturas: extra.posturas ?? [],
+  atributoExistente: extra.atributoExistente ?? '',
 });
 const persona = (atributos: ReturnType<typeof atributo>[], cambios = '') => ({ atributos, informacionQueFalta: 'Falta hablar con pagadores.', cambiosRespectoDeLaAnterior: cambios });
 
@@ -86,8 +93,8 @@ describe('etapa 4: sintetizar (H7)', () => {
         atributo('Quién decide, usa y paga', [], {
           categoria: 'Contexto',
           posturas: [
-            { postura: 'Decide la comisión', evidencias: ['E1'], delContexto: false },
-            { postura: 'Es la misma persona', evidencias: ['E2'], delContexto: false },
+            { postura: 'Decide la comisión', evidencias: ['E1'] },
+            { postura: 'Es la misma persona', evidencias: ['E2'] },
           ],
         }),
         atributo('Pierde plata por cobros que fallan', ['E3', 'E4']),
@@ -135,21 +142,21 @@ describe('etapa 4: sintetizar (H7)', () => {
   });
 
   it('una misma fuente en dos posturas no es divergencia; el equipo contra el contexto, sí', async () => {
-    const { espacio } = espacioBase();
+    const { espacio } = espacioBase({ Competidores: 'Hay otras aplicaciones, pero no podemos nombrar competidores directos.' });
     const { correr, filas } = preparar(espacio, [
       segmentos({ nombre: 'Emisores' }),
       persona([
         atributo('Cómo cobran hoy', [], {
           posturas: [
-            { postura: 'Con planilla', evidencias: ['E1'], delContexto: false },
-            { postura: 'Con recordatorios', evidencias: ['E4'], delContexto: false },
+            { postura: 'Con planilla', evidencias: ['E1'] },
+            { postura: 'Con recordatorios', evidencias: ['E4'] },
           ],
         }),
         atributo('Si hay competidores directos', [], {
           categoria: 'Contexto',
           posturas: [
-            { postura: 'No hay competidores directos', evidencias: [], delContexto: true },
-            { postura: 'Hay alternativas que cobran recurrente', evidencias: ['E3'], delContexto: false },
+            { postura: 'No hay competidores directos', evidencias: [], campoDelContexto: 'Competidores' },
+            { postura: 'Hay alternativas que cobran recurrente', evidencias: ['E3'] },
           ],
         }),
       ]),
@@ -161,7 +168,8 @@ describe('etapa 4: sintetizar (H7)', () => {
     expect(mismoMiembro!['Divergencia']).toEqual({ checkbox: false });
     expect(r.notas.some((n) => n.includes('una misma fuente aparece en más de una postura'))).toBe(true);
     expect(conContexto!['Divergencia']).toEqual({ checkbox: true });
-    expect(textoDe(conContexto!['Posturas'])).toContain(`No hay competidores directos — ${FUENTE_CONTEXTO}`);
+    expect(textoDe(conContexto!['Posturas'])).toContain(`Campo Competidores: «Hay otras aplicaciones, pero no podemos nombrar competidores directos.» — ${FUENTE_CONTEXTO}`);
+    expect(textoDe(conContexto!['Posturas'])).not.toContain('No hay competidores directos');
     expect(textoDe(conContexto!['Posturas'])).toContain('Hay alternativas que cobran recurrente — Pública: Talo');
   });
 
@@ -188,7 +196,7 @@ describe('etapa 4: sintetizar (H7)', () => {
   });
 
   it('el contexto contra varias evidencias públicas es divergencia, y solo con públicas la confianza queda Baja', async () => {
-    const { espacio } = espacioBase();
+    const { espacio } = espacioBase({ Competidores: 'No podemos nombrar competidores directos.' });
     sembrarEvidencia(espacio, { titulo: 'Qobra', extracto: 'Orquesta el cobro de cuotas.', tipo: 'Pública' });
     const { correr, filas } = preparar(espacio, [
       segmentos({ nombre: 'Emisores' }),
@@ -196,8 +204,8 @@ describe('etapa 4: sintetizar (H7)', () => {
         atributo('Cómo resuelve hoy el cobro', [], {
           categoria: 'Comportamiento',
           posturas: [
-            { postura: 'No se pueden nombrar competidores directos', evidencias: [], delContexto: true },
-            { postura: 'Hay servicios que ya lo resuelven', evidencias: ['E3', 'E5'], delContexto: false },
+            { postura: 'No existen competidores', evidencias: [], campoDelContexto: 'Competidores' },
+            { postura: 'Hay servicios que ya lo resuelven', evidencias: ['E3', 'E5'] },
           ],
         }),
       ]),
@@ -208,9 +216,37 @@ describe('etapa 4: sintetizar (H7)', () => {
     const [a] = filas('atributos').map(([, x]) => x);
     expect(a!['Categoría']).toEqual({ select: { name: 'Comportamiento' } });
     expect(a!['Divergencia']).toEqual({ checkbox: true });
-    expect(textoDe(a!['Posturas'])).toBe(`• No se pueden nombrar competidores directos — ${FUENTE_CONTEXTO}\n• Hay servicios que ya lo resuelven — Pública: Talo; Pública: Qobra`);
+    expect(textoDe(a!['Posturas'])).toBe(`• Campo Competidores: «No podemos nombrar competidores directos.» — ${FUENTE_CONTEXTO}\n• Hay servicios que ya lo resuelven — Pública: Talo; Pública: Qobra`);
     expect((a!['Evidencias'] as { relation: unknown[] }).relation).toHaveLength(2);
     expect(a!['Confianza']).toEqual({ select: { name: 'Baja' } });
+  });
+
+  it('una postura con un campo que no existe o está vacío no cuenta como contexto; con evidencia, conserva su texto y suma el del campo', async () => {
+    const { espacio } = espacioBase({ 'Propuesta de valor': 'Conciliación manual.', Competidores: 'No encontrado' });
+    const { correr, filas } = preparar(espacio, [
+      segmentos({ nombre: 'Emisores' }),
+      persona([
+        atributo('Sin campo válido', [], {
+          posturas: [
+            { postura: 'Inventado', evidencias: [], campoDelContexto: 'Competidores' },
+            { postura: 'Con planilla', evidencias: ['E1'] },
+          ],
+        }),
+        atributo('Quién verifica', [], {
+          posturas: [
+            { postura: 'Verifica el emisor', evidencias: ['E1'], campoDelContexto: 'propuesta de valor' },
+            { postura: 'Lo automatiza', evidencias: ['E2'] },
+          ],
+        }),
+      ]),
+    ]);
+
+    const r = await correr();
+
+    const [sinCampo, conCampo] = filas('atributos').map(([, a]) => a);
+    expect(sinCampo!['Divergencia']).toEqual({ checkbox: false });
+    expect(r.notas.some((n) => n.includes('se descartó la fuente de contexto «Competidores»'))).toBe(true);
+    expect(textoDe(conCampo!['Posturas'])).toBe(`• Verifica el emisor · Campo Propuesta de valor: «Conciliación manual.» — Ana (PM); ${FUENTE_CONTEXTO}\n• Lo automatiza — Beto (Ingeniería)`);
   });
 
   it('dos investigaciones propias dan confianza Alta; una cargada con el formulario sin «Tipo» también cuenta', async () => {
@@ -298,6 +334,91 @@ describe('etapa 4: sintetizar (H7)', () => {
     expect(espacio.contadores().bloqueos).toBe(0);
   });
 
+  it('HU-12: si el modelo repite el texto que editó el PM, no se duplica el atributo', async () => {
+    const { espacio } = espacioBase();
+    const primera = preparar(espacio, [segmentos({ nombre: 'Emisores' }), persona([atributo('Pierde plata por morosos', ['E4'])])]);
+    await primera.correr();
+    const [idAtributo] = primera.filas('atributos')[0]!;
+    espacio.notion.editarComoPm(idAtributo, { 'Afirmación': titulo('Pierde plata porque los socios se olvidan') });
+
+    // Lo que hace un modelo real: recibe el texto editado y lo mantiene, como le pide el prompt.
+    const segunda = preparar(espacio, [segmentos({ nombre: 'Emisores', personaExistente: 'P1' }), persona([atributo('Pierde plata porque los socios se olvidan', ['E4', 'E3'])])]);
+    await segunda.correr();
+
+    expect(segunda.gemini.recibidas[1]!.usuario).toContain('Pierde plata porque los socios se olvidan');
+    expect(segunda.filas('atributos')).toHaveLength(1);
+    expect(textoDe(segunda.filas('atributos')[0]![1]['Sugerencia del agente'])).toContain('Propuesta del agente');
+  });
+
+  it('HU-12: con la referencia, una redacción nueva va a «Sugerencia del agente» y el texto del PM queda igual', async () => {
+    const { espacio } = espacioBase();
+    const primera = preparar(espacio, [segmentos({ nombre: 'Emisores' }), persona([atributo('Pierde plata por morosos', ['E4'])])]);
+    await primera.correr();
+    const [idAtributo] = primera.filas('atributos')[0]!;
+    espacio.notion.editarComoPm(idAtributo, { 'Afirmación': titulo('Texto del PM') });
+
+    const segunda = preparar(espacio, [segmentos({ nombre: 'Emisores', personaExistente: 'P1' }), persona([atributo('Otra redacción', ['E4'], { atributoExistente: 'A1' })])]);
+    await segunda.correr();
+
+    expect(segunda.gemini.recibidas[1]!.usuario).toContain('A1 · [Problema] Texto del PM');
+    const [fila, ...resto] = segunda.filas('atributos');
+    expect(resto).toHaveLength(0);
+    expect(textoDe(fila![1]['Afirmación'])).toBe('Texto del PM');
+    expect(fila![1]['Editado por el PM']).toEqual({ checkbox: true });
+    expect(textoDe(fila![1]['Sugerencia del agente'])).toContain('Otra redacción');
+  });
+
+  it('una redacción nueva de un atributo sin editar actualiza la misma fila, sin archivarla ni cambiar su clave', async () => {
+    const { espacio } = espacioBase();
+    const primera = preparar(espacio, [segmentos({ nombre: 'Emisores' }), persona([atributo('Primera redacción', ['E4'])])]);
+    await primera.correr();
+    const [idAtributo, antes] = primera.filas('atributos')[0]!;
+    const clave = textoDe(antes['Clave']);
+
+    const segunda = preparar(espacio, [segmentos({ nombre: 'Emisores', personaExistente: 'P1' }), persona([atributo('Segunda redacción', ['E4'], { atributoExistente: ' a1 ' })])]);
+    const r = await segunda.correr();
+
+    const filasNuevas = segunda.filas('atributos');
+    expect(filasNuevas).toHaveLength(1);
+    expect(filasNuevas[0]![0]).toBe(idAtributo);
+    expect(textoDe(filasNuevas[0]![1]['Afirmación'])).toBe('Segunda redacción');
+    expect(textoDe(filasNuevas[0]![1]['Clave'])).toBe(clave);
+    expect(r.notas.some((n) => n.includes('Archivada'))).toBe(false);
+  });
+
+  it('una referencia que no existe o se repite se ignora y queda anotada', async () => {
+    const { espacio } = espacioBase();
+    const primera = preparar(espacio, [segmentos({ nombre: 'Emisores' }), persona([atributo('Uno', ['E4'])])]);
+    await primera.correr();
+
+    const segunda = preparar(espacio, [
+      segmentos({ nombre: 'Emisores', personaExistente: 'P1' }),
+      persona([atributo('Uno bis', ['E4'], { atributoExistente: 'A1' }), atributo('Dos', ['E1'], { atributoExistente: 'A1' }), atributo('Tres', ['E2'], { atributoExistente: 'A9' })]),
+    ]);
+    const r = await segunda.correr();
+
+    expect(segunda.filas('atributos').map(([, a]) => textoDe(a['Afirmación']))).toEqual(['Uno bis', 'Dos', 'Tres']);
+    expect(r.notas.filter((n) => n.includes('se ignoró la referencia'))).toHaveLength(2);
+  });
+
+  it('avisa qué atributos tienen divergencia y deja una nota si una se archiva', async () => {
+    const { espacio } = espacioBase();
+    const posturas = [
+      { postura: 'Decide la comisión', evidencias: ['E1'] },
+      { postura: 'Es la misma persona', evidencias: ['E2'] },
+    ];
+    const primera = preparar(espacio, [segmentos({ nombre: 'Emisores' }), persona([atributo('Quién decide', [], { posturas })])]);
+    await primera.correr();
+
+    const segunda = preparar(espacio, [segmentos({ nombre: 'Emisores', personaExistente: 'P1' }), persona([atributo('Otra cosa', ['E4'])])]);
+    const r = await segunda.correr();
+
+    const enviado = segunda.gemini.recibidas[1]!.usuario;
+    expect(enviado).toContain('A1 · [Problema] Quién decide (con divergencia)');
+    expect(enviado).toContain('mantené esa divergencia');
+    expect(r.notas.some((n) => n.includes('se archivó «Quién decide», que tenía una divergencia'))).toBe(true);
+  });
+
   it('una persona Rechazada genera la versión 2, con el motivo en el prompt y el registro de cambios (T7.6)', async () => {
     const { espacio } = espacioBase();
     const v1 = espacio.notion.sembrar(BASES.personas, {
@@ -322,8 +443,10 @@ describe('etapa 4: sintetizar (H7)', () => {
     expect(textoDe(v2['Registro de cambios'])).toContain('Motivo de rechazo: «Mezcla profesionales con clubes.»');
     expect(textoDe(v2['Registro de cambios'])).toContain('Separé los clubes de los profesionales.');
     expect(gemini.recibidas[1]!.usuario).toContain('Mezcla profesionales con clubes.');
-    // La versión rechazada no se toca.
-    expect(espacio.notion.paginas.get(v1)!.properties['Estado']).toEqual({ status: { name: 'Rechazada' } });
+    // El prompt de segmentos pide responder al motivo y no repetir personas.
+    expect(gemini.recibidas[0]!.usuario).toContain('tienen que responder a ese motivo');
+    expect(gemini.recibidas[0]!.usuario).toContain('No propongas un segmento que cubra a las mismas personas');
+    // La versión rechazada no se toca.    expect(espacio.notion.paginas.get(v1)!.properties['Estado']).toEqual({ status: { name: 'Rechazada' } });
   });
 
   it('no toca las personas En revisión ni las Aprobadas', async () => {

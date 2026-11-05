@@ -200,6 +200,26 @@ describe('adaptador de OpenRouter', () => {
   });
 });
 
+describe('adaptador de OpenRouter: cuerpo inesperado', () => {
+  const api = new ApiModeloFalsa();
+  let openrouter: ProveedorOpenRouter;
+
+  beforeAll(async () => {
+    openrouter = new ProveedorOpenRouter('clave', 'openrouter/free', await api.iniciar());
+  });
+  afterAll(() => api.detener());
+
+  it('se reintenta como transitorio y registra dónde está el problema, sin copiar el contenido', async () => {
+    api.responder({ estado: 200, cuerpo: { model: 'm', choices: 'texto del prompt' } });
+
+    const e = await errorDe(openrouter.completar(peticion));
+
+    expect(e.tipo).toBe('transitorio');
+    expect(e.message).toBe('OpenRouter devolvió una respuesta con un formato inesperado (choices: invalid_type).');
+    expect(e.message).not.toContain('texto del prompt');
+  });
+});
+
 describe('esperaDeCabecera', () => {
   it('acepta segundos o una fecha HTTP', () => {
     expect(esperaDeCabecera('5')).toBe(5000);

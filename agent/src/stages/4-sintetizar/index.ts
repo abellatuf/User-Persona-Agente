@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import { claves } from '../../guards/claves.js';
+import { claves, normalizar } from '../../guards/claves.js';
 import { ErrorGeneracion, notasDeGeneracion, type Generador } from '../../llm/index.js';
 import type { EspacioNotion, FilaAtributo, FilaContexto, FilaPersona } from '../../notion/espacio.js';
 import * as p from '../../notion/propiedades.js';
@@ -11,6 +11,7 @@ import type { ContextoEtapa, FuncionEtapa, ResultadoEtapa } from '../registro.js
 import {
   armarControles,
   armarResumen,
+  camposConTexto,
   CATEGORIAS,
   esquemaPersona,
   esquemaSegmentos,
@@ -46,6 +47,9 @@ const TAREA_SEGMENTOS = [
   '- "porQueDistinto": por qué es un segmento distinto de los demás, en una o dos oraciones.',
   '- "evidencias": los identificadores (E1, E2…) de las evidencias que justifican el segmento.',
   '- "personaExistente": si el segmento corresponde a una de las personas existentes, su identificador (P1, P2…); si no, una cadena vacía.',
+  'Si una persona existente está Rechazada, leé su motivo: el nombre y "porQueDistinto" tienen que responder a ese motivo. Si el motivo cuestiona el nombre o una palabra del nombre, cambialos.',
+  'Si el motivo dice que esa persona no debería existir o que repite otra, no la propongas.',
+  'No propongas un segmento que cubra a las mismas personas que otro segmento o que una persona existente. Si es el mismo, indicá esa persona en "personaExistente".',
   'En "informacionQueFalta" contá, en una o dos oraciones, qué información haría falta para distinguir mejor los segmentos.',
 ].join('\n');
 
@@ -57,8 +61,11 @@ const TAREA_PERSONA = [
   'Si una evidencia pública y una del equipo dicen lo mismo, citá las dos.',
   'Citá evidencia pública solo si trata sobre los usuarios, el problema o el mercado del contexto. Si no, no la cites, aunque toque un tema parecido.',
   'Si la evidencia lo permite, incluí un atributo de categoría Comportamiento sobre cómo resuelve hoy el problema esta persona (herramientas, servicios, personas o procesos).',
-  'En ese atributo, compará la evidencia con el campo Competidores del contexto. Si la evidencia pública muestra alternativas que ponen en duda lo que dice ese campo, es una divergencia: una postura con "delContexto" en true y otra con esas evidencias públicas. Si el campo dice "No encontrado", no hay desacuerdo.',
-  'Divergencias: si hay posturas incompatibles sobre el mismo aspecto, entre miembros del equipo o entre el equipo y la evidencia pública o el contexto, escribí la afirmación de forma neutral (describí el aspecto, sin elegir una postura) y listá cada postura en "posturas", con sus evidencias. Marcá "delContexto" en true si la postura sale del contexto del producto. Si no hay desacuerdo, dejá "posturas" vacío.',
+  'En ese atributo, compará la evidencia con el campo Competidores del contexto. Si la evidencia pública muestra alternativas que ponen en duda lo que dice ese campo, es una divergencia: una postura con "campoDelContexto" igual a "Competidores" y otra con esas evidencias públicas. Si el campo dice "No encontrado", no hay desacuerdo.',
+  'Divergencias: si hay posturas incompatibles sobre el mismo aspecto, entre miembros del equipo o entre el equipo y la evidencia pública o el contexto, escribí la afirmación de forma neutral (describí el aspecto, sin elegir una postura) y listá cada postura en "posturas", con sus evidencias. Si una postura sale del contexto del producto, poné en "campoDelContexto" el nombre exacto del campo; el texto de ese campo se copia tal cual. Si no, dejalo vacío. Si no hay desacuerdo, dejá "posturas" vacío.',
+  'Si te paso atributos actuales con identificador (A1, A2…), poné en "atributoExistente" el identificador del atributo al que corresponde cada uno, aunque cambies la redacción. Si es nuevo, dejalo vacío.',
+  'Si un atributo actual dice (con divergencia) y las evidencias de sus posturas siguen, mantené esa divergencia.',
+  'Si hay un motivo de rechazo, aplicalo también a la redacción de los atributos.',
   'Nunca elijas una postura ni digas cuál es la correcta.',
   'En "informacionQueFalta" contá qué información falta para conocer mejor a esta persona.',
   'En "cambiosRespectoDeLaAnterior" explicá qué cambiaste respecto de la versión anterior y cómo respondés al motivo de rechazo. Si no hay versión anterior, dejalo vacío.',
@@ -130,6 +137,7 @@ interface Contexto {
   mapa: Map<string, EvidenciaPreparada>;
   atributosExistentes: FilaAtributo[];
   otrosSegmentos: string[];
+  campos: ReturnType<typeof camposConTexto>;
   entrevistas: number;
   notaEntrevistas: string;
   hayPublica: boolean;
@@ -146,14 +154,16 @@ async function sintetizarPersona(c: Contexto, segmento: SegmentoValidado, destin
       contenido: `Nombre: ${segmento.nombre}\nPor qué es distinto: ${segmento.porQueDistinto}\nOtros segmentos de esta síntesis: ${c.otrosSegmentos.filter((n) => n !== segmento.nombre).join('; ') || 'ninguno'}`,
     },
   ];
-  if (previa) {
-    const actuales = c.atributosExistentes.filter((a) => a.personas.includes(previa.id));
-    if (actuales.length) {
-      datos.push({
-        fuente: destino.tipo === 'version' ? 'Atributos de la versión anterior (rechazada)' : 'Atributos actuales de esta persona (mantené la redacción si siguen valiendo)',
-        contenido: actuales.map((a) => `- [${a.categoria ?? 'Sin categoría'}] ${a.afirmacion}`).join('\n'),
-      });
-    }
+  const actuales = previa ? c.atributosExistentes.filter((a) => a.personas.includes(previa.id)) : [];
+  // Solo los atributos de la misma persona se actualizan: los de una rechazada son historial.
+  const refs = new Map(destino.tipo === 'actualizar' ? actuales.map((a, i) => [`A${i + 1}`, a]) : []);
+  if (actuales.length) {
+    const linea = (a: FilaAtributo, i: number) =>
+      `${destino.tipo === 'actualizar' ? `A${i + 1} ·` : '-'} [${a.categoria ?? 'Sin categoría'}] ${a.afirmacion}${a.divergencia ? ' (con divergencia)' : ''}`;
+    datos.push({
+      fuente: destino.tipo === 'version' ? 'Atributos de la versión anterior (rechazada)' : 'Atributos actuales de esta persona (mantené la redacción si siguen valiendo)',
+      contenido: actuales.map(linea).join('\n'),
+    });
   }
   if (destino.tipo === 'version') {
     datos.push({ fuente: 'Motivo de rechazo del PM', contenido: destino.anterior.motivoRechazo || 'El PM no indicó un motivo.' });
@@ -162,9 +172,25 @@ async function sintetizarPersona(c: Contexto, segmento: SegmentoValidado, destin
 
   const mensajes = armarPrompt({ tarea: TAREA_PERSONA, datos, idioma: c.idioma, esquema: esquemaPersona });
   const generado = await c.generar({ mensajes, esquema: esquemaPersona });
-  const atributos = validarAtributos(generado.datos.atributos, c.mapa, segmento.nombre, c.notas);
-  const id = await escribirPersona(c, segmento, destino, atributos, generado.datos);
+  const atributos = validarAtributos(generado.datos.atributos, c.mapa, segmento.nombre, c.notas, c.campos);
+  const id = await escribirPersona(c, segmento, destino, atributos, generado.datos, refs);
   return { id, atributos, proveedorModelo: generado.proveedorModelo, notasModelo: notasDeGeneracion(generado) };
+}
+
+/**
+ * El atributo actual que corresponde a una propuesta: el que indicó el modelo o, si no indicó
+ * ninguno, el que tiene el mismo texto. La clave no alcanza: sale del texto original, y el
+ * modelo recibe el texto que dejó el PM (HU-12).
+ */
+function atributoActual(a: AtributoValidado, refs: Map<string, FilaAtributo>, usados: Set<string>, persona: string, notas: string[]): FilaAtributo | undefined {
+  const ref = a.existente.trim().toUpperCase().replace(/[^A0-9]/g, '');
+  if (ref) {
+    const fila = refs.get(ref);
+    if (fila && !usados.has(fila.id)) return fila;
+    notas.push(`${persona} · «${a.afirmacion}»: se ignoró la referencia «${a.existente}», que no existe o ya se usó.`);
+  }
+  const texto = normalizar(a.afirmacion);
+  return [...refs.values()].find((x) => !usados.has(x.id) && normalizar(x.afirmacion) === texto);
 }
 
 async function escribirPersona(
@@ -173,6 +199,7 @@ async function escribirPersona(
   destino: Exclude<Destino, { tipo: 'saltear' }>,
   atributos: AtributoValidado[],
   salida: z.infer<typeof esquemaPersona>,
+  refs: Map<string, FilaAtributo>,
 ): Promise<string> {
   const props: Record<string, unknown> = {
     'Por qué es un segmento distinto': p.texto(segmento.porQueDistinto),
@@ -213,27 +240,29 @@ async function escribirPersona(
   const escritas = new Set<string>();
   for (const a of atributos) {
     const clave = claves.atributo(destino.clave, a.categoria, a.afirmacion);
-    escritas.add(clave);
-    await c.espacio.escritor.guardar(
-      'atributos',
-      {
-        'Afirmación': p.titulo(a.afirmacion),
-        'Categoría': p.seleccion(a.categoria),
-        Persona: p.relacion([id]),
-        Evidencias: p.relacion(a.evidencias.map((e) => e.id)),
-        Confianza: p.seleccion(a.confianza),
-        Divergencia: { checkbox: a.divergencia },
-        Posturas: p.texto(a.posturas),
-      },
-      { clave },
-    );
+    const propiedades = {
+      'Afirmación': p.titulo(a.afirmacion),
+      'Categoría': p.seleccion(a.categoria),
+      Persona: p.relacion([id]),
+      Evidencias: p.relacion(a.evidencias.map((e) => e.id)),
+      Confianza: p.seleccion(a.confianza),
+      Divergencia: { checkbox: a.divergencia },
+      Posturas: p.texto(a.posturas),
+    };
+    const actual = atributoActual(a, refs, escritas, segmento.nombre, c.notas);
+    // Un atributo actual se actualiza por su id y conserva su clave, aunque cambie la redacción.
+    const { id: idAtributo } = actual
+      ? await c.espacio.escritor.actualizar('atributos', actual.id, actual.clave ? propiedades : { ...propiedades, Clave: p.texto(clave) })
+      : await c.espacio.escritor.guardar('atributos', propiedades, { clave });
+    escritas.add(idAtributo);
   }
 
   // Lo que ya no se propone se archiva, salvo lo que editó el PM (se conserva y se avisa).
   if (destino.tipo === 'actualizar') {
-    for (const viejo of c.atributosExistentes.filter((x) => x.personas.includes(id) && !escritas.has(x.clave))) {
+    for (const viejo of c.atributosExistentes.filter((x) => x.personas.includes(id) && !escritas.has(x.id))) {
       const impedimento = await c.espacio.escritor.archivarSiSePuede('atributos', viejo.id, 'la nueva síntesis ya no lo propone.');
       if (impedimento) c.notas.push(`${segmento.nombre}: se conserva «${viejo.afirmacion}», que ya no se propone: ${impedimento}`);
+      else if (viejo.divergencia) c.notas.push(`${segmento.nombre}: se archivó «${viejo.afirmacion}», que tenía una divergencia, porque el modelo ya no la propuso. Revisá si sigue vigente.`);
     }
   }
 
@@ -304,6 +333,7 @@ export const sintetizarEtapa: FuncionEtapa = async ({ solicitud, espacio, genera
     mapa: new Map(evidencias.map((e) => [e.ref, e])),
     atributosExistentes: await espacio.leerAtributos(),
     otrosSegmentos: segmentos.map((s) => s.nombre),
+    campos: camposConTexto(contexto),
     entrevistas: seleccion.incluidas.length,
     notaEntrevistas: seleccion.excluidas.length ? `Quedaron afuera ${seleccion.excluidas.length} entrevista(s) incompleta(s), a pedido del PM.` : '',
     hayPublica: evidencias.some((e) => e.tipo === 'Pública'),

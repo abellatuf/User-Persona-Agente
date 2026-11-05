@@ -23,7 +23,7 @@ export interface ResultadoGeneracion<T> {
   datosPersonalesOcultos: number;
 }
 
-/** Ningún proveedor devolvió una respuesta válida: no se escribe nada. */
+/** Ningún proveedor devolvió una respuesta válida para esta llamada. */
 export class ErrorGeneracion extends Error {
   override name = 'ErrorGeneracion';
   constructor(
@@ -41,8 +41,10 @@ export interface OpcionesGenerador {
   /** Reintentos ante límite de uso o error transitorio, por proveedor. */
   reintentos?: number;
   esperaInicialMs?: number;
-  /** Tope de cada espera, aunque el proveedor pida más. */
+  /** Tope de la espera que pide el proveedor. */
   esperaMaximaMs?: number;
+  /** Esperas ante un error transitorio (503, timeout), una por reintento. */
+  esperasTransitorioMs?: readonly number[];
   esperar?: (ms: number) => Promise<void>;
 }
 
@@ -61,6 +63,25 @@ const sumar = (a: Tokens, b: Tokens): Tokens => ({
 
 const CERO: Tokens = { entrada: 0, salida: 0, total: 0 };
 
+/** Un 503 por alta demanda dura más que un límite por minuto: conviene esperar más antes de pasar al respaldo. */
+const ESPERAS_TRANSITORIO_MS = [10_000, 30_000];
+
+/** Escrituras que delatan otro idioma. Quedan afuera griego y latín, que aparecen en textos técnicos o en cualquier español. */
+const ESCRITURAS: ReadonlyArray<{ nombre: string; patron: RegExp }> = [
+  { nombre: 'china o japonesa', patron: /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/u },
+  { nombre: 'coreana', patron: /\p{Script=Hangul}/u },
+  { nombre: 'cirílica', patron: /\p{Script=Cyrillic}/u },
+  { nombre: 'árabe', patron: /\p{Script=Arabic}/u },
+  { nombre: 'hebrea', patron: /\p{Script=Hebrew}/u },
+  { nombre: 'tailandesa', patron: /\p{Script=Thai}/u },
+  { nombre: 'devanagari', patron: /\p{Script=Devanagari}/u },
+];
+
+/** Escrituras de la respuesta que no están en el prompt: el modelo mezcló otro idioma (RNF-05). */
+export function escriturasAjenas(respuesta: string, prompt: string): string[] {
+  return ESCRITURAS.filter((e) => e.patron.test(respuesta) && !e.patron.test(prompt)).map((e) => e.nombre);
+}
+
 /** Saca el JSON de la respuesta, aunque venga envuelto en un bloque de código o con texto alrededor. */
 export function extraerJson(texto: string): unknown {
   const limpio = texto.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
@@ -74,7 +95,7 @@ export function extraerJson(texto: string): unknown {
   }
 }
 
-function problemasDeFormato(texto: string, esquema: z.ZodType): { ok: true; datos: unknown } | { ok: false; problema: string } {
+function problemasDeFormato(texto: string, esquema: z.ZodType, prompt: string): { ok: true; datos: unknown } | { ok: false; problema: string } {
   let json: unknown;
   try {
     json = extraerJson(texto);
@@ -82,7 +103,11 @@ function problemasDeFormato(texto: string, esquema: z.ZodType): { ok: true; dato
     return { ok: false, problema: 'La respuesta no es un JSON válido.' };
   }
   const r = esquema.safeParse(json);
-  if (r.success) return { ok: true, datos: r.data };
+  if (r.success) {
+    const ajenas = escriturasAjenas(JSON.stringify(r.data), prompt);
+    if (ajenas.length === 0) return { ok: true, datos: r.data };
+    return { ok: false, problema: `La respuesta mezcla otro idioma: tiene texto en escritura ${ajenas.join(' y ')}. Escribí todos los textos en el idioma pedido.` };
+  }
   const problemas = r.error.issues
     .slice(0, 5)
     .map((i) => `${i.path.length ? i.path.join('.') : '(raíz)'}: ${i.message}`)
@@ -104,13 +129,14 @@ function pedidoDeCorreccion(problema: string): string {
  * 1. Oculta los datos personales de los mensajes antes de cualquier llamada (RNF-06).
  * 2. Ante límite de uso o error transitorio, reintenta con espera creciente.
  * 3. Ante clave inválida, modelo inexistente o bloqueo, pasa directo al respaldo.
- * 4. Ante formato inválido, reintenta una vez con el problema en el prompt.
+ * 4. Ante formato inválido u otro idioma, reintenta una vez con el problema en el prompt.
  *    Si sigue mal, prueba con el respaldo. Si también falla, no devuelve nada.
  */
 export function crearGenerador(opciones: OpcionesGenerador): Generador {
   const reintentos = opciones.reintentos ?? 2;
   const esperaInicial = opciones.esperaInicialMs ?? 2_000;
   const esperaMaxima = opciones.esperaMaximaMs ?? 20_000;
+  const esperasTransitorio = opciones.esperasTransitorioMs ?? ESPERAS_TRANSITORIO_MS;
   const esperar = opciones.esperar ?? ((ms: number) => dormir(ms).then(() => undefined));
   const proveedores = [opciones.principal, ...(opciones.respaldo ? [opciones.respaldo] : [])];
 
@@ -122,6 +148,7 @@ export function crearGenerador(opciones: OpcionesGenerador): Generador {
       0,
     );
     const esquema = esquemaJson(pedido.esquema);
+    const prompt = `${sistema.texto}\n${usuario.texto}`;
     const intentos: Intento[] = [];
     let tokens = CERO;
 
@@ -141,7 +168,13 @@ export function crearGenerador(opciones: OpcionesGenerador): Generador {
           intentos.push({ ...base, resultado: `error: ${error.tipo}`, detalle: error.message });
           const esperable = error.tipo === 'limite' || error.tipo === 'transitorio';
           if (esperable && esperas < reintentos) {
-            const ms = Math.min(error.opciones.esperaMs ?? esperaInicial * 2 ** esperas, esperaMaxima);
+            const pedida = error.opciones.esperaMs;
+            const ms =
+              pedida !== undefined
+                ? Math.min(pedida, esperaMaxima)
+                : error.tipo === 'transitorio'
+                  ? (esperasTransitorio[esperas] ?? esperasTransitorio.at(-1) ?? esperaInicial)
+                  : esperaInicial * 2 ** esperas;
             esperas++;
             await esperar(ms);
             continue;
@@ -151,7 +184,7 @@ export function crearGenerador(opciones: OpcionesGenerador): Generador {
 
         tokens = sumar(tokens, respuesta.tokens);
         const modeloReal = respuesta.modelo || proveedor.modelo;
-        const formato = problemasDeFormato(respuesta.texto, pedido.esquema);
+        const formato = problemasDeFormato(respuesta.texto, pedido.esquema, prompt);
         if (formato.ok) {
           intentos.push({ ...base, modelo: modeloReal, resultado: 'ok', tokens: respuesta.tokens });
           return {
@@ -170,7 +203,7 @@ export function crearGenerador(opciones: OpcionesGenerador): Generador {
       }
     }
 
-    throw new ErrorGeneracion('Ningún modelo devolvió una respuesta válida. No se escribió nada.', intentos, tokens);
+    throw new ErrorGeneracion('Ningún modelo devolvió una respuesta válida.', intentos, tokens);
   };
 }
 

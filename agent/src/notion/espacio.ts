@@ -105,6 +105,7 @@ export interface FilaAtributo {
   categoria: string | null;
   personas: string[];
   clave: string;
+  divergencia: boolean;
 }
 
 /** Esquema de una base: propiedad → tipo y, si es selección o estado, sus opciones. */
@@ -326,6 +327,7 @@ export class EspacioNotionMcp implements EspacioNotion {
       categoria: p.leerSeleccion(fila, 'Categoría'),
       personas: p.leerRelacion(fila, 'Persona'),
       clave: p.leerTexto(fila, 'Clave').trim(),
+      divergencia: p.leerCasilla(fila, 'Divergencia'),
     }));
   }
 

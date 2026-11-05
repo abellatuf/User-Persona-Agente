@@ -89,7 +89,17 @@ export class ProveedorOpenRouter implements Proveedor {
     }
 
     const datos = respuestaOpenRouter.safeParse(cuerpo);
-    if (!datos.success) throw new ErrorModelo('OpenRouter devolvió una respuesta con un formato inesperado.', 'otro');
+    if (!datos.success) {
+      // Solo la ruta y el tipo de problema: el cuerpo puede repetir datos del prompt.
+      const motivo =
+        cuerpo === undefined
+          ? 'el cuerpo no es un JSON'
+          : datos.error.issues
+              .slice(0, 3)
+              .map((i) => `${i.path.join('.') || '(raíz)'}: ${i.code}`)
+              .join('; ');
+      throw new ErrorModelo(`OpenRouter devolvió una respuesta con un formato inesperado (${motivo}).`, 'transitorio');
+    }
     const eleccion = datos.data.choices?.[0];
     // OpenRouter puede devolver 200 con el error del proveedor dentro de la elección.
     if (eleccion?.error) {
