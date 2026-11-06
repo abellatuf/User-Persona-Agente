@@ -35,7 +35,9 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 - **Repreguntas en el cuerpo de la página** (H5, 2026-10-24): el servidor MCP de Notion solo escribe párrafos, así que cada repregunta usa renglones con marcas fijas (❓ y ✍️). El miembro responde debajo de «✍️ Tu respuesta:» y no tiene que borrar las marcas.
 - **Aviso de privacidad del H6** (2026-10-26): Abel agregó a mano, en la descripción de la base Contexto del producto, que las consultas de búsqueda de *Relevar la web* se arman con el contexto y se envían a Tavily, con los datos personales ocultos. Se hizo a mano porque el MCP de Notion no muestra esa descripción y pisarla sin verla borraría el aviso del H4.
 
+- **Formulario *Investigación propia*** (H7, 2026-10-31): vista de formulario sobre Evidencia, con *Título*, *Método de investigación*, *Fecha de consulta*, *Muestra*, *Extracto* y *Tipo* (HU-08). El MCP de Notion solo deja ver la pregunta del título, así que las demás preguntas y la descripción («No incluyas datos personales…») las revisa Abel a mano. Abel corrigió la opción «Análitica» a «Analítica» en *Método de investigación*.
+- **Atributos y Sugerencia del agente** (H7, 2026-11-05): al volver a sintetizar, el agente actualiza cada atributo por su fila (A1, A2… en el prompt). Si el PM lo editó, conserva su texto y deja la propuesta completa en *Sugerencia del agente*. En *Posturas*, una postura del contexto se escribe como «Campo *Nombre*: «texto del campo»», con el texto copiado tal cual.
+
 ## Pendiente
 
-- **Formularios:** investigación propia sobre Evidencia.
 - **Vistas útiles:** por ejemplo, Solicitudes pendientes y personas por estado.

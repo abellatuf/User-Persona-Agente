@@ -13,7 +13,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H4. Agente de contexto | ✅ Cerrado |
 | H5. Entrevistas | ✅ Cerrado |
 | H6. Web | ✅ Cerrado |
-| H7. Síntesis | ⚪ Pendiente |
+| H7. Síntesis | ✅ Cerrado |
 | H8. Validación y persona viva | ⚪ Pendiente |
 | H9. Evaluaciones y aceptación | ⚪ Pendiente |
 
@@ -671,7 +671,7 @@ La [página de precios de la API de Gemini](https://ai.google.dev/gemini-api/doc
 - **Flojas:** la cita existe, pero aportan poco o son de otro mercado: fichas de CB Insights (Wallbit, Prex, HSBC y Uelz), CoinMarketCap, el programa PEI, Stripe (e-commerce en general), Point Tap, Rankia, Mercado Pago **Colombia** y una pasarela de **Guatemala**.
 
 **Dos hallazgos para el H7:**
-1. **Qobra, Mercado Pago Suscripciones y Recaudo contradicen el campo *Competidores* del contexto**, que dice que no hay competidores directos. La síntesis tiene que mostrar esta divergencia entre el equipo y la evidencia pública.
+1. **Qobra, Mercado Pago Suscripciones y Recaudo contradicen el campo *Competidores* del contexto**, que dice «no podemos nombrar competidores directos». La síntesis tiene que mostrar esta divergencia entre el equipo y la evidencia pública.
 2. **Casi todas las fuentes son de empresas que venden una solución.** No quedó ninguna voz directa de usuarios: los foros bloquean la lectura (Reddit dio 403) y el tema *Opiniones* no guardó nada útil. Hay que tenerlo en cuenta al asignar la confianza de los atributos.
 
 **El límite diario de Gemini es bajo.** La última corrida mostró el detalle de la cuota: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, **límite 20** pedidos por día para `gemini-3.6-flash`. Hoy se gastaron entre las pruebas y las demos, y el respaldo de OpenRouter cubrió lo que faltaba. Una corrida de *Relevar la web* usa unos 5 pedidos.
@@ -690,3 +690,109 @@ La [página de precios de la API de Gemini](https://ai.google.dev/gemini-api/doc
 3. **No reintentar un límite diario:** si el 429 dice que la cuota es por día, pasar directo al respaldo en lugar de esperar y reintentar.
 4. **Cuota diaria de Gemini (20 pedidos):** tenerla en cuenta al diseñar el H7, que va a necesitar varias llamadas por corrida.
 5. Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías.
+
+---
+
+## H7. Etapa 4: síntesis de personas
+
+El agente ya propone **User Personas en *Borrador*** a partir de la evidencia de las entrevistas, la web y la investigación propia. Cada atributo cita su evidencia, la confianza la calcula el código y las divergencias muestran cada postura con su autor.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T7.1 Prompt y esquema de segmentos y personas | 🤖 | ✅ Hasta 5 segmentos, cada uno con *Por qué es un segmento distinto* |
+| T7.2 Atributos vinculados a la evidencia | 🤖 | ✅ Hasta 10 por persona, 100 % con evidencia y confianza calculada por código |
+| T7.3 Divergencias con posturas y autores | 🤖 | ✅ Detectó Competidores, P06 y el rol del pagador (P01 y P09); P10 solo en personas rechazadas |
+| T7.4 Resumen y *Controles* | 🤖 | ✅ Los arma el código |
+| T7.5 Investigación propia del formulario | 🤖 | ✅ Formulario *Investigación propia*; la regla de confianza la cubren las pruebas (ver el resultado) |
+| T7.6 Motivo de rechazo en la versión siguiente | 🤖 | ✅ Tesorero v2 respondió al motivo de la v1; la v2 se descartó por su motivo |
+
+### Decisiones de diseño (aprobadas por Abel el 2026-10-31)
+
+- **Dos tipos de llamada:** una propone hasta **5 segmentos** y otra por persona propone hasta **10 atributos**. El tope de atributos es nuevo, para evitar atributos decorativos.
+- **A. Evidencia verificada por código.** Cada evidencia citada (E1, E2…) tiene que existir, y cada atributo tiene que citar al menos una.
+- **B. La confianza la calcula el código** (`calcularConfianza`), no el modelo: Alta con dos investigaciones propias, Media con una o con una pública y una del equipo, y Baja en los demás casos. Una divergencia sin resolver baja Alta a Media.
+- **C. Divergencia solo con fuentes distintas:** hacen falta al menos dos posturas de fuentes distintas (miembros distintos, o el equipo contra la evidencia pública o el contexto). **El autor y el rol los pone el código**, a partir de la evidencia citada.
+- **D. Topes** de personas y de atributos por persona.
+- **Volver a sintetizar** actualiza el *Borrador* sin pisar al PM. Una persona *Rechazada* genera una **versión nueva** que responde al motivo, y *En revisión* y *Aprobada* no se tocan (la versión por evidencia nueva es del H8).
+
+### Cómo funciona *Sintetizar*
+
+1. Necesita el contexto **Confirmado** y las entrevistas **Completas**, salvo que la solicitud pida avanzar sin las incompletas. Primero guarda como evidencia las respuestas a repreguntas que faltaban.
+2. **Segmentos:** el modelo recibe el contexto, las personas existentes (P1, P2…, con su estado y su motivo de rechazo) y la evidencia (E1, E2…), y propone los segmentos. Cada uno indica si corresponde a una persona existente.
+3. **Destino de cada segmento:** si la persona está en *Borrador* se actualiza, si está *Rechazada* se crea la versión siguiente, y si está *En revisión* o *Aprobada* se saltea con el motivo.
+4. **Atributos:** una llamada por persona. Los atributos actuales llegan como A1, A2…, marcados si tienen divergencia, y el modelo indica a cuál corresponde cada propuesta. Las posturas que salen del contexto indican el campo (`campoDelContexto`), y el código copia el texto tal cual.
+5. **Escritura:** el código valida A a D, escribe la persona con *Resumen* y *Controles*, y actualiza la fila de cada atributo. Si el PM lo editó, la propuesta va a *Sugerencia del agente*. Lo que ya no se propone se archiva, salvo lo que editó el PM, y se avisa si se archiva un atributo con divergencia.
+6. **Ejecuciones:** los segmentos, cada persona con sus atributos y divergencias, lo descartado y por qué, los intentos de cada llamada y los tokens.
+
+### Decisiones tomadas al implementar
+
+- **2026-10-31:** una evidencia sin *Tipo* pero con *Método de investigación* cuenta como investigación propia. El nombre de la persona lo pone el agente solo al crearla; después es del PM.
+- **2026-11-04, opción A (aprobada por Abel):** el prompt de cada persona pide un atributo de *Comportamiento* sobre cómo resuelve hoy el problema, compararlo con el campo *Competidores* y citar evidencia pública solo si trata sobre los usuarios, el problema o el mercado. Se descartó una llamada aparte, por la cuota diaria de Gemini.
+- **2026-11-05, siete correcciones (aprobadas por Abel):**
+  1. Si la respuesta usa una escritura que no está en el prompt (chino, cirílico), cuenta como formato inválido y se pide corregir. No detecta inglés.
+  2. El prompt de segmentos responde al motivo de rechazo y no repite personas; si el motivo dice que la persona no debería existir, no se propone.
+  3. `campoDelContexto` reemplaza a `delContexto`, y el texto del campo se copia tal cual.
+  4. La ficha de HSBC (CB Insights) se mandó a la papelera, sin tocar código.
+  5. OpenRouter reintenta un cuerpo inesperado y registra el motivo, sin copiar el contenido. Ante un 503 se espera 10 y 30 s, y `agente.yml` tiene un tope de 20 minutos.
+  6. Los atributos con divergencia llegan marcados, y se avisa si se archiva uno.
+  7. Edición del PM (HU-12): una prueba confirmó que el texto editado generaba otra clave y otra fila. Ahora se actualiza la fila indicada con A1, A2… o, si el modelo no indica ninguna, la que tiene el mismo texto.
+
+  Limitación que queda: si el modelo no indica la fila y cambia el texto, la fila del PM se conserva con una nota y aparece otra.
+
+### Pruebas
+
+`npm test` corre **231 pruebas**, sin red ni secretos: 218 con la etapa original, 220 con la opción A y 231 con las correcciones del 05/11. Las de la etapa cubren las reglas A a D, el resumen y los controles, el destino de cada persona según su estado, la versión nueva de una rechazada, no pisar al PM, el archivado, las referencias A1… y `campoDelContexto`. Las de `generar` y OpenRouter cubren la escritura ajena al prompt, las esperas ante un 503 y el cuerpo inesperado. Al sacar a propósito la regla de fuentes distintas, falla una prueba.
+
+> Commits del H7: la etapa (`d3535c5` y `a7d28c1`, 218 pruebas), la opción A (`f0cfc76`, 220) y las correcciones (`3af8f95`, 231).
+
+### Demo de cierre del H7 (la hace Abel)
+
+La guía, paso por paso, está en [demo-h7-guia.md](demo-h7-guia.md).
+
+**Demo de cierre del H7:** personas en *Borrador* con atributos trazables, divergencias detectadas, la edición del PM respetada y el rechazo atendido. **Cumplida el 2026-11-06.**
+
+### Resultado de la demo del H7
+
+| Corrida | Resultado | Qué mostró |
+|---------|-----------|------------|
+| [2026-10-31 17:14](https://app.notion.com/p/40a245a35f2b8154bbb5e25c4b121212) | *Lista* | 3 personas: Profesional independiente, Dueño de comercio o servicio y Tesorero de organización chica. Detectó divergencias del H5, pero **no Competidores** (llevó a la opción A) |
+| [2026-11-05 10:03](https://app.notion.com/p/40f245a35f2b811fbcb7c450a04bd9b0) | *Error* | Tres 503 de Gemini y un cuerpo inesperado de OpenRouter en la llamada de segmentos. No escribió personas |
+| [2026-11-05 11:19](https://app.notion.com/p/40f245a35f2b81b398f0d7b318e7088d) | *Incompleta* | 4 personas, entre ellas **Tesorero v2**, que respondió al motivo de la v1. **Detectó Competidores.** Mostró los problemas que llevaron a las 7 correcciones |
+| [2026-11-06 12:31](https://app.notion.com/p/410245a35f2b81528f5bd7be74084f12) | *Lista* | La corrida que prueba las correcciones (ver abajo) |
+
+**Corrida final (2026-11-06):**
+
+| Qué se probó | Resultado |
+|--------------|-----------|
+| Edición del PM (HU-12) | ✅ [El atributo editado](https://app.notion.com/p/40a245a35f2b818c816cd11a32bf8a53) conservó el texto de Abel, sin una fila duplicada, con *Editado por el PM* y la propuesta en *Sugerencia del agente* |
+| Idioma | ✅ Sin texto en otro idioma; el «Por qué» de Dueño, que tenía chino, se reescribió |
+| Competidores | ✅ En las dos personas, la postura del contexto copia el campo tal cual: «…no podemos nombrar competidores directos» |
+| Divergencias | ✅ Profesional independiente: Competidores, P06 y el rol del pagador (P01 y P09). Dueño: Competidores. **No se archivó ningún atributo** (el 05/11 se habían archivado 6) |
+| Rechazo | Tesorero v2 tenía el motivo «no aplica en el común de los casos»: el modelo no la volvió a proponer, como pide la corrección 2. **No hay una v3**, y *Ejecuciones* no lo avisa |
+| Esperas | ✅ Gemini dio 5 errores 503 en las 3 llamadas y las esperas los resolvieron, sin pasar al respaldo. No hubo errores de OpenRouter |
+
+Personas vigentes: [Profesional independiente](https://app.notion.com/p/40a245a35f2b81a78e8eea7342090e2f) (8 atributos, 3 con divergencia) y [Dueño de comercio o servicio](https://app.notion.com/p/40a245a35f2b810b9210c72250b826fd) (7 atributos, 1 con divergencia), las dos en *Borrador*. Quedan como historial Tesorero [v1](https://app.notion.com/p/40a245a35f2b81439461d127efdc6f25) y [v2](https://app.notion.com/p/40f245a35f2b8109aa32d18254d80655), las dos *Rechazadas*.
+
+**P10 (quién decide, usa y paga) quedó como divergencia solo en las personas rechazadas.** En Profesional independiente es razonable, porque ahí la misma persona decide, usa y paga. En Dueño de comercio se puede discutir, y lo revisa el PM.
+
+**Investigación propia (T7.5).** La ficha de PRUEBA («encuesta simulada a 20 clubes») se citó en 3 atributos, pero esos atributos ya tenían Media por una pública y una del equipo, así que la subida de confianza no se vio aislada. La regla la cubren las pruebas. Después de la demo, con el OK de Abel, la ficha se mandó a la papelera. El *Resumen* de Dueño todavía la cuenta, y se corrige en la próxima síntesis.
+
+**Gasto:** la corrida final hizo 3 llamadas exitosas, con unos 35.000 tokens, y tardó 4 minutos.
+
+> **Lecciones aprendidas:**
+> - **La demo encontró lo que las pruebas no veían:** texto en chino, posturas parafraseadas y la fila duplicada al editar. Las pruebas verifican que la regla llegue al modelo; lo que el modelo hace con ella se ve en la demo.
+> - **Lo que copia el código es más confiable que lo que copia el modelo.** Con `campoDelContexto`, la cita del contexto es textual siempre, igual que las citas del H4 y el H6.
+> - **Un identificador corto (A1, P1, E1) es mejor que pedirle al modelo que repita un texto.** Resolvió la edición del PM sin depender de la redacción.
+> - **Un motivo de rechazo puede pedir que la persona desaparezca,** y el agente lo respeta. Lo que falta es que *Ejecuciones* lo diga.
+> - **Esperar ante un 503 rindió:** en la corrida final no hizo falta el respaldo.
+
+### Pendientes que salieron de la demo
+
+Sin tocar código hasta que Abel los apruebe, para el H8 o el H9:
+
+1. **Excluir de la síntesis:** una casilla en Evidencia para que el PM saque una ficha sin borrarla (como la de HSBC).
+2. **Confianza Media:** una pública y una del equipo suben a Media sin verificar que digan lo mismo.
+3. **Persona rechazada sin versión nueva:** que *Ejecuciones* lo avise. Hoy solo se entiende leyendo el código.
+4. **Ejecuciones más legibles:** la nota de un atributo editado por el PM muestra el ID, no el texto.
+5. Del H6 siguen abiertos: no reintentar un límite diario de Gemini, el país en Tavily y las voces de usuarios.
+6. Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías.

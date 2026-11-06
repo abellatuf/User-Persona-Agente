@@ -41,7 +41,7 @@ Buscá en los atributos las divergencias que planteaste en el H5 y la del H6:
 | **P09** Diferencias entre usuarios | PM: cobrador ≠ pagador · Ingeniería: ninguna importante |
 | **P10** ¿Quién decide, usa y paga? | PM: el prestador · Ingeniería: la misma persona · Negocio: no siempre |
 | **P06** ¿Qué lo empuja a probarlo? | PM: el volumen hace inmanejable el Excel · Negocio: la plata que pierde por morosidad |
-| **Competidores** (H6) | Contexto: no hay competidores directos · Web: Qobra, Mercado Pago Suscripciones, Recaudo |
+| **Competidores** (H6) | Contexto: «no podemos nombrar competidores directos» · Web: Qobra, Mercado Pago Suscripciones, Recaudo |
 
 Anotá cuáles aparecieron como divergencia y si alguna postura quedó mal atribuida.
 
@@ -49,14 +49,15 @@ Anotá cuáles aparecieron como divergencia y si alguna postura quedó mal atrib
 
 1. Elegí un atributo de una persona en *Borrador* y cambiale la *Afirmación* a mano.
 2. Volvé a poner la solicitud en **Pendiente** y corré **Agente**.
-3. Tu edición tiene que seguir igual. Si el agente proponía otra cosa, aparece en *Sugerencia del agente* y se marca *Editado por el PM*.
-4. La persona no se duplica: se actualiza la misma.
+3. Tu edición tiene que seguir igual, en la misma fila: el agente recibe los atributos actuales como A1, A2… y actualiza esa fila. Se marca *Editado por el PM*, y la propuesta del agente queda en *Sugerencia del agente*.
+4. Ni la persona ni el atributo se duplican.
 
 ## Paso 5. Rechazar una persona y ver la versión 2 (T7.6)
 
 1. En una persona, poné *Estado* = **Rechazada** y escribí un *Motivo de rechazo* (por ejemplo, «Mezcla profesionales independientes con clubes»).
 2. Volvé a pedir *Sintetizar* y corré **Agente**.
 3. Tiene que aparecer una persona nueva en **Borrador** con *Versión* = 2, vinculada en *Versión anterior* a la rechazada, y un *Registro de cambios* con el motivo y lo que cambió. La rechazada no se toca.
+4. Si el motivo dice que la persona no debería existir (por ejemplo, «no aplica en el común de los casos»), el agente no la vuelve a proponer y no hay versión nueva.
 
 ## Paso 6 (opcional). Cargar investigación propia (HU-08)
 
