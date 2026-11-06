@@ -259,7 +259,7 @@ describe('etapa 4: sintetizar (H7)', () => {
 
     const [a] = filas('atributos').map(([, x]) => x);
     expect(a!['Confianza']).toEqual({ select: { name: 'Alta' } });
-    const sinTipo: FilaEvidencia = { id: 'x', titulo: 't', tipo: null, extracto: 'e', entrevistas: [], url: null, etapa: 'Formulario de investigación', metodo: null, muestra: '' };
+    const sinTipo: FilaEvidencia = { id: 'x', titulo: 't', tipo: null, extracto: 'e', entrevistas: [], url: null, etapa: 'Formulario de investigación', metodo: null, muestra: '', creada: null, excluida: false };
     expect(tipoDe(sinTipo)).toBe('Investigación propia');
   });
 
@@ -461,7 +461,7 @@ describe('etapa 4: sintetizar (H7)', () => {
     expect(filas('personas')).toHaveLength(2);
     expect(filas('atributos')).toHaveLength(0);
     expect(r.notas.some((n) => n.includes('En revisión'))).toBe(true);
-    expect(r.notas.some((n) => n.includes('(H8)'))).toBe(true);
+    expect(r.notas.some((n) => n.includes('no hay evidencia nueva desde su última síntesis'))).toBe(true);
     expect(espacio.contadores().bloqueos).toBe(0);
   });
 
@@ -498,5 +498,115 @@ describe('etapa 4: sintetizar (H7)', () => {
 
     expect(espacio.estadoDe('s1')).toBe('Lista');
     expect(espacio.ejecuciones[0]?.cierre?.resultado).toBe('Lista');
+  });
+});
+
+describe('persona viva (H8)', () => {
+  /** Persona Aprobada creada después de E1…E4, con un atributo, y una evidencia nueva E5 creada después. */
+  function conAprobada(extra: Record<string, unknown> = {}) {
+    const base = espacioBase();
+    const aprobada = base.espacio.notion.sembrar(BASES.personas, {
+      Nombre: titulo('Clubes'),
+      Estado: { status: { name: 'Aprobada' } },
+      'Versión': { number: 1 },
+      Clave: texto(claves.persona('Clubes', 1)),
+      ...extra,
+    });
+    base.espacio.notion.sembrar(BASES.atributos, {
+      'Afirmación': titulo('Cobra cuotas sociales'),
+      'Categoría': { select: { name: 'Problema' } },
+      Persona: { relation: [{ id: aprobada }] },
+      Confianza: { select: { name: 'Baja' } },
+    });
+    sembrarEvidencia(base.espacio, { titulo: 'Encuesta a tesoreros', extracto: 'Siete de diez cobran en efectivo.', metodo: 'Encuesta' });
+    return { ...base, aprobada };
+  }
+
+  it('con evidencia nueva crea la versión siguiente en Borrador y no toca la aprobada', async () => {
+    const { espacio, aprobada } = conAprobada();
+    const { correr, filas, gemini } = preparar(espacio, [
+      segmentos({ nombre: 'Clubes', personaExistente: 'P1' }),
+      persona([atributo('Cobra en efectivo', ['E5'])], 'Sumé que la mayoría cobra en efectivo.'),
+    ]);
+
+    const r = await correr();
+
+    expect(r.resultado).toBe('Lista');
+    const v2 = filas('personas').find(([id]) => id !== aprobada)![1];
+    expect(v2['Versión']).toEqual({ number: 2 });
+    expect(v2['Estado']).toEqual({ status: { name: 'Borrador' } });
+    expect(v2['Versión anterior']).toEqual({ relation: [{ id: aprobada }] });
+    expect((v2['Sintetizada el'] as { date: { start: string } }).date.start).toMatch(/:00\.000Z$/);
+    const registro = textoDe(v2['Registro de cambios']);
+    expect(registro).toContain('creada a partir de la versión 1 (Aprobada), por evidencia nueva:');
+    expect(registro).toContain('- Investigación propia: Encuesta a tesoreros');
+    expect(registro).toContain('Sumé que la mayoría cobra en efectivo.');
+    const prompt = gemini.recibidas[1]!.usuario;
+    expect(prompt).toContain('Atributos de la versión aprobada');
+    expect(prompt).toContain('Evidencia nueva desde la versión aprobada');
+    expect(espacio.notion.paginas.get(aprobada)!.properties['Estado']).toEqual({ status: { name: 'Aprobada' } });
+    expect(espacio.contadores().bloqueos).toBe(0);
+  });
+
+  it('si ningún atributo usa la evidencia nueva, no crea la versión', async () => {
+    const { espacio } = conAprobada();
+    const { correr, filas } = preparar(espacio, [segmentos({ nombre: 'Clubes', personaExistente: 'P1' }), persona([atributo('Cobra cuotas sociales', ['E1'])])]);
+
+    const r = await correr();
+
+    expect(filas('personas')).toHaveLength(1);
+    expect(r.notas.some((n) => n.includes('ningún atributo propuesto la usa, así que no se crea la versión 2'))).toBe(true);
+  });
+
+  it('sin evidencia nueva desde «Sintetizada el», no llama al modelo para la persona', async () => {
+    const { espacio } = conAprobada({ 'Sintetizada el': { date: { start: '2099-01-01T00:00:00.000Z' } } });
+    const { correr, filas, gemini } = preparar(espacio, [segmentos({ nombre: 'Clubes', personaExistente: 'P1' })]);
+
+    const r = await correr();
+
+    expect(gemini.recibidas).toHaveLength(1);
+    expect(filas('personas')).toHaveLength(1);
+    expect(r.notas.some((n) => n.includes('no hay evidencia nueva desde su última síntesis'))).toBe(true);
+  });
+
+  it('avisa las personas que esperaban una versión y el modelo no asoció a ningún segmento', async () => {
+    const { espacio } = conAprobada();
+    espacio.notion.sembrar(BASES.personas, { Nombre: titulo('Gimnasios'), Estado: { status: { name: 'Rechazada' } }, Clave: texto('persona:gim') });
+    const { correr } = preparar(espacio, [segmentos({ nombre: 'Escuelas' }), persona([atributo('Cobra cuotas', ['E1'])])]);
+
+    const r = await correr();
+
+    expect(r.notas).toContain('Persona «Gimnasios» (Rechazada): el modelo no la volvió a proponer, así que no hay versión nueva.');
+    expect(r.notas.some((n) => n.startsWith('Persona «Clubes» (Aprobada): hay evidencia nueva, pero el modelo no la asoció'))).toBe(true);
+  });
+
+  it('la evidencia marcada con «Excluir de la síntesis» no entra al prompt', async () => {
+    const { espacio } = espacioBase();
+    espacio.notion.sembrar(BASES.evidencia, { 'Título': titulo('Prueba vieja'), Extracto: texto('Dato de prueba.'), 'Excluir de la síntesis': { checkbox: true } });
+    const { correr, gemini } = preparar(espacio, [segmentos({ nombre: 'Clubes' }), persona([atributo('Cobra cuotas', ['E1'])])]);
+
+    const r = await correr();
+
+    expect(gemini.recibidas[0]!.usuario).not.toContain('Dato de prueba.');
+    expect(r.notas).toContain('Quedaron afuera 1 evidencia(s) marcadas con «Excluir de la síntesis».');
+  });
+
+  it('en cada ejecución, la aprobada pasa a Reemplazada cuando el PM aprueba la versión siguiente', async () => {
+    const { espacio, aprobada } = conAprobada();
+    const v2 = espacio.notion.sembrar(BASES.personas, {
+      Nombre: titulo('Clubes'),
+      Estado: { status: { name: 'Aprobada' } },
+      'Versión': { number: 2 },
+      'Versión anterior': { relation: [{ id: aprobada }] },
+    });
+    espacio.notion.paginas.get(aprobada)!.properties['Versión siguiente'] = { relation: [{ id: v2 }] };
+
+    const resumen = await ejecutarAgente({ espacio, etapas: ETAPAS, log: silencio });
+
+    expect(resumen.resultado).toBe('Sin pendientes');
+    expect(espacio.notion.paginas.get(aprobada)!.properties['Estado']).toEqual({ status: { name: 'Reemplazada' } });
+    expect(espacio.notion.paginas.get(v2)!.properties['Estado']).toEqual({ status: { name: 'Aprobada' } });
+    expect(espacio.ejecuciones[0]!.cierre!.notas).toContain('Persona «Clubes» (versión 1): pasó a Reemplazada porque el PM aprobó la versión 2.');
+    expect(espacio.contadores().bloqueos).toBe(0);
   });
 });

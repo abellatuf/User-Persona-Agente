@@ -91,6 +91,14 @@ function cuotasSuperadas(detalles: DetalleError | undefined): string {
   return textos.length > 0 ? ` · cuota: ${textos.join('; ')}` : '';
 }
 
+/** Si alguna cuota superada es por día (GenerateRequestsPerDay…): esperar no sirve hasta mañana (H8). */
+function esCuotaDiaria(detalles: DetalleError | undefined): boolean {
+  return (detalles ?? [])
+    .filter((d) => d['@type']?.endsWith('QuotaFailure'))
+    .flatMap((d) => d.violations ?? [])
+    .some((v) => /PerDay/i.test(`${v.quotaId ?? ''} ${v.quotaMetric ?? ''}`));
+}
+
 // Motivos de corte que no son una respuesta normal.
 const CORTES = new Set(['SAFETY', 'RECITATION', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII', 'LANGUAGE', 'OTHER']);
 
@@ -134,6 +142,7 @@ export class ProveedorGemini implements Proveedor {
       const mensaje = `Gemini respondió ${r.status}${detalle?.status ? ` (${detalle.status})` : ''}${cuotasSuperadas(detalle?.details)}: ${detalle?.message ?? 'sin detalle'}`;
       throw new ErrorModelo(mensaje.slice(0, 500), tipoPorEstado(r.status), {
         estadoHttp: r.status,
+        ...(r.status === 429 && esCuotaDiaria(detalle?.details) ? { diario: true } : {}),
         ...(espera !== undefined ? { esperaMs: espera } : {}),
       });
     }

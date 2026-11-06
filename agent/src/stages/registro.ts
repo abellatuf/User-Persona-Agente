@@ -4,6 +4,7 @@ import { armarContexto } from './1-armar-contexto/index.js';
 import { repreguntarEtapa } from './2-repreguntar/index.js';
 import { relevarWeb } from './3-relevar-web/index.js';
 import { sintetizarEtapa } from './4-sintetizar/index.js';
+import { planificarValidacion } from './5-planificar-validacion/index.js';
 
 export interface ContextoEtapa {
   solicitud: Solicitud;
@@ -28,14 +29,6 @@ export interface ResultadoEtapa {
 }
 
 export type FuncionEtapa = (ctx: ContextoEtapa) => Promise<ResultadoEtapa>;
-
-/** Marcador del H1: la etapa todavía no existe, termina sin llamar a ningún modelo. */
-const marcador: FuncionEtapa = async () => ({
-  resultado: 'Lista',
-  notas: ['Etapa no implementada todavía (H1: esqueleto). No se llamó a ningún modelo.'],
-  errores: [],
-  proveedorModelo: 'Ninguno (H1)',
-});
 
 /**
  * Precondición de las etapas 2 a 5 (T4.4): el contexto tiene que estar Confirmado por el PM.
@@ -63,5 +56,5 @@ export const ETAPAS: Record<EtapaSolicitable, FuncionEtapa> = {
   Repreguntar: conContextoConfirmado('Repreguntar', repreguntarEtapa),
   'Relevar la web': conContextoConfirmado('Relevar la web', relevarWeb),
   Sintetizar: conContextoConfirmado('Sintetizar', sintetizarEtapa),
-  'Planificar validación': conContextoConfirmado('Planificar validación', marcador),
+  'Planificar validación': conContextoConfirmado('Planificar validación', planificarValidacion),
 };

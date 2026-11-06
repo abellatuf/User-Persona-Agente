@@ -53,6 +53,8 @@ export interface EvidenciaPreparada {
   /** Quién la sostiene: "Ana (PM)", "Pública: título"… Distingue fuentes en una divergencia. */
   fuente: string;
   texto: string;
+  /** Creación de la fila en Notion: junto con «Sintetizada el» dice si es evidencia nueva (H8). */
+  creada: string | null;
 }
 
 /**
@@ -77,7 +79,8 @@ export function prepararEvidencias(filas: FilaEvidencia[], incluidas: FilaEntrev
   const preparadas: EvidenciaPreparada[] = [];
   for (const fila of filas) {
     const tipo = tipoDe(fila);
-    if (!fila.extracto && !fila.titulo) continue;
+    // El PM la sacó con «Excluir de la síntesis» (H8).
+    if (fila.excluida || (!fila.extracto && !fila.titulo)) continue;
     let fuente: string;
     if (tipo === 'Supuesto del equipo') {
       const entrevista = fila.entrevistas.map((id) => porId.get(id)).find((e) => e !== undefined);
@@ -99,6 +102,7 @@ export function prepararEvidencias(filas: FilaEvidencia[], incluidas: FilaEntrev
       tipo,
       fuente,
       texto: `${tipo ?? 'Sin tipo'} · ${fuente} · ${detalle}\n${recortar(fila.extracto, MAX_CARACTERES_EXTRACTO)}`,
+      creada: fila.creada,
     });
   }
   return preparadas;
@@ -295,9 +299,17 @@ export function armarResumen(datos: {
   return lineas.join('\n');
 }
 
-/** Propiedad «Controles»: qué controles pasó la persona y qué falta (Fase 4). */
-export function armarControles(atributos: AtributoValidado[]): string {
-  const n = atributos.length;
-  const evidencia = n > 0 ? `✅ ${n} de ${n} atributos con evidencia (100 %)` : '⚠️ La persona no tiene atributos';
-  return [evidencia, '✅ Confianza calculada por código', '⏳ Supuestos de confianza baja con plan: los arma la etapa 5 (H8)'].join(' · ');
+/**
+ * Propiedad «Controles»: qué controles pasó la persona y qué falta (Fase 4).
+ * La arman la síntesis y la etapa 5: todo atributo tiene evidencia por la regla de trazabilidad.
+ */
+export function armarControles(atributos: number, plan: { bajas: number; conPlan: number }): string {
+  const evidencia = atributos > 0 ? `✅ ${atributos} de ${atributos} atributos con evidencia (100 %)` : '⚠️ La persona no tiene atributos';
+  const supuestos =
+    plan.bajas === 0
+      ? '✅ No hay atributos de confianza baja'
+      : plan.conPlan >= plan.bajas
+        ? `✅ ${plan.bajas} de ${plan.bajas} supuestos de confianza baja con plan`
+        : `⏳ ${plan.conPlan} de ${plan.bajas} supuestos de confianza baja con plan: pedí «Planificar validación»`;
+  return [evidencia, '✅ Confianza calculada por código', supuestos].join(' · ');
 }

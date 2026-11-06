@@ -56,7 +56,8 @@ export interface Proveedor {
 
 /**
  * Tipos de error de un proveedor:
- * - limite: límite de uso (429). Se reintenta y después se pasa al respaldo.
+ * - limite: límite de uso (429). Se reintenta y después se pasa al respaldo. Si es el límite
+ *   diario (opción «diario»), no se reintenta: esperar no sirve hasta el día siguiente (H8).
  * - transitorio: error del servidor (5xx) o timeout. Igual que limite.
  * - credencial: clave inválida o sin permisos (401/403). Pasa directo al respaldo.
  * - modelo: el modelo no existe o no está disponible (404). Pasa directo al respaldo.
@@ -70,7 +71,7 @@ export class ErrorModelo extends Error {
   constructor(
     message: string,
     readonly tipo: TipoErrorModelo,
-    readonly opciones: { estadoHttp?: number; esperaMs?: number } = {},
+    readonly opciones: { estadoHttp?: number; esperaMs?: number; diario?: boolean } = {},
   ) {
     super(message);
   }

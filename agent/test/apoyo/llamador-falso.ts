@@ -28,7 +28,11 @@ interface PaginaFalsa {
   creadaPor: string;
   editadaPor: string;
   enPapelera: boolean;
+  /** Fecha de creación (ISO). Cada página nueva es un segundo posterior a la anterior. */
+  creada: string;
 }
+
+const INICIO_DEL_RELOJ = Date.UTC(2026, 0, 1);
 
 /**
  * Notion falso a nivel de herramientas del servidor MCP, en memoria.
@@ -54,9 +58,16 @@ export class LlamadorFalso implements LlamadorHerramientas {
 
   /** Crea una página como si la hubiera creado alguien (por defecto, el agente). */
   sembrar(dataSourceId: string, properties: Propiedades, autor = ID_AGENTE): string {
-    const id = `pagina-${this.siguiente++}`;
-    this.paginas.set(id, { parent: dataSourceId, properties, creadaPor: autor, editadaPor: autor, enPapelera: false });
+    const n = this.siguiente++;
+    const id = `pagina-${n}`;
+    const creada = new Date(INICIO_DEL_RELOJ + n * 1000).toISOString();
+    this.paginas.set(id, { parent: dataSourceId, properties, creadaPor: autor, editadaPor: autor, enPapelera: false, creada });
     return id;
+  }
+
+  /** Cambia la fecha de creación de una página (por ejemplo, para que una evidencia sea anterior o posterior a una síntesis). */
+  fechar(id: string, creada: string) {
+    this.paginas.get(id)!.creada = creada;
   }
 
   /** Simula que el PM editó la página desde Notion. */
@@ -80,6 +91,7 @@ export class LlamadorFalso implements LlamadorHerramientas {
       object: 'page',
       id,
       parent: { type: 'data_source_id', data_source_id: p.parent },
+      created_time: p.creada,
       created_by: { object: 'user', id: p.creadaPor },
       last_edited_by: { object: 'user', id: p.editadaPor },
       in_trash: p.enPapelera,

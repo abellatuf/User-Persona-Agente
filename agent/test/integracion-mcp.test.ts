@@ -28,7 +28,7 @@ describe('integración con el servidor MCP de Notion', () => {
   });
 
   it('atiende una solicitud: En curso → Lista, con su fila en Ejecuciones', async () => {
-    // Planificar validación todavía es un marcador; necesita el contexto Confirmado (precondición del H4).
+    // Planificar validación sin personas en Borrador no llama a ningún modelo; necesita el contexto Confirmado (H4).
     notion.crearPagina(BASES.contexto, { Estado: { type: 'status', status: { name: 'Confirmado' } } });
     const solicitud = notion.crearSolicitud('Demo H1', 'Planificar validación');
     const espacio = new EspacioNotionMcp(conexion);
@@ -46,7 +46,7 @@ describe('integración con el servidor MCP de Notion', () => {
       Etapa: { select: { name: 'Planificar validación' } },
       Solicitud: { relation: [{ id: solicitud }] },
       Resultado: { select: { name: 'Lista' } },
-      Lecturas: { number: 13 },
+      Lecturas: { number: 18 },
       Escrituras: { number: 5 },
       'Intentos bloqueados': { number: 0 },
     });

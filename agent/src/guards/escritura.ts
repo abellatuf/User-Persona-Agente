@@ -101,6 +101,10 @@ const atributoDePersonaCongelada: Regla = (op) =>
     ? 'el atributo pertenece a una persona que ya no está en Borrador.'
     : null;
 
+/** El agente crea los supuestos que faltan, pero nunca modifica uno existente: puede tener ediciones del PM (H8). */
+const supuestoNoSeModifica: Regla = (op) =>
+  op.base === 'supuestos' && op.accion === 'actualizar' ? 'el agente no modifica supuestos existentes, solo crea los que faltan.' : null;
+
 const archivoPermitido: Regla = (op) => {
   if (op.accion !== 'archivar') return null;
   if (!BASES_ARCHIVABLES.includes(op.base)) return `el agente no archiva filas de «${nombreBase(op.base)}».`;
@@ -136,6 +140,7 @@ const REGLAS: Regla[] = [
   contextoConfirmadoIntocable,
   entrevistaCompletaNoVuelveAtras,
   atributoDePersonaCongelada,
+  supuestoNoSeModifica,
   archivoPermitido,
   trazabilidad,
   claveObligatoria,

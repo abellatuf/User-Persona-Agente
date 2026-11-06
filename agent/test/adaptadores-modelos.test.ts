@@ -111,6 +111,27 @@ describe('adaptador de Gemini', () => {
       /^Gemini respondió 429 \(RESOURCE_EXHAUSTED\) · cuota: SearchGroundingRequestsPerDayPerProjectPerModel-FreeTier, límite 0; generativelanguage\.googleapis\.com\/generate_content_free_tier_requests: You exceeded/,
     );
     expect(e.message.length).toBeLessThanOrEqual(500);
+    // La cuota es por día: se marca para no reintentar (H8).
+    expect(e.opciones.diario).toBe(true);
+  });
+
+  it('un 429 por minuto no se marca como límite diario', async () => {
+    api.responder({
+      estado: 429,
+      cuerpo: {
+        error: {
+          code: 429,
+          status: 'RESOURCE_EXHAUSTED',
+          message: 'Too many requests',
+          details: [{ '@type': 'type.googleapis.com/google.rpc.QuotaFailure', violations: [{ quotaId: 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier' }] }],
+        },
+      },
+    });
+
+    const e = await errorDe(gemini.completar(peticion));
+
+    expect(e.tipo).toBe('limite');
+    expect(e.opciones.diario).toBeUndefined();
   });
 
   it('clasifica clave inválida, modelo inexistente y error del servidor', async () => {

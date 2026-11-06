@@ -57,13 +57,14 @@ describe('bucle de solicitudes', () => {
     expect(fila.cierre).toMatchObject({
       resultado: 'Lista',
       errores: [],
-      proveedorModelo: 'Ninguno (H1)',
+      proveedorModelo: 'Ninguno',
       intentosBloqueados: 0,
     });
     expect(fila.cierre?.notas[0]).toBe('Etapa 0: espacio verificado.');
-    // Configuración, la consulta de pendientes, las 10 bases de la etapa 0
-    // y el contexto (precondición de las etapas 2 a 5).
-    expect(fila.cierre?.lecturas).toBe(13);
+    // Configuración, las personas (versiones reemplazadas), la consulta de pendientes, las 10 bases
+    // de la etapa 0, el contexto (precondición de las etapas 2 a 5) y, en la etapa 5, personas,
+    // atributos, supuestos y contexto. Sin personas en Borrador no llama a ningún modelo.
+    expect(fila.cierre?.lecturas).toBe(18);
     // Crear la fila, En curso, Lista, el cierre y las notas.
     expect(fila.cierre?.escrituras).toBe(5);
     expect(resumen.fallasDeRegistro).toEqual([]);

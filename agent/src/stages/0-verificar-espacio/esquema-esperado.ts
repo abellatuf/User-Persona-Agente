@@ -121,6 +121,7 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
       'Aprobada por': t('people'),
       Atributos: t('relation'),
       Clave: t('rich_text'),
+      'Sintetizada el': t('date'),
     },
   },
   evidencia: {
@@ -137,6 +138,7 @@ export const ESQUEMA_ESPERADO: Record<ClaveBase, BaseEsperada> = {
       Muestra: t('rich_text'),
       Atributos: t('relation'),
       Clave: t('rich_text'),
+      'Excluir de la síntesis': t('checkbox'),
     },
   },
   atributos: {

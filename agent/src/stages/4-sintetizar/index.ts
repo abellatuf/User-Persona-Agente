@@ -33,7 +33,8 @@ import {
  * 3. Una llamada por segmento propone sus atributos; el código valida evidencia, divergencias y
  *    topes, y calcula la confianza.
  * 4. Escribe cada persona en Borrador con sus atributos, el resumen y los controles. Una persona
- *    Rechazada genera una versión nueva; En revisión y Aprobada no se tocan.
+ *    Rechazada genera una versión nueva; una Aprobada, solo si hay evidencia nueva desde su
+ *    última síntesis (H8). En revisión y Aprobada no se tocan.
  */
 
 const SIN_MODELO = 'Ninguno';
@@ -68,7 +69,8 @@ const TAREA_PERSONA = [
   'Si hay un motivo de rechazo, aplicalo también a la redacción de los atributos.',
   'Nunca elijas una postura ni digas cuál es la correcta.',
   'En "informacionQueFalta" contá qué información falta para conocer mejor a esta persona.',
-  'En "cambiosRespectoDeLaAnterior" explicá qué cambiaste respecto de la versión anterior y cómo respondés al motivo de rechazo. Si no hay versión anterior, dejalo vacío.',
+  'Si te paso evidencia nueva desde la versión aprobada, la versión nueva tiene que reflejar lo que cambia con esa evidencia y mantener lo que sigue valiendo. Citá la evidencia nueva en los atributos que cambia.',
+  'En "cambiosRespectoDeLaAnterior" explicá qué cambiaste respecto de la versión anterior: cómo respondés al motivo de rechazo o qué cambia por la evidencia nueva. Si no hay versión anterior, dejalo vacío.',
 ].join('\n');
 
 const resultado = (r: ResultadoEtapa['resultado'], notas: string[], errores: string[] = [], proveedorModelo = SIN_MODELO): ResultadoEtapa => ({
@@ -78,7 +80,7 @@ const resultado = (r: ResultadoEtapa['resultado'], notas: string[], errores: str
   proveedorModelo,
 });
 
-function datoDelContexto(contexto: FilaContexto | undefined): DatoDelPrompt[] {
+export function datoDelContexto(contexto: FilaContexto | undefined): DatoDelPrompt[] {
   if (!contexto) return [];
   const campos = CAMPOS.map((c) => `${c.propiedad}: ${contexto.textos[c.propiedad]?.trim() || 'No encontrado'}`);
   return [{ fuente: 'Contexto del producto (confirmado por el PM)', contenido: [`Nombre: ${contexto.titulo}`, ...campos].join('\n') }];
@@ -89,14 +91,39 @@ const datoDeEvidencias = (evidencias: EvidenciaPreparada[]): DatoDelPrompt => ({
   contenido: evidencias.map((e) => `${e.ref} · ${e.texto}`).join('\n\n'),
 });
 
-/** Adónde va cada segmento: una persona nueva, una que se actualiza o una versión nueva de una rechazada. */
+/**
+ * Adónde va cada segmento: una persona nueva, una que se actualiza o una versión nueva, de una
+ * rechazada (por el motivo) o de una aprobada con evidencia nueva (persona viva, H8).
+ */
 type Destino =
   | { tipo: 'nueva'; clave: string; version: number }
   | { tipo: 'actualizar'; persona: FilaPersona; clave: string; version: number }
-  | { tipo: 'version'; anterior: FilaPersona; clave: string; version: number }
+  | { tipo: 'version'; anterior: FilaPersona; clave: string; version: number; nuevas: EvidenciaPreparada[] | null }
   | { tipo: 'saltear'; motivo: string };
 
-function decidirDestino(segmento: SegmentoValidado, refs: Map<string, FilaPersona>, personas: FilaPersona[]): Destino {
+const instante = (iso: string | null) => {
+  const ms = iso ? Date.parse(iso) : NaN;
+  return Number.isNaN(ms) ? null : ms;
+};
+
+/**
+ * La evidencia creada después de la última síntesis de la persona («Sintetizada el» o, si nunca
+ * se escribió, la creación de la persona). Notion redondea la creación al minuto.
+ */
+export function evidenciaNueva(persona: FilaPersona, evidencias: EvidenciaPreparada[]): EvidenciaPreparada[] {
+  const desde = instante(persona.sintetizadaEl) ?? instante(persona.creada);
+  if (desde === null) return [];
+  return evidencias.filter((e) => (instante(e.creada) ?? -Infinity) > desde);
+}
+
+function versionSiguiente(existente: FilaPersona, personas: FilaPersona[]): { clave: string; version: number } | { motivo: string } {
+  const version = (existente.version ?? 1) + 1;
+  const clave = claves.persona(existente.clave || existente.nombre, version);
+  const ocupada = personas.find((x) => x.clave === clave);
+  return ocupada && ocupada.estado !== 'Borrador' ? { motivo: `la versión ${version} ya existe y está en «${ocupada.estado}»` } : { clave, version };
+}
+
+function decidirDestino(segmento: SegmentoValidado, refs: Map<string, FilaPersona>, personas: FilaPersona[], evidencias: EvidenciaPreparada[]): Destino {
   const existente = segmento.personaExistente ? refs.get(segmento.personaExistente) : undefined;
   if (!existente) {
     const clave = claves.persona(segmento.nombre, 1);
@@ -112,17 +139,18 @@ function decidirDestino(segmento: SegmentoValidado, refs: Map<string, FilaPerson
     case null:
       return { tipo: 'actualizar', persona: existente, clave: existente.clave || claves.persona(existente.nombre, version), version };
     case 'Rechazada': {
-      const clave = claves.persona(existente.clave || existente.nombre, version + 1);
-      const ocupada = personas.find((x) => x.clave === clave);
-      if (ocupada && ocupada.estado !== 'Borrador') {
-        return { tipo: 'saltear', motivo: `la versión ${version + 1} ya existe y está en «${ocupada.estado}»` };
-      }
-      return { tipo: 'version', anterior: existente, clave, version: version + 1 };
+      const siguiente = versionSiguiente(existente, personas);
+      return 'motivo' in siguiente ? { tipo: 'saltear', motivo: siguiente.motivo } : { tipo: 'version', anterior: existente, ...siguiente, nuevas: null };
     }
     case 'En revisión':
       return { tipo: 'saltear', motivo: 'el PM la está revisando (En revisión), así que no se toca' };
-    case 'Aprobada':
-      return { tipo: 'saltear', motivo: 'está Aprobada; la versión nueva por evidencia nueva es de la etapa 5 (H8)' };
+    case 'Aprobada': {
+      // Persona viva (HU-15): la aprobada no se toca; con evidencia nueva se propone la versión siguiente.
+      const nuevas = evidenciaNueva(existente, evidencias);
+      if (nuevas.length === 0) return { tipo: 'saltear', motivo: 'está Aprobada y no hay evidencia nueva desde su última síntesis' };
+      const siguiente = versionSiguiente(existente, personas);
+      return 'motivo' in siguiente ? { tipo: 'saltear', motivo: siguiente.motivo } : { tipo: 'version', anterior: existente, ...siguiente, nuevas };
+    }
     default:
       return { tipo: 'saltear', motivo: `está en «${existente.estado}»` };
   }
@@ -142,6 +170,10 @@ interface Contexto {
   notaEntrevistas: string;
   hayPublica: boolean;
   hayPropia: boolean;
+  /** Atributos que ya tienen un supuesto a validar (etapa 5), para los controles. */
+  conSupuesto: Set<string>;
+  /** Inicio de la síntesis, redondeado al minuto como la creación en Notion: va a «Sintetizada el». */
+  inicio: Date;
   notas: string[];
 }
 
@@ -160,12 +192,17 @@ async function sintetizarPersona(c: Contexto, segmento: SegmentoValidado, destin
   if (actuales.length) {
     const linea = (a: FilaAtributo, i: number) =>
       `${destino.tipo === 'actualizar' ? `A${i + 1} ·` : '-'} [${a.categoria ?? 'Sin categoría'}] ${a.afirmacion}${a.divergencia ? ' (con divergencia)' : ''}`;
-    datos.push({
-      fuente: destino.tipo === 'version' ? 'Atributos de la versión anterior (rechazada)' : 'Atributos actuales de esta persona (mantené la redacción si siguen valiendo)',
-      contenido: actuales.map(linea).join('\n'),
-    });
+    const fuente =
+      destino.tipo === 'actualizar'
+        ? 'Atributos actuales de esta persona (mantené la redacción si siguen valiendo)'
+        : destino.tipo === 'version' && destino.nuevas
+          ? 'Atributos de la versión aprobada (mantené los que siguen valiendo)'
+          : 'Atributos de la versión anterior (rechazada)';
+    datos.push({ fuente, contenido: actuales.map(linea).join('\n') });
   }
-  if (destino.tipo === 'version') {
+  if (destino.tipo === 'version' && destino.nuevas) {
+    datos.push({ fuente: 'Evidencia nueva desde la versión aprobada', contenido: destino.nuevas.map((e) => e.ref).join(', ') });
+  } else if (destino.tipo === 'version') {
     datos.push({ fuente: 'Motivo de rechazo del PM', contenido: destino.anterior.motivoRechazo || 'El PM no indicó un motivo.' });
   }
   datos.push(datoDeEvidencias(c.evidencias));
@@ -173,8 +210,19 @@ async function sintetizarPersona(c: Contexto, segmento: SegmentoValidado, destin
   const mensajes = armarPrompt({ tarea: TAREA_PERSONA, datos, idioma: c.idioma, esquema: esquemaPersona });
   const generado = await c.generar({ mensajes, esquema: esquemaPersona });
   const atributos = validarAtributos(generado.datos.atributos, c.mapa, segmento.nombre, c.notas, c.campos);
+  const modelo = { proveedorModelo: generado.proveedorModelo, notasModelo: notasDeGeneracion(generado) };
+  // Una versión por evidencia nueva solo se escribe si algún atributo usa esa evidencia.
+  if (destino.tipo === 'version' && destino.nuevas) {
+    const nuevas = new Set(destino.nuevas.map((e) => e.id));
+    if (!atributos.some((a) => a.evidencias.some((e) => nuevas.has(e.id)))) {
+      c.notas.push(
+        `Persona «${destino.anterior.nombre}» (Aprobada): hay ${nuevas.size} evidencia(s) nueva(s), pero ningún atributo propuesto la usa, así que no se crea la versión ${destino.version}.`,
+      );
+      return { id: null, atributos, ...modelo };
+    }
+  }
   const id = await escribirPersona(c, segmento, destino, atributos, generado.datos, refs);
-  return { id, atributos, proveedorModelo: generado.proveedorModelo, notasModelo: notasDeGeneracion(generado) };
+  return { id, atributos, ...modelo };
 }
 
 /**
@@ -201,6 +249,16 @@ async function escribirPersona(
   salida: z.infer<typeof esquemaPersona>,
   refs: Map<string, FilaAtributo>,
 ): Promise<string> {
+  // Qué atributo actual corresponde a cada propuesta: hace falta antes, para los controles.
+  const usados = new Set<string>();
+  const correspondencias = atributos.map((a) => {
+    const actual = atributoActual(a, refs, usados, segmento.nombre, c.notas);
+    if (actual) usados.add(actual.id);
+    return { a, actual };
+  });
+  const bajas = correspondencias.filter(({ a }) => a.confianza === 'Baja');
+  const conPlan = bajas.filter(({ actual }) => actual && c.conSupuesto.has(actual.id)).length;
+
   const props: Record<string, unknown> = {
     'Por qué es un segmento distinto': p.texto(segmento.porQueDistinto),
     Resumen: p.texto(
@@ -213,8 +271,9 @@ async function escribirPersona(
         notaEntrevistas: c.notaEntrevistas,
       }),
     ),
-    Controles: p.texto(armarControles(atributos)),
+    Controles: p.texto(armarControles(atributos.length, { bajas: bajas.length, conPlan })),
     'Versión': p.numero(destino.version),
+    'Sintetizada el': p.fecha(c.inicio),
   };
   // El nombre lo pone el agente al crear la persona; después es del PM.
   if (destino.tipo !== 'actualizar') {
@@ -223,13 +282,16 @@ async function escribirPersona(
   }
   if (destino.tipo === 'version') {
     props['Versión anterior'] = p.relacion([destino.anterior.id]);
-    props['Registro de cambios'] = p.texto(
-      [
-        `Versión ${destino.version}, creada a partir de la versión ${destino.version - 1}, que el PM rechazó.`,
-        `Motivo de rechazo: «${destino.anterior.motivoRechazo || 'sin motivo'}».`,
-        `Cambios: ${salida.cambiosRespectoDeLaAnterior.trim() || 'No encontrado'}`,
-      ].join('\n'),
-    );
+    const origen = destino.nuevas
+      ? [
+          `Versión ${destino.version}, creada a partir de la versión ${destino.version - 1} (Aprobada), por evidencia nueva:`,
+          ...destino.nuevas.map((e) => `- ${e.fuente}`),
+        ]
+      : [
+          `Versión ${destino.version}, creada a partir de la versión ${destino.version - 1}, que el PM rechazó.`,
+          `Motivo de rechazo: «${destino.anterior.motivoRechazo || 'sin motivo'}».`,
+        ];
+    props['Registro de cambios'] = p.texto([...origen, `Cambios: ${salida.cambiosRespectoDeLaAnterior.trim() || 'No encontrado'}`].join('\n'));
   }
   // Una persona existente se actualiza por su id: puede no tener clave si se cargó a mano.
   const { id, accion } =
@@ -238,7 +300,7 @@ async function escribirPersona(
       : await c.espacio.escritor.guardar('personas', props, { clave: destino.clave });
 
   const escritas = new Set<string>();
-  for (const a of atributos) {
+  for (const { a, actual } of correspondencias) {
     const clave = claves.atributo(destino.clave, a.categoria, a.afirmacion);
     const propiedades = {
       'Afirmación': p.titulo(a.afirmacion),
@@ -249,7 +311,6 @@ async function escribirPersona(
       Divergencia: { checkbox: a.divergencia },
       Posturas: p.texto(a.posturas),
     };
-    const actual = atributoActual(a, refs, escritas, segmento.nombre, c.notas);
     // Un atributo actual se actualiza por su id y conserva su clave, aunque cambie la redacción.
     const { id: idAtributo } = actual
       ? await c.espacio.escritor.actualizar('atributos', actual.id, actual.clave ? propiedades : { ...propiedades, Clave: p.texto(clave) })
@@ -266,7 +327,8 @@ async function escribirPersona(
     }
   }
 
-  const accionTexto = destino.tipo === 'version' ? `versión ${destino.version} creada` : accion === 'creada' ? 'creada' : 'actualizada';
+  const accionTexto =
+    destino.tipo === 'version' ? `versión ${destino.version} creada${destino.nuevas ? ' por evidencia nueva' : ''}` :accion === 'creada' ? 'creada' : 'actualizada';
   const divergencias = atributos.filter((a) => a.divergencia).length;
   c.notas.push(`Persona «${segmento.nombre}» (${accionTexto}): ${atributos.length} atributo(s), ${divergencias} con divergencia.`);
   return id;
@@ -283,8 +345,12 @@ export const sintetizarEtapa: FuncionEtapa = async ({ solicitud, espacio, genera
   // Las respuestas a repreguntas que todavía no son evidencia, primero (decisión D del H5).
   for (const e of seleccion.incluidas) await guardarEvidenciaDeRepreguntas(espacio, e, notas);
 
+  const inicio = new Date();
+  inicio.setUTCSeconds(0, 0);
   const contexto = (await espacio.leerContextos())[0];
   const filas = await espacio.leerEvidencias();
+  const excluidas = filas.filter((f) => f.excluida).length;
+  if (excluidas) notas.push(`Quedaron afuera ${excluidas} evidencia(s) marcadas con «Excluir de la síntesis».`);
   const evidencias = prepararEvidencias(filas, seleccion.incluidas, entrevistas);
   if (evidencias.length === 0) return resultado('Error', notas, ['No hay evidencia para sintetizar.']);
 
@@ -338,13 +404,18 @@ export const sintetizarEtapa: FuncionEtapa = async ({ solicitud, espacio, genera
     notaEntrevistas: seleccion.excluidas.length ? `Quedaron afuera ${seleccion.excluidas.length} entrevista(s) incompleta(s), a pedido del PM.` : '',
     hayPublica: evidencias.some((e) => e.tipo === 'Pública'),
     hayPropia: evidencias.some((e) => e.tipo === 'Investigación propia'),
+    conSupuesto: new Set((await espacio.leerSupuestos()).flatMap((s) => s.atributos)),
+    inicio,
     notas,
   };
 
   const errores: string[] = [];
   let escritas = 0;
+  const asociadas = new Set<string>();
   for (const segmento of segmentos) {
-    const destino = decidirDestino(segmento, refs, personas);
+    const destino = decidirDestino(segmento, refs, personas, evidencias);
+    const existente = segmento.personaExistente ? refs.get(segmento.personaExistente) : undefined;
+    if (existente) asociadas.add(existente.id);
     if (destino.tipo === 'saltear') {
       notas.push(`Segmento «${segmento.nombre}»: no se escribe, porque ${destino.motivo}.`);
       continue;
@@ -353,11 +424,20 @@ export const sintetizarEtapa: FuncionEtapa = async ({ solicitud, espacio, genera
       const r = await sintetizarPersona(c, segmento, destino);
       proveedores.add(r.proveedorModelo);
       notasModelo.push(...r.notasModelo);
-      escritas++;
+      if (r.id) escritas++;
     } catch (e) {
       if (!(e instanceof ErrorGeneracion)) throw e;
       errores.push(`Persona «${segmento.nombre}»: ${e.message}`);
       notasModelo.push(...notasDeGeneracion(e));
+    }
+  }
+
+  // Las personas que esperan una versión nueva y el modelo no asoció a ningún segmento (H8).
+  for (const x of vigentes.filter((v) => !asociadas.has(v.id))) {
+    if (x.estado === 'Rechazada') {
+      notas.push(`Persona «${x.nombre}» (Rechazada): el modelo no la volvió a proponer, así que no hay versión nueva.`);
+    } else if (x.estado === 'Aprobada' && evidenciaNueva(x, evidencias).length > 0) {
+      notas.push(`Persona «${x.nombre}» (Aprobada): hay evidencia nueva, pero el modelo no la asoció a ningún segmento, así que no hay versión nueva.`);
     }
   }
 

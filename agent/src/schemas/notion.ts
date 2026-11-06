@@ -17,6 +17,7 @@ export const valorPropiedad = z
     status: z.object({ name: z.string() }).loose().nullable().optional(),
     relation: z.array(z.object({ id: z.string() }).loose()).optional(),
     url: z.string().nullable().optional(),
+    date: z.object({ start: z.string() }).loose().nullable().optional(),
     files: z
       .array(
         z
@@ -38,6 +39,7 @@ export const pagina = z
     object: z.literal('page'),
     id: z.string(),
     parent: z.object({ type: z.string(), data_source_id: z.string().optional() }).loose().optional(),
+    created_time: z.string().optional(),
     created_by: usuario.optional(),
     last_edited_by: usuario.optional(),
     in_trash: z.boolean().optional(),

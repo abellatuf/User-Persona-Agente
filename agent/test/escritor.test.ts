@@ -77,7 +77,7 @@ describe('Escritor: no pisar al PM', () => {
     expect(textoDe(pagina.properties['Afirmación'])).toBe('Paga tarde cuando cobra el aguinaldo');
     expect(textoDe(pagina.properties['Sugerencia del agente'])).toContain('«Paga con atraso»');
     expect(pagina.properties['Editado por el PM']).toEqual({ checkbox: true });
-    expect(contador.avisosDesde(0)[0]).toMatch(/el PM lo editó/);
+    expect(contador.avisosDesde(0)[0]).toBe('Atributo «Paga tarde cuando cobra el aguinaldo»: el PM lo editó, así que la propuesta quedó en «Sugerencia del agente».');
   });
 
   it('una vez marcado, sigue protegido aunque el agente haya sido el último en escribir', async () => {

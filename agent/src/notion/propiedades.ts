@@ -56,6 +56,11 @@ export function leerSeleccion(pagina: Pagina, nombre: string): string | null {
   return p?.select?.name ?? p?.status?.name ?? null;
 }
 
+/** Inicio de una propiedad de fecha (ISO), o null si está vacía. */
+export function leerFecha(pagina: Pagina, nombre: string): string | null {
+  return prop(pagina, nombre)?.date?.start ?? null;
+}
+
 export function leerUrl(pagina: Pagina, nombre: string): string | null {
   const url = prop(pagina, nombre)?.url?.trim();
   return url ? url : null;

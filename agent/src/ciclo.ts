@@ -12,6 +12,7 @@ import {
 } from './notion/espacio.js';
 import { verificarEspacio, type ResultadoVerificacion } from './stages/0-verificar-espacio/index.js';
 import type { ContextoEtapa, FuncionEtapa, ResultadoEtapa } from './stages/registro.js';
+import { marcarReemplazadas } from './stages/versiones.js';
 
 /** Acceso a los modelos para las etapas: un generador (y la búsqueda web), o el motivo por el que no hay. */
 export type Modelos = { generar: Generador; buscar?: Buscador; sinBusqueda?: string } | { sinModelo: string };
@@ -24,6 +25,8 @@ export interface Dependencias {
   /** Arma el acceso a los modelos con la Configuración. Armarlo no llama a ningún modelo. */
   modelos?: (configuracion: Configuracion) => Modelos;
   verificar?: (espacio: EspacioNotion) => Promise<ResultadoVerificacion>;
+  /** Marca las personas reemplazadas por una versión aprobada (H8). Devuelve las notas. */
+  versiones?: (espacio: EspacioNotion) => Promise<string[]>;
   reloj?: () => Date;
   log?: (mensaje: string) => void;
   maxSolicitudes?: number;
@@ -73,6 +76,7 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
     resultado: 'Pausado' | 'Sin pendientes' | 'Error',
     nota: string,
     errores: string[] = [],
+    extra: string[] = [],
   ) => {
     const base = espacio.contadores();
     const inicio = reloj();
@@ -82,7 +86,7 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
       fin: reloj(),
       resultado,
       errores,
-      notas: [nota],
+      notas: [nota, ...extra],
       lecturas: ahora.lecturas - corte.lecturas,
       // Se suman el cierre y las notas.
       escrituras: ahora.escrituras - base.escrituras + 2,
@@ -109,10 +113,18 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
     return { resultado: 'Pausado', solicitudes: [], fallasDeRegistro };
   }
 
+  // Las notas de esta revisión van a la primera fila de Ejecuciones de la corrida.
+  let notasVersiones: string[];
+  try {
+    notasVersiones = await (deps.versiones ?? marcarReemplazadas)(espacio);
+  } catch (e) {
+    notasVersiones = [`No se pudieron revisar las versiones reemplazadas: ${mensajeDe(e)}`];
+  }
+
   const pendientes = await espacio.solicitudesPendientes(maximo);
   if (pendientes.length === 0) {
     log('No hay solicitudes pendientes: termina sin llamar a ningún modelo.');
-    await registrarSinSolicitudes('Sin pendientes', 'No había solicitudes en Pendiente.');
+    await registrarSinSolicitudes('Sin pendientes', 'No había solicitudes en Pendiente.', [], notasVersiones);
     return { resultado: 'Sin pendientes', solicitudes: [], fallasDeRegistro };
   }
 
@@ -139,7 +151,8 @@ export async function ejecutarAgente(deps: Dependencias): Promise<ResumenEjecuci
 
   const solicitudes: ResumenEjecucion['solicitudes'] = [];
   for (const solicitud of pendientes) {
-    const r = await atenderSolicitud(solicitud, verificacion, corte, { espacio, etapas, acceso, reloj, log, fallasDeRegistro });
+    const r = await atenderSolicitud(solicitud, verificacion, corte, { espacio, etapas, acceso, reloj, log, fallasDeRegistro, previas: notasVersiones });
+    notasVersiones = [];
     corte = espacio.contadores();
     solicitudes.push({ id: solicitud.id, titulo: solicitud.titulo, resultado: r });
   }
@@ -157,9 +170,11 @@ async function atenderSolicitud(
     reloj: () => Date;
     log: (m: string) => void;
     fallasDeRegistro: string[];
+    /** Notas de la corrida que van en esta fila (la primera). */
+    previas: string[];
   },
 ): Promise<ResultadoEtapa['resultado']> {
-  const { espacio, etapas, acceso, reloj, log, fallasDeRegistro } = deps;
+  const { espacio, etapas, acceso, reloj, log, fallasDeRegistro, previas } = deps;
   const inicio = reloj();
   const etapa = esEtapaSolicitable(solicitud.etapa) ? solicitud.etapa : undefined;
   const nombre = solicitud.titulo || '(sin título)';
@@ -207,7 +222,7 @@ async function atenderSolicitud(
     }
     if (ejecucionId) {
       const ahora = espacio.contadores();
-      const notas = [...r.notas, ...espacio.avisosDesde(base.avisos)];
+      const notas = [...previas, ...r.notas, ...espacio.avisosDesde(base.avisos)];
       const cierre: CierreEjecucion = {
         fin: reloj(),
         resultado: r.resultado,

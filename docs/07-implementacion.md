@@ -796,3 +796,44 @@ Sin tocar código hasta que Abel los apruebe, para el H8 o el H9:
 4. **Ejecuciones más legibles:** la nota de un atributo editado por el PM muestra el ID, no el texto.
 5. Del H6 siguen abiertos: no reintentar un límite diario de Gemini, el país en Tavily y las voces de usuarios.
 6. Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías.
+
+## H8. Etapa 5: validación y persona viva
+
+Cada atributo de confianza **Baja** de una persona en *Borrador* recibe su **supuesto a validar**, con método, perfil a contactar y preguntas no sesgadas. Una persona **Aprobada** con evidencia nueva recibe una **versión nueva en *Borrador***, y la aprobada no se modifica.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T8.1 Prompt de plan de validación | 🤖 | 🔨 Implementado y probado; falta la demo |
+| T8.2 Versionado y *Reemplazada* | 🤖 | 🔨 Implementado y probado; falta la demo |
+
+### Decisiones de diseño (aprobadas por Abel el 2026-11-06)
+
+- **Etapa 5, *Planificar validación*, es una solicitud aparte** de *Sintetizar*, por la cuota diaria de Gemini. Hace una llamada por persona en *Borrador* que tenga atributos Baja sin plan.
+- **Preguntas no sesgadas, controladas por código:** cada pregunta tiene que tener «?» y no puede empezar con «¿No…?», preguntar por el futuro o una hipótesis («¿Pagarías…?», «Si existiera…») ni repetir la afirmación del atributo. Cada plan necesita un método válido (Entrevista, Encuesta, Prueba o Analítica), un perfil y de 3 a 5 preguntas válidas. Si un plan falla, se pide **una corrección**; si sigue mal, se descarta y se anota.
+- **Los supuestos solo se crean:** el agente nunca modifica uno existente (puede tener ediciones del PM), y solo archiva los *Pendientes* cuyo atributo ya no existe o ya no es Baja.
+- **Persona viva:** la evidencia nueva es la creada después de ***Sintetizada el*** (o de la creación de la persona, si está vacía). La versión nueva solo se escribe si **algún atributo cita evidencia nueva**. Cuando el PM aprueba la versión nueva, la anterior pasa a ***Reemplazada*** en la ejecución siguiente, sin modelo.
+- ***Validado* y *Refutado* no hacen nada automático:** el PM carga lo que aprendió como evidencia y vuelve a sintetizar.
+- **Entran al H8:** no reintentar un límite diario de Gemini, la casilla ***Excluir de la síntesis*** y dos avisos en *Ejecuciones* (persona rechazada sin versión nueva y el texto del atributo en lugar del ID). Quedan para el H9 la confianza Media, el país en Tavily y las voces de usuarios.
+
+### Cómo funciona *Planificar validación*
+
+1. Necesita el contexto **Confirmado**. Archiva los supuestos *Pendientes* que sobran.
+2. Para cada persona en *Borrador*, toma los atributos Baja sin supuesto (ni vinculado ni con la misma clave) y los manda al modelo como A1, A2…, con la evidencia que los respalda hoy.
+3. El código valida cada plan, pide una corrección si hace falta y crea los supuestos en *Pendiente*, con las preguntas numeradas.
+4. Actualiza *Controles*: «✅ N de N supuestos de confianza baja con plan» o «⏳ … pedí «Planificar validación»». *Sintetizar* escribe la misma línea.
+
+### Cómo funciona la persona viva
+
+1. En *Sintetizar*, si un segmento corresponde a una persona *Aprobada* y hay evidencia nueva, el modelo recibe sus atributos y la lista de evidencias nuevas.
+2. La versión n+1 se crea en *Borrador*, con *Versión anterior* y un *Registro de cambios* que lista la evidencia nueva y los cambios. Toda persona que escribe el agente recibe *Sintetizada el*.
+3. Al empezar cada ejecución, antes de mirar las solicitudes, toda persona *Aprobada* cuya versión siguiente también esté *Aprobada* pasa a *Reemplazada*. Es la única escritura permitida sobre una persona aprobada.
+
+### Decisiones tomadas al implementar
+
+- **2026-11-06:** *Sintetizada el* guarda el **inicio** de la síntesis, redondeado al minuto como la creación de las filas en Notion. Una evidencia cargada en el mismo minuto en que empieza la corrida no cuenta como nueva.
+- **2026-11-06:** el límite diario se detecta por las cuotas «PerDay» del 429 de Gemini y pasa directo al respaldo, sin esperas.
+- **2026-11-06:** *Ejecuciones* también avisa cuando una persona *Aprobada* tiene evidencia nueva y el modelo no la asoció a ningún segmento.
+
+### Pruebas
+
+`npm test` corre **247 pruebas** (231 del H7 y 16 nuevas): el plan, la corrección y el descarte, las preguntas sesgadas, no modificar supuestos, el archivado, la versión por evidencia nueva y cuándo no se crea, *Excluir de la síntesis*, *Reemplazada* y el límite diario.

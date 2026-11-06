@@ -166,7 +166,8 @@ export function crearGenerador(opciones: OpcionesGenerador): Generador {
           const error =
             e instanceof ErrorModelo ? e : new ErrorModelo(e instanceof Error ? e.message : String(e), 'otro');
           intentos.push({ ...base, resultado: `error: ${error.tipo}`, detalle: error.message });
-          const esperable = error.tipo === 'limite' || error.tipo === 'transitorio';
+          // El límite diario no se reintenta: pasa directo al respaldo (H8).
+          const esperable = (error.tipo === 'limite' && !error.opciones.diario) || error.tipo === 'transitorio';
           if (esperable && esperas < reintentos) {
             const pedida = error.opciones.esperaMs;
             const ms =

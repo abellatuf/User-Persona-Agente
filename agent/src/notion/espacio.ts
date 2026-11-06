@@ -83,6 +83,10 @@ export interface FilaEvidencia {
   etapa: string | null;
   metodo: string | null;
   muestra: string;
+  /** Fecha de creación de la fila (ISO): la persona viva compara con «Sintetizada el» (H8). */
+  creada: string | null;
+  /** El PM la marcó con «Excluir de la síntesis» (H8). */
+  excluida: boolean;
 }
 
 /** Una fila de User Personas. */
@@ -96,6 +100,10 @@ export interface FilaPersona {
   motivoRechazo: string;
   versionAnterior: string[];
   versionSiguiente: string[];
+  /** Última síntesis del agente (ISO), o null si nunca la escribió. */
+  sintetizadaEl: string | null;
+  /** Fecha de creación de la fila (ISO). */
+  creada: string | null;
 }
 
 /** Una fila de Atributos. */
@@ -106,6 +114,17 @@ export interface FilaAtributo {
   personas: string[];
   clave: string;
   divergencia: boolean;
+  confianza: string | null;
+  evidencias: string[];
+}
+
+/** Una fila de Supuestos a validar (H8). */
+export interface FilaSupuesto {
+  id: string;
+  supuesto: string;
+  atributos: string[];
+  estado: string | null;
+  clave: string;
 }
 
 /** Esquema de una base: propiedad → tipo y, si es selección o estado, sus opciones. */
@@ -149,6 +168,7 @@ export interface EspacioNotion {
   leerEvidencias(): Promise<FilaEvidencia[]>;
   leerPersonas(): Promise<FilaPersona[]>;
   leerAtributos(): Promise<FilaAtributo[]>;
+  leerSupuestos(): Promise<FilaSupuesto[]>;
   /** Texto de cada bloque del cuerpo de una página, en orden (los bloques sin texto quedan como ""). */
   leerTextoDelCuerpo(paginaId: string): Promise<string[]>;
   /** Devuelve null si la base no existe o no está compartida con la integración. */
@@ -303,6 +323,8 @@ export class EspacioNotionMcp implements EspacioNotion {
       etapa: p.leerSeleccion(fila, 'Etapa que la creó'),
       metodo: p.leerSeleccion(fila, 'Método de investigación'),
       muestra: p.leerTexto(fila, 'Muestra').trim(),
+      creada: fila.created_time ?? null,
+      excluida: p.leerCasilla(fila, 'Excluir de la síntesis'),
     }));
   }
 
@@ -317,6 +339,8 @@ export class EspacioNotionMcp implements EspacioNotion {
       motivoRechazo: p.leerTexto(fila, 'Motivo de rechazo').trim(),
       versionAnterior: p.leerRelacion(fila, 'Versión anterior'),
       versionSiguiente: p.leerRelacion(fila, 'Versión siguiente'),
+      sintetizadaEl: p.leerFecha(fila, 'Sintetizada el'),
+      creada: fila.created_time ?? null,
     }));
   }
 
@@ -328,6 +352,18 @@ export class EspacioNotionMcp implements EspacioNotion {
       personas: p.leerRelacion(fila, 'Persona'),
       clave: p.leerTexto(fila, 'Clave').trim(),
       divergencia: p.leerCasilla(fila, 'Divergencia'),
+      confianza: p.leerSeleccion(fila, 'Confianza'),
+      evidencias: p.leerRelacion(fila, 'Evidencias'),
+    }));
+  }
+
+  async leerSupuestos(): Promise<FilaSupuesto[]> {
+    return (await this.todasLasFilas(BASES.supuestos)).map((fila) => ({
+      id: fila.id,
+      supuesto: p.leerTexto(fila, 'Supuesto').trim(),
+      atributos: p.leerRelacion(fila, 'Atributo'),
+      estado: p.leerSeleccion(fila, 'Estado'),
+      clave: p.leerTexto(fila, 'Clave').trim(),
     }));
   }
 

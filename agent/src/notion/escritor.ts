@@ -140,7 +140,9 @@ export class EscritorNotion implements Escritor {
     this.verificar(op);
     paginaCreada.parse(await this.llamar('API-patch-page', { page_id: id, properties: op.propiedades }));
     if (redirigida) {
-      this.contador.avisar(`Atributo ${id}: el PM lo editó, así que la propuesta quedó en «Sugerencia del agente».`);
+      // El texto del atributo, no su id: el PM lo tiene que poder encontrar (H8).
+      const afirmacion = pagina ? p.leerTexto(pagina, 'Afirmación') : '';
+      this.contador.avisar(`Atributo «${afirmacion || id}»: el PM lo editó, así que la propuesta quedó en «Sugerencia del agente».`);
     }
     return { id, accion: redirigida ? 'sugerencia' : 'actualizada' };
   }

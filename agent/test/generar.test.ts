@@ -91,6 +91,19 @@ describe('generar: reintentos y respaldo ante límites de uso (T3.3)', () => {
     ]);
   });
 
+  it('el límite diario no se reintenta: pasa directo al respaldo (H8)', async () => {
+    const diario = new ErrorModelo('429 por día', 'limite', { estadoHttp: 429, diario: true });
+    const gemini = new ProveedorFalso('Gemini', 'g', [diario]);
+    const openrouter = new ProveedorFalso('OpenRouter', 'openrouter/free', [respuesta(valido, 'algun/modelo:free')]);
+    const { generar, esperas } = generador(gemini, openrouter);
+
+    const r = await generar({ mensajes, esquema });
+
+    expect(gemini.recibidas).toHaveLength(1);
+    expect(esperas).toEqual([]);
+    expect(r.usoRespaldo).toBe(true);
+  });
+
   it('si el reintento funciona, no pasa al respaldo', async () => {
     const gemini = new ProveedorFalso('Gemini', 'g', [new ErrorModelo('503', 'transitorio'), respuesta(valido)]);
     const openrouter = new ProveedorFalso('OpenRouter', 'o');

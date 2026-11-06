@@ -37,6 +37,8 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 
 - **Formulario *Investigación propia*** (H7, 2026-10-31): vista de formulario sobre Evidencia, con *Título*, *Método de investigación*, *Fecha de consulta*, *Muestra*, *Extracto* y *Tipo* (HU-08). El MCP de Notion solo deja ver la pregunta del título, así que las demás preguntas y la descripción («No incluyas datos personales…») las revisa Abel a mano. Abel corrigió la opción «Análitica» a «Analítica» en *Método de investigación*.
 - **Atributos y Sugerencia del agente** (H7, 2026-11-05): al volver a sintetizar, el agente actualiza cada atributo por su fila (A1, A2… en el prompt). Si el PM lo editó, conserva su texto y deja la propuesta completa en *Sugerencia del agente*. En *Posturas*, una postura del contexto se escribe como «Campo *Nombre*: «texto del campo»», con el texto copiado tal cual.
+- **Sintetizada el** (H8, 2026-11-06): fecha en User Personas. La escribe el agente cada vez que sintetiza la persona; la evidencia creada después cuenta como nueva para una persona *Aprobada*.
+- **Excluir de la síntesis** (H8, 2026-11-06): casilla en Evidencia. La marca el PM para que el agente no use esa fila al sintetizar, sin borrarla.
 
 ## Pendiente
 
