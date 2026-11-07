@@ -14,7 +14,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H5. Entrevistas | ✅ Cerrado |
 | H6. Web | ✅ Cerrado |
 | H7. Síntesis | ✅ Cerrado |
-| H8. Validación y persona viva | ⚪ Pendiente |
+| H8. Validación y persona viva | ✅ Cerrado |
 | H9. Evaluaciones y aceptación | ⚪ Pendiente |
 
 ---
@@ -803,8 +803,8 @@ Cada atributo de confianza **Baja** de una persona en *Borrador* recibe su **sup
 
 | Tarea | Quién | Estado |
 |-------|-------|--------|
-| T8.1 Prompt de plan de validación | 🤖 | 🔨 Implementado y probado; falta la demo |
-| T8.2 Versionado y *Reemplazada* | 🤖 | 🔨 Implementado y probado; falta la demo |
+| T8.1 Prompt de plan de validación | 🤖 | ✅ 10 supuestos en 2 personas; el supuesto editado por el PM no se tocó |
+| T8.2 Versionado y *Reemplazada* | 🤖 | ✅ Dueño de comercio v2 por evidencia nueva; la v1 pasó a *Reemplazada* |
 
 ### Decisiones de diseño (aprobadas por Abel el 2026-11-06)
 
@@ -837,3 +837,40 @@ Cada atributo de confianza **Baja** de una persona en *Borrador* recibe su **sup
 ### Pruebas
 
 `npm test` corre **247 pruebas** (231 del H7 y 16 nuevas): el plan, la corrección y el descarte, las preguntas sesgadas, no modificar supuestos, el archivado, la versión por evidencia nueva y cuándo no se crea, *Excluir de la síntesis*, *Reemplazada* y el límite diario.
+
+> Commit del H8: `9f0cfa8` (247 pruebas).
+
+### Demo de cierre del H8 (la hace Abel)
+
+La guía, paso por paso, está en [demo-h8-guia.md](demo-h8-guia.md).
+
+**Demo de cierre del H8:** supuestos con preguntas no sesgadas para los atributos Baja, una versión nueva por evidencia nueva sin tocar la aprobada, y la anterior *Reemplazada* al aprobar la nueva. **Cumplida el 2026-11-06.**
+
+### Resultado de la demo del H8
+
+| Corrida | Resultado | Qué mostró |
+|---------|-----------|------------|
+| [14:18 · Planificar validación](https://app.notion.com/p/410245a35f2b81178f91d7120e4690f0) | *Lista* | 10 supuestos *Pendientes* en las 2 personas en *Borrador*, con método, perfil y preguntas, en una llamada a Gemini por persona |
+| [14:32 · Planificar validación](https://app.notion.com/p/410245a35f2b81d3ba99f9cdb9a24fab) | *Lista* | Después de que Abel editó un supuesto: 0 creados y sin llamar al modelo. El supuesto editado conservó el texto de Abel y siguió *Pendiente* |
+| [17:18 · Sintetizar](https://app.notion.com/p/410245a35f2b81efa552c95d68f9f475) | *Lista* | Con «Dueño de comercio o servicio» *Aprobada* y una encuesta nueva, creó la [versión 2](https://app.notion.com/p/410245a35f2b818bafeacd5857098f33) en *Borrador*. El *Registro de cambios* nombra la encuesta, y la [versión 1](https://app.notion.com/p/40a245a35f2b810b9210c72250b826fd) no cambió |
+| [18:14 · Sin pendientes](https://app.notion.com/p/410245a35f2b81ab8cabe958543adb87) | *Sin pendientes* | No marcó *Reemplazada*: por error se había pasado a *Borrador* la versión 1 en lugar de la 2 (pendiente 2) |
+| [18:18 · Sin pendientes](https://app.notion.com/p/410245a35f2b81ee9995ddb5635dd4b8) | *Sin pendientes* | ✅ Con las dos versiones *Aprobadas*, la 1 pasó a *Reemplazada* y la nota lo dice |
+| [18:31 · Sintetizar](https://app.notion.com/p/410245a35f2b81188bebd63ac8b940c5) | *Lista* | ✅ Avisó la evidencia excluida, la persona rechazada sin versión nueva y el atributo editado por su texto. No creó una versión 3 porque ningún atributo usó la evidencia nueva |
+
+**Lo que no se vio en la demo:** el límite diario de Gemini, porque no se agotó la cuota. Lo cubren las pruebas.
+
+**La corrida de las 18:31 también** creó una persona nueva en *Borrador*, «Pagador de cuotas recurrentes», y actualizó «Profesional independiente». Esos cambios los revisa el PM, y sus supuestos se completan con *Planificar validación*.
+
+> **Lecciones aprendidas:**
+> - **Una regla de código no ve los presupuestos:** el filtro frena las preguntas sobre el futuro y las que empiezan con «¿No…?», pero no las que dan algo por hecho (pendiente 1).
+> - **El estado lo maneja el PM a mano, y ahí aparecen los errores:** dos versiones con el mismo nombre llevaron a cambiar la fila equivocada, y una solicitud se cargó en Evidencia. El agente actuó bien en los dos casos, pero no avisó.
+> - **Que la versión nueva necesite un atributo que cite la evidencia nueva** evitó una versión 3 hecha con una fila cargada por error.
+
+### Pendientes que salieron de la demo
+
+Sin tocar código hasta que Abel los apruebe:
+
+1. **Preguntas que dan algo por supuesto:** «¿Por qué decidiste aplicar cambios…?» asume que la persona cambió algo, y el filtro del código no lo detecta.
+2. **Versiones con el mismo nombre:** en *User Personas*, la versión 1 y la 2 de una persona se llaman igual, y en la demo se cambió el estado de la fila equivocada. Se puede resolver con una vista que muestre *Versión* junto al nombre o agregando la versión al nombre.
+3. **Evidencia sin tipo ni extracto:** una fila de *Evidencia* creada por error («Sintetizar en Pendiente», sin *Tipo*) se tomó como evidencia nueva de una persona *Aprobada*. El agente no valida que la evidencia tenga *Tipo* y *Extracto* antes de usarla.
+4. Siguen abiertos para el H9: la confianza Media (H7), el país en Tavily y las voces de usuarios (H6), y que el agente ignore las filas de contexto totalmente vacías (H4).

@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H7 ✅, sigue el H8 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H8 ✅, sigue el H9 |
 
 ---
 
@@ -136,20 +136,23 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-06 | 7 | [Corrida final](https://app.notion.com/p/410245a35f2b81528f5bd7be74084f12) en *Lista*, solo con Gemini: los 503 se resolvieron con las esperas. La edición del PM se mantuvo, sin una fila duplicada. No hubo texto en otro idioma, Competidores se copió tal cual y no se archivó ningún atributo. Se mantienen las divergencias de Competidores, P06 y el rol del pagador (P01 y P09); P10 quedó solo en personas rechazadas. **No se creó una Tesorero v3:** el motivo («no aplica en el común de los casos») pedía no proponerla, y el modelo la descartó. Abel lo da por bueno; la versión nueva ya se había visto con la v2. |
 | 2026-11-06 | 7 | **Se cierra el H7.** Con el OK de Abel, la investigación de PRUEBA va a la papelera. El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h7). |
 | 2026-11-06 | 7 | Diseño del **H8** aprobado. **Etapa 5, *Planificar validación*** (HU-14), como solicitud aparte por la cuota: planifica los atributos de confianza Baja de las personas en *Borrador*, con una llamada por persona. Cada supuesto trae método (Entrevista, Encuesta, Prueba o Analítica), perfil sin datos personales y de 3 a 5 preguntas. El código **rechaza las preguntas sesgadas**: las que empiezan con «¿No…», las que preguntan por el futuro («¿Pagarías…?») y las que repiten la afirmación. El agente solo crea los supuestos que faltan, nunca modifica uno existente, y archiva solo los *Pendientes* cuyo atributo ya no es Baja. **Persona viva** (HU-15): una persona *Aprobada* con evidencia posterior a la propiedad nueva ***Sintetizada el*** genera una versión n+1 en *Borrador*, siempre que la versión cite esa evidencia. En cada ejecución, sin modelo, una *Aprobada* cuya versión siguiente esté *Aprobada* pasa a *Reemplazada*. *Validado* y *Refutado* no hacen nada automático: el resultado entra como investigación propia. **Entran al H8:** no reintentar un límite diario de Gemini, la casilla ***Excluir de la síntesis*** en Evidencia y los avisos en *Ejecuciones* (persona rechazada sin versión nueva y el texto del atributo en lugar del ID). Quedan para el H9 la confianza Media, el país en Tavily y las voces de usuarios. |
+| 2026-11-06 | 7 | Código del H8 en `main` (`9f0cfa8`, 247 pruebas): etapa *Planificar validación*, persona viva con *Sintetizada el*, *Reemplazada* en cada ejecución, *Excluir de la síntesis*, los dos avisos de *Ejecuciones* y el límite diario de Gemini sin reintentos. |
+| 2026-11-06 | 7 | **Se cierra el H8.** En la demo: 10 supuestos con preguntas no sesgadas, el supuesto editado por Abel se respetó, «Dueño de comercio o servicio» v2 salió de una encuesta nueva sin tocar la v1, y la v1 pasó a *Reemplazada* al aprobar la v2. Quedaron 3 pendientes: preguntas que dan algo por supuesto, versiones con el mismo nombre y evidencia sin tipo ni extracto. El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h8). |
 
 ### Próximo paso
 
-**H8: validación y persona viva.** El asistente propone el diseño, y no se toca código hasta que Abel lo apruebe.
+**H9: evaluaciones y aceptación.** El asistente propone el diseño, y no se toca código hasta que Abel lo apruebe.
 
 Pendientes a tener en cuenta:
-- **Mejoras para el H8 o el H9**, sin tocar código hasta que Abel las apruebe. El detalle está en la [Fase 7](docs/07-implementacion.md#pendientes-que-salieron-de-la-demo-2):
-  - una casilla *Excluir de la síntesis* en Evidencia;
+- **Mejoras para el H9**, sin tocar código hasta que Abel las apruebe. El detalle está en la [Fase 7](docs/07-implementacion.md#pendientes-que-salieron-de-la-demo-3):
+  - que el filtro de preguntas detecte las que dan algo por supuesto;
+  - distinguir las versiones de una persona en *User Personas* (vista o nombre);
+  - que el agente no use evidencia sin *Tipo* ni *Extracto*;
   - que la confianza Media por una pública y una del equipo verifique que las dos digan lo mismo;
-  - que *Ejecuciones* avise cuando una persona rechazada no tiene versión nueva;
-  - no reintentar un límite diario de Gemini;
   - pasarle a Tavily el país del *Mercado*;
   - sumar voces de usuarios (foros y reseñas).
-- Personas vigentes: *Profesional independiente* y *Dueño de comercio o servicio*, las dos en *Borrador*.
+- Personas vigentes: *Dueño de comercio o servicio* v2 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*).
+- En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente»: conviene marcarle *Excluir de la síntesis*.
 - `gemini-3.6-flash` admite solo 20 pedidos por día, y una corrida de *Sintetizar* usa unos 3 a 6.
 - Las entrevistas de Ingeniería y Negocio las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
