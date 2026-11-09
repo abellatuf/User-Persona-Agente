@@ -171,3 +171,13 @@ describe('reglas de las preguntas (H8)', () => {
     expect(problemas.get('A3')).toEqual(['el modelo no propuso un plan para este atributo']);
   });
 });
+
+describe('preguntas que dan algo por supuesto (H9)', () => {
+  it('el pedido al modelo prohíbe dar por hecho lo que la persona no dijo', async () => {
+    const { espacio } = espacioBase();
+    const { correr, gemini } = preparar(espacio, [{ supuestos: [plan('A1')] }]);
+    await correr();
+    const pedido = `${gemini.recibidas[0]!.sistema}\n${gemini.recibidas[0]!.usuario}`;
+    expect(pedido).toContain('No des por hecho algo que la persona no dijo');
+  });
+});

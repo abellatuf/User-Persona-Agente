@@ -70,6 +70,12 @@ export function tipoDe(fila: FilaEvidencia): TipoEvidencia | null {
 export const quienRespondio = (e: FilaEntrevista) => `${e.nombreMiembro || 'Sin nombre'} (${e.rolMiembro ?? 'Otro'})`;
 
 /**
+ * Una fila sin Tipo o sin Extracto no es evidencia: suele ser una fila creada por error
+ * (en la demo del H8, una solicitud cargada en Evidencia). Queda afuera de la síntesis.
+ */
+export const esEvidenciaIncompleta = (fila: FilaEvidencia) => tipoDe(fila) === null || !fila.extracto.trim();
+
+/**
  * Asigna E1, E2… a la evidencia que entra en la síntesis. La del equipo solo entra si su
  * entrevista está incluida; el autor sale de la entrevista, no del modelo.
  */
@@ -79,8 +85,8 @@ export function prepararEvidencias(filas: FilaEvidencia[], incluidas: FilaEntrev
   const preparadas: EvidenciaPreparada[] = [];
   for (const fila of filas) {
     const tipo = tipoDe(fila);
-    // El PM la sacó con «Excluir de la síntesis» (H8).
-    if (fila.excluida || (!fila.extracto && !fila.titulo)) continue;
+    // El PM la sacó con «Excluir de la síntesis» (H8), o le falta Tipo o Extracto (H9).
+    if (fila.excluida || tipo === null || esEvidenciaIncompleta(fila)) continue;
     let fuente: string;
     if (tipo === 'Supuesto del equipo') {
       const entrevista = fila.entrevistas.map((id) => porId.get(id)).find((e) => e !== undefined);
@@ -88,10 +94,8 @@ export function prepararEvidencias(filas: FilaEvidencia[], incluidas: FilaEntrev
       fuente = entrevista ? quienRespondio(entrevista) : 'Equipo (sin entrevista vinculada)';
     } else if (tipo === 'Pública') {
       fuente = `Pública: ${fila.titulo || fila.url || fila.id}`;
-    } else if (tipo === 'Investigación propia') {
-      fuente = `Investigación propia: ${fila.titulo || fila.id}`;
     } else {
-      fuente = `Sin tipo: ${fila.titulo || fila.id}`;
+      fuente = `Investigación propia: ${fila.titulo || fila.id}`;
     }
     const detalle = [fila.titulo, fila.metodo ? `método: ${fila.metodo}` : '', fila.muestra ? `muestra: ${fila.muestra}` : '']
       .filter(Boolean)

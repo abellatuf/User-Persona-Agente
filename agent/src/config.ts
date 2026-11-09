@@ -4,7 +4,7 @@ import { z } from 'zod';
  * IDs de las bases (data sources) de la plantilla de Notion.
  * No son secretos: el detalle está en docs/notion-plantilla.md.
  */
-export const BASES = {
+export const BASES_PRINCIPAL = {
   configuracion: 'de3cb0ff-3f04-40b4-9cad-9342b177b12e',
   equipo: 'a6565b62-6a72-42a3-8cb8-632a1b02314d',
   contexto: 'acf50bb3-01f8-4d02-b324-b6385022a556',
@@ -17,7 +17,39 @@ export const BASES = {
   supuestos: '52dcc77d-24a1-4584-ad0d-c25fed833fc4',
 } as const;
 
-export type ClaveBase = keyof typeof BASES;
+export type ClaveBase = keyof typeof BASES_PRINCIPAL;
+
+/**
+ * Copia de la plantilla en la página «Evaluaciones» de Notion (H9). Solo la usa evals.yml:
+ * el runner de evaluaciones manda a la papelera sus filas en cada corrida.
+ */
+export const BASES_EVALUACION: Readonly<Record<ClaveBase, string>> = {
+  configuracion: '2b65c12d-6400-43ea-8049-05f68919de7f',
+  equipo: '425f5e8c-4056-4dac-863f-f18832bb5efd',
+  contexto: '64f03849-afb1-4322-afd1-d9e2ee571c73',
+  solicitudes: 'c5abee68-1c42-44c3-b9e5-d6d6920165e5',
+  entrevistas: '46010d33-58e2-4f7c-9b28-8d14750454a2',
+  ejecuciones: '1fb7094b-c903-476e-a8c0-a7ed3685ce93',
+  personas: '981330cd-367c-4c74-abfe-df72a8f90b4a',
+  evidencia: '8a889fa4-71bc-40cb-812f-350d88aa47e0',
+  atributos: '13500cab-4def-4513-934e-ca642a40f68e',
+  supuestos: 'ccf23d55-ad76-45e6-b4a4-ac712898e9b2',
+};
+
+export type Espacio = 'principal' | 'evaluacion';
+
+/** ESPACIO vacío o «principal»: el espacio del PM. «evaluacion»: el de las evaluaciones (solo evals.yml). */
+export function leerEspacio(env: NodeJS.ProcessEnv): Espacio {
+  const valor = env['ESPACIO']?.trim() ?? '';
+  if (valor === '' || valor === 'principal') return 'principal';
+  if (valor === 'evaluacion') return 'evaluacion';
+  throw new Error(`ESPACIO="${valor}" no existe: usá «principal» o «evaluacion».`);
+}
+
+export const ESPACIO: Espacio = leerEspacio(process.env);
+
+/** Las bases del espacio elegido con ESPACIO al arrancar el proceso. */
+export const BASES: Readonly<Record<ClaveBase, string>> = ESPACIO === 'evaluacion' ? BASES_EVALUACION : BASES_PRINCIPAL;
 
 /** Tope de solicitudes atendidas por ejecución, para acotar el tiempo de cada corrida. */
 export const MAX_SOLICITUDES_POR_EJECUCION = 10;

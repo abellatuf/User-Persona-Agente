@@ -35,6 +35,7 @@ const TAREA = [
   '- Preguntá por lo que la persona hizo o hace, con casos concretos y recientes («¿Cómo cobraste las cuotas el mes pasado?»).',
   '- No preguntes por el futuro ni por hipótesis («¿Pagarías…?», «¿Usarías…?», «¿Estarías dispuesto…?», «Si existiera…»).',
   '- No empieces con «¿No…?» ni sugieras la respuesta.',
+  '- No des por hecho algo que la persona no dijo: «¿Por qué decidiste cambiar…?» supone que cambió algo. Primero preguntá si pasó y cómo.',
   '- No repitas la afirmación del atributo: la pregunta no tiene que delatar lo que se quiere confirmar.',
   '- No menciones el producto ni sus funciones.',
 ].join('\n');

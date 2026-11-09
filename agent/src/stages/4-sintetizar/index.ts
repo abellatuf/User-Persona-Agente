@@ -17,6 +17,7 @@ import {
   esquemaSegmentos,
   MAX_ATRIBUTOS,
   MAX_PERSONAS,
+  esEvidenciaIncompleta,
   prepararEvidencias,
   validarAtributos,
   validarSegmentos,
@@ -351,6 +352,12 @@ export const sintetizarEtapa: FuncionEtapa = async ({ solicitud, espacio, genera
   const filas = await espacio.leerEvidencias();
   const excluidas = filas.filter((f) => f.excluida).length;
   if (excluidas) notas.push(`Quedaron afuera ${excluidas} evidencia(s) marcadas con «Excluir de la síntesis».`);
+  const incompletas = filas.filter((f) => !f.excluida && esEvidenciaIncompleta(f));
+  if (incompletas.length) {
+    notas.push(
+      `Quedaron afuera ${incompletas.length} fila(s) de Evidencia sin «Tipo» o sin «Extracto»: ${incompletas.map((f) => `«${f.titulo || f.id}»`).join(', ')}.`,
+    );
+  }
   const evidencias = prepararEvidencias(filas, seleccion.incluidas, entrevistas);
   if (evidencias.length === 0) return resultado('Error', notas, ['No hay evidencia para sintetizar.']);
 

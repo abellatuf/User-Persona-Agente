@@ -1,0 +1,24 @@
+{
+  "divergencias": [
+    {
+      "tema": "Cuántos tipos de usuario hay y si el pagador es usuario",
+      "preguntas": ["P01", "P09"],
+      "lados": [["Abel", "Abel Negocio"], ["Abel Ingeniería"]]
+    },
+    {
+      "tema": "Quién decide, quién usa y quién paga",
+      "preguntas": ["P10"],
+      "lados": [["Abel Negocio"], ["Abel Ingeniería", "Abel"]]
+    },
+    {
+      "tema": "Qué lo lleva a probarlo: el volumen de clientes o lo que deja de cobrar",
+      "preguntas": ["P06"],
+      "lados": [["Abel"], ["Abel Negocio"]]
+    }
+  ],
+  "competidores": {
+    "tema": "La evidencia pública muestra competidores y el contexto dice que no hay directos",
+    "marcaEnPosturas": "Campo Competidores"
+  },
+  "terminosPropios": ["cobro", "pagador", "emisor", "morosidad", "cuota", "WhatsApp"]
+}

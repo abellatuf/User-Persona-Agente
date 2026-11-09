@@ -32,7 +32,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H8 ✅, sigue el H9 |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H8 ✅, H9 en curso |
 
 ---
 
@@ -138,26 +138,22 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-06 | 7 | Diseño del **H8** aprobado. **Etapa 5, *Planificar validación*** (HU-14), como solicitud aparte por la cuota: planifica los atributos de confianza Baja de las personas en *Borrador*, con una llamada por persona. Cada supuesto trae método (Entrevista, Encuesta, Prueba o Analítica), perfil sin datos personales y de 3 a 5 preguntas. El código **rechaza las preguntas sesgadas**: las que empiezan con «¿No…», las que preguntan por el futuro («¿Pagarías…?») y las que repiten la afirmación. El agente solo crea los supuestos que faltan, nunca modifica uno existente, y archiva solo los *Pendientes* cuyo atributo ya no es Baja. **Persona viva** (HU-15): una persona *Aprobada* con evidencia posterior a la propiedad nueva ***Sintetizada el*** genera una versión n+1 en *Borrador*, siempre que la versión cite esa evidencia. En cada ejecución, sin modelo, una *Aprobada* cuya versión siguiente esté *Aprobada* pasa a *Reemplazada*. *Validado* y *Refutado* no hacen nada automático: el resultado entra como investigación propia. **Entran al H8:** no reintentar un límite diario de Gemini, la casilla ***Excluir de la síntesis*** en Evidencia y los avisos en *Ejecuciones* (persona rechazada sin versión nueva y el texto del atributo en lugar del ID). Quedan para el H9 la confianza Media, el país en Tavily y las voces de usuarios. |
 | 2026-11-06 | 7 | Código del H8 en `main` (`9f0cfa8`, 247 pruebas): etapa *Planificar validación*, persona viva con *Sintetizada el*, *Reemplazada* en cada ejecución, *Excluir de la síntesis*, los dos avisos de *Ejecuciones* y el límite diario de Gemini sin reintentos. |
 | 2026-11-06 | 7 | **Se cierra el H8.** En la demo: 10 supuestos con preguntas no sesgadas, el supuesto editado por Abel se respetó, «Dueño de comercio o servicio» v2 salió de una encuesta nueva sin tocar la v1, y la v1 pasó a *Reemplazada* al aprobar la v2. Quedaron 3 pendientes: preguntas que dan algo por supuesto, versiones con el mismo nombre y evidencia sin tipo ni extracto. El detalle, con los links a Notion, está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-demo-del-h8). |
+| 2026-11-09 | 7 | Diseño del **H9** aprobado. Las evaluaciones corren en una página de Notion aparte, [*Evaluaciones*](https://app.notion.com/p/411245a35f2b81feae4bf98386f719e1), con una copia de la plantilla (se había propuesto correrlas en memoria; Abel prefirió Notion). Solo `evals.yml` la usa, con `ESPACIO=evaluacion`, y cada corrida arranca de cero. Corren *Armar contexto*, *Repreguntar*, *Sintetizar* y *Planificar validación* con la evidencia pública fija del caso. Las divergencias las controla el código, sin juez de modelo, y **Competidores es un chequeo aparte**. Un caso por día, por la cuota de Gemini. Las métricas de la Fase 2 las mide un script que solo lee el Notion real. Entran al H9 tres pendientes de la demo del H8; la confianza Media, el país en Tavily, las voces de usuarios y las filas de contexto vacías quedan para después del MVP. |
+| 2026-11-09 | 7 | Código del H9: selección de espacio con `ESPACIO`, limpieza que se niega fuera del espacio de evaluación, casos cobros-recurrentes (exportado de Notion) y rutina-app (escrito por el asistente), runner con 8 chequeos, `evals.yml` y el script de aceptación. *Sintetizar* ya no usa evidencia sin *Tipo* ni *Extracto*, y el prompt del plan pide no dar nada por supuesto. 272 pruebas. Falta la primera corrida. |
 
 ### Próximo paso
 
-**H9: evaluaciones y aceptación.** El asistente propone el diseño, y no se toca código hasta que Abel lo apruebe.
+**H9: primera corrida de `evals.yml`**, un caso por día, y la prueba de aceptación de Abel (T9.3). El detalle está en la [Fase 7](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
 
 Pendientes a tener en cuenta:
-- **Mejoras para el H9**, sin tocar código hasta que Abel las apruebe. El detalle está en la [Fase 7](docs/07-implementacion.md#pendientes-que-salieron-de-la-demo-3):
-  - que el filtro de preguntas detecte las que dan algo por supuesto;
-  - distinguir las versiones de una persona en *User Personas* (vista o nombre);
-  - que el agente no use evidencia sin *Tipo* ni *Extracto*;
-  - que la confianza Media por una pública y una del equipo verifique que las dos digan lo mismo;
-  - pasarle a Tavily el país del *Mercado*;
-  - sumar voces de usuarios (foros y reseñas).
+- El caso cobros-recurrentes **no trae la spec**, que es del repositorio de franCiti: *Armar contexto* se evalúa solo con rutina-app.
+- **Vista de *User Personas* con *Versión* junto al nombre:** entra al H9 y se hace en Notion, sin código.
 - Personas vigentes: *Dueño de comercio o servicio* v2 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*).
-- En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente»: conviene marcarle *Excluir de la síntesis*.
-- `gemini-3.6-flash` admite solo 20 pedidos por día, y una corrida de *Sintetizar* usa unos 3 a 6.
-- Las entrevistas de Ingeniería y Negocio las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
+- En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente». Desde el H9 el agente ya no la usa, porque no tiene *Tipo*.
+- `gemini-3.6-flash` admite solo 20 pedidos por día, y un caso de evaluación usa unos 11.
+- Las entrevistas de Ingeniería y Negocio, y las 3 de rutina-app, las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
 - *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
-- El contexto de cobros-recurrentes está **Confirmado** y las 3 entrevistas están **Completas**.
-- Del H4 sigue abierto: que el agente ignore las filas de contexto totalmente vacías. Del H5: medir el efecto del ajuste del prompt y el esfuerzo por miembro con personas reales, en el H9.
+- El esfuerzo por miembro, el tiempo total y el efecto del ajuste del prompt del H5 se miden en la prueba de aceptación.
 - T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 
 ### Cómo retomar en otro chat

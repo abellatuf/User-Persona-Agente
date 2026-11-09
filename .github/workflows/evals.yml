@@ -1,0 +1,69 @@
+# Evaluaciones y aceptación (H9). Solo manual, para cuidar la cuota de los modelos.
+# «Evaluar un caso» trabaja en la página Evaluaciones de Notion (ESPACIO=evaluacion):
+# borra la corrida anterior, carga el caso y pide las etapas. «Medir aceptación»
+# solo lee el espacio del PM.
+name: Evaluaciones
+
+on:
+  workflow_dispatch:
+    inputs:
+      que:
+        description: "Qué correr"
+        type: choice
+        options:
+          - Evaluar un caso
+          - Medir aceptación
+        default: Evaluar un caso
+      caso:
+        description: "Caso de evals/casos (solo para «Evaluar un caso»)"
+        type: choice
+        options:
+          - cobros-recurrentes
+          - rutina-app
+        default: cobros-recurrentes
+
+permissions:
+  contents: read
+
+# No se cruza con una ejecución del agente: comparten la cuota de los modelos.
+concurrency:
+  group: agente
+  cancel-in-progress: false
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: agent/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Evaluar el caso ${{ inputs.caso }}
+        if: inputs.que == 'Evaluar un caso'
+        env:
+          ESPACIO: evaluacion
+          CASO: ${{ inputs.caso }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: npm run evals
+
+      - name: Medir aceptación en el espacio del PM
+        if: inputs.que == 'Medir aceptación'
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+        run: npm run aceptacion

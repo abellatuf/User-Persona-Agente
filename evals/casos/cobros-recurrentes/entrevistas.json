@@ -1,0 +1,67 @@
+{
+  "equipo": [
+    {
+      "nombre": "Abel",
+      "rol": "PM"
+    },
+    {
+      "nombre": "Abel Negocio",
+      "rol": "Negocio"
+    },
+    {
+      "nombre": "Abel Ingeniería",
+      "rol": "Ingeniería"
+    }
+  ],
+  "entrevistas": [
+    {
+      "miembro": "Abel",
+      "rol": "PM",
+      "respuestas": {
+        "P01": "Tenes 2 tipos de usuarios. Por un lado los dueños de los comercios o prestadores de servicios (cobradores), y por otro, los usuarios/clientes de esos comercios o servicios",
+        "P02": "Dueño del gimnasio que todos los días tiene que reclamarle a distintos usuarios de su gimnasio el pago de la cuota",
+        "P03": "La persona que entrena en el gimnasio usualmente se olvida que tiene que pagar, por ello necesita que se lo recuerde. El dueño del gimnasio, necesita llevar un trackeo de esos pagos y recordarselo a sus clientes",
+        "P04": "El dueño del gimnasio con un excel y el cliente se olvida usualmente",
+        "P05": "Es tedioso y un proceso muy manual",
+        "P06": "que su numero de cliente cresca de tal forma que sea inmanejable con un excel",
+        "P07": "Que obtenga una mayor tasa de pagos en fecha y menos procesos de trackeo manuales en planillas de excel",
+        "P08": "Siempre que se venda en cuotas o se preste un servicio que requiera pagos recurrentes",
+        "P09": "Entre el cobrador y el pagador hay diferencias, las funcionalidades del cobrador tienen que estar orientadas a automatizar procesos, tracking de pagos y aumentar el ratio de exito de cobros. El pagador necesita que se le recuerde que tiene que pagar y que le sea mas facil el mismo",
+        "P10": "El prestador de servicios, ya que es quien aplica el producto y envia la notificacion a sus clientes",
+        "P11": "Prefiero no dar por sentado nada",
+        "P12": "Casos que he conocido  y mi propia experiencia como cliente de servicios",
+        "P13": "como medis los usuarios que te pagan en tiempo? y tenes alguna clasificacion de los mismos?"
+      }
+    },
+    {
+      "miembro": "Abel Negocio",
+      "rol": "Negocio",
+      "respuestas": {
+        "P01": "Dos tipos de emisor muy distintos: el profesional independiente que cobra solo, y la organización chica (club, sociedad de fomento) donde cobra un tesorero o administrativo. Y además están los pagadores.",
+        "P02": "El tesorero de una sociedad de fomento que cobra la cuota social a unos 150 socios. Lo hace en su tiempo libre y muchos socios pagan tarde o se olvidan.",
+        "P03": "La morosidad: si no cobra, la organización se queda sin plata para funcionar.",
+        "P06": "Que la morosidad le haga perder plata, aunque tenga pocos pagadores. El volumen no es lo que lo empuja, sino lo que deja de cobrar. Lo frenaría tener que cambiar cómo le pagan hoy sus socios.",
+        "P07": "Bajar la morosidad. Lo vería en que a fin de mes cobra más cuotas en fecha.",
+        "P10": "No siempre. En una organización, decide la comisión directiva, lo usa el tesorero y, si el servicio se cobra, paga la organización. En el profesional independiente sí es la misma persona.",
+        "P11": "Que el emisor va a estar dispuesto a pagar por el servicio. No sé si una organización chica tiene presupuesto para eso.",
+        "P12": "Conozco cómo funciona un club de barrio. Pesa más la experiencia propia que datos.",
+        "P13": "¿Cuánta plata dejaste de cobrar el último año por cuotas atrasadas?"
+      }
+    },
+    {
+      "miembro": "Abel Ingeniería",
+      "rol": "Ingeniería",
+      "respuestas": {
+        "P01": "Un solo tipo: el emisor. El pagador no es realmente un usuario del sistema: no tiene cuenta, no se loguea y no instala nada; solo recibe un mensaje y manda un comprobante.",
+        "P04": "Una planilla y recordatorios a mano por WhatsApp. Algunos usan el recordatorio del celular.",
+        "P05": "Tener que cruzar a mano los comprobantes que le llegan con quién pagó y quién no.",
+        "P08": "Desde el celular, a fin o principio de mes, cuando le toca cobrar.",
+        "P09": "No veo diferencias importantes: todos los emisores necesitan lo mismo, mandar el pedido de pago y ver quién pagó. El tamaño no cambia mucho las funcionalidades.",
+        "P10": "Sí, es la misma persona: el emisor decide, lo usa y, si en algún momento se cobra el servicio, lo paga.",
+        "P11": "Que el emisor va a querer conciliar a mano. Creo que va a pedir conciliación automática apenas tenga más de unos pocos pagadores.",
+        "P12": "Intuición y lo que veo en otros productos parecidos. No hablé con usuarios.",
+        "P13": "¿Cuánto tiempo por mes te lleva hoy controlar quién te pagó?"
+      }
+    }
+  ]
+}

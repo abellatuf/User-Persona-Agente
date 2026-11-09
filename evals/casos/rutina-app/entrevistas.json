@@ -1,0 +1,61 @@
+{
+  "equipo": [
+    { "nombre": "Sofía", "rol": "PM" },
+    { "nombre": "Diego", "rol": "Diseño" },
+    { "nombre": "Marcos", "rol": "Ingeniería" }
+  ],
+  "entrevistas": [
+    {
+      "miembro": "Sofía",
+      "rol": "PM",
+      "respuestas": {
+        "P01": "Principiantes que se anotaron en el gimnasio hace poco y no saben qué hacer: copian lo que ven o repiten la rutina que les dieron el primer día.",
+        "P02": "Una chica de 25 años que va tres veces por semana después del trabajo. Llega, mira el papel que le dio el profesor hace cuatro meses y hace lo mismo de siempre.",
+        "P03": "No progresa y se aburre. Si no ve cambios en unos meses, deja de ir.",
+        "P04": "La rutina en papel o en una foto del celular. A veces le pregunta al profesor de turno, que no siempre tiene tiempo.",
+        "P05": "No saber cuándo ni cómo cambiar la rutina.",
+        "P06": "Que se lo recomiende alguien del gimnasio. La frenaría tener que cargar a mano todas las máquinas del gimnasio.",
+        "P07": "Seguir yendo después de los primeros tres meses y notar que levanta más peso.",
+        "P08": "En el gimnasio, con el celular en la mano, entre serie y serie.",
+        "P09": "Todos los principiantes necesitan lo mismo: que les digan qué hacer. No veo grandes diferencias.",
+        "P10": "Es la misma persona: decide, la usa y, si hay plan pago, lo paga.",
+        "P11": "Que el usuario va a confiar en una rutina armada por IA sin que la revise un profesor.",
+        "P12": "Lo que veo en mi gimnasio y en amigos que empezaron a entrenar. Pesa más la experiencia propia.",
+        "P13": "¿Cuánto tiempo hace que hacés la misma rutina?"
+      }
+    },
+    {
+      "miembro": "Diego",
+      "rol": "Diseño",
+      "respuestas": {
+        "P01": "Gente que recién empieza en el gimnasio y no tiene idea de cómo armar una rutina.",
+        "P02": "Un pibe de 19 que entrena con amigos y hace lo que hacen ellos, sin un plan propio.",
+        "P03": "Se lesiona o se estanca porque entrena sin criterio.",
+        "P05": "Llegar y que la máquina de su rutina esté ocupada: no sabe por qué ejercicio cambiarla.",
+        "P06": "Que sea gratis y rápido de empezar, sin un formulario largo.",
+        "P07": "Tener claro qué hacer cada día sin tener que preguntar.",
+        "P09": "Las diferencias son de objetivo (bajar de peso o ganar músculo), no de experiencia: todos son principiantes.",
+        "P11": "Que la gente va a completar el inventario del gimnasio. Creo que la mayoría lo va a saltear.",
+        "P12": "Intuición y apps parecidas que usé. No hablé con usuarios.",
+        "P13": "¿Qué hacés cuando la máquina que te toca está ocupada?"
+      }
+    },
+    {
+      "miembro": "Marcos",
+      "rol": "Ingeniería",
+      "respuestas": {
+        "P01": "Gente que ya entrena hace uno o dos años, tiene su rutina y quiere que se ajuste a su gimnasio y a su progreso. El principiante absoluto no es el usuario: necesita un profesor al lado.",
+        "P04": "Planillas propias o apps de registro de entrenamiento. Arman la rutina con videos.",
+        "P05": "Perder tiempo pensando la rutina nueva cada dos meses.",
+        "P06": "Que pueda cargar su rutina actual y no empezar de cero. Lo frenaría que la IA le proponga ejercicios para máquinas que su gimnasio no tiene.",
+        "P07": "Ahorrarse el tiempo de armar la rutina y que el cambio a los 60 días le llegue solo.",
+        "P08": "En la casa, el domingo, cuando planifica la semana. En el gimnasio solo la consulta.",
+        "P09": "El que ya entrena quiere control y ajustar detalles; el principiante quiere que le den todo hecho. Son necesidades muy distintas y el MVP debería elegir uno.",
+        "P10": "La misma persona.",
+        "P11": "Que el aviso a los 60 días alcanza. Creo que el que ya entrena quiere cambiar según cómo progresa, no por fecha.",
+        "P12": "Mi propia experiencia: entreno hace años y armo mis rutinas.",
+        "P13": "¿Cómo decidís hoy que es momento de cambiar la rutina?"
+      }
+    }
+  ]
+}

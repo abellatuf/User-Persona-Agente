@@ -15,7 +15,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H6. Web | ✅ Cerrado |
 | H7. Síntesis | ✅ Cerrado |
 | H8. Validación y persona viva | ✅ Cerrado |
-| H9. Evaluaciones y aceptación | ⚪ Pendiente |
+| H9. Evaluaciones y aceptación | 🟡 En curso |
 
 ---
 
@@ -874,3 +874,65 @@ Sin tocar código hasta que Abel los apruebe:
 2. **Versiones con el mismo nombre:** en *User Personas*, la versión 1 y la 2 de una persona se llaman igual, y en la demo se cambió el estado de la fila equivocada. Se puede resolver con una vista que muestre *Versión* junto al nombre o agregando la versión al nombre.
 3. **Evidencia sin tipo ni extracto:** una fila de *Evidencia* creada por error («Sintetizar en Pendiente», sin *Tipo*) se tomó como evidencia nueva de una persona *Aprobada*. El agente no valida que la evidencia tenga *Tipo* y *Extracto* antes de usarla.
 4. Siguen abiertos para el H9: la confianza Media (H7), el país en Tavily y las voces de usuarios (H6), y que el agente ignore las filas de contexto totalmente vacías (H4).
+
+---
+
+## H9. Evaluaciones y prueba de aceptación
+
+El agente se mide con casos fijos, sin juez de modelo: el código compara lo que quedó escrito con lo que el caso espera. Aparte, un script que solo lee mide las métricas de la Fase 2 sobre el Notion real.
+
+| Tarea | Quién | Estado |
+|-------|-------|--------|
+| T9.1 Caso cobros-recurrentes | 🤖 + 👤 | ✅ Exportado de Notion, sin la spec |
+| T9.2 Runner y `evals.yml` | 🤖 | 🟡 Código listo; falta la primera corrida |
+| T9.3 Prueba de aceptación | 👤 | ⚪ Pendiente |
+| T9.4 Caso rutina-app (*should*) | 🤖 + 👤 | 🟡 Escrito; falta que Abel lo apruebe |
+| T9.5 Resultados en el README | 🤖 | ⚪ Pendiente |
+
+### Decisiones de diseño (aprobadas por Abel el 2026-11-09)
+
+- **Las evaluaciones corren en una página de Notion aparte, *Evaluaciones***, con una copia de la plantilla. Se había propuesto correrlas en memoria; Abel prefirió Notion, porque es más fiel y los datos quedan para revisarlos.
+- **El espacio lo elige `ESPACIO`:** solo `evals.yml` pone `ESPACIO=evaluacion`; `agente.yml` nunca lo pone. Cualquier otro valor corta la ejecución.
+- **Cada corrida arranca de cero:** el runner manda a la papelera todas las filas del espacio de evaluación, menos *Configuración*. Se niega si los IDs de las bases no son los de evaluación, aunque `ESPACIO` diga lo contrario.
+- **Etapas:** *Armar contexto* desde la spec (si el caso la trae), *Repreguntar*, *Sintetizar* y *Planificar validación*, una solicitud por etapa. *Relevar la web* no corre: el caso trae la evidencia pública fija, para que las corridas se puedan comparar. Las repreguntas no se responden: el runner pasa las entrevistas a *Completa* y *Sintetizar* usa el formulario base.
+- **Después de *Armar contexto***, el runner reemplaza el contexto armado por el confirmado del caso, así las etapas siguientes no dependen de esa extracción.
+- **Divergencias por código:** un atributo con divergencia tiene que citar respuestas a esas preguntas de al menos un miembro de cada lado. **Competidores es un chequeo aparte** y no cuenta para la alineación.
+- **Un caso por día:** usa unas 11 llamadas y Gemini admite 20. El informe queda en el resumen de la ejecución de Actions y no va al commit.
+- **Entran al H9:** no usar evidencia sin *Tipo* ni *Extracto*, una regla en el prompt del plan contra las preguntas que dan algo por supuesto y una vista de *User Personas* con *Versión* junto al nombre. Quedan para después del MVP la confianza Media, el país en Tavily, las voces de usuarios y las filas de contexto vacías.
+
+### Cómo corre una evaluación
+
+1. `evals.yml` (manual) pide qué correr: **Evaluar un caso** (cobros-recurrentes o rutina-app) o **Medir aceptación**.
+2. El runner vacía el espacio de evaluación y carga el caso haciendo de PM: equipo, entrevistas en *Base respondida* y evidencia pública. Lo escribe directo por MCP, sin el Escritor del agente, porque lo que carga el PM no pasa por las reglas del agente.
+3. Si el caso trae `spec.md`, la sirve en `127.0.0.1` como *URL fuente* y pide *Armar contexto*.
+4. Carga el contexto confirmado y pide las otras tres etapas con `ejecutarAgente`, el mismo bucle de `agente.yml`.
+5. Saca una foto de lo que quedó escrito, corre los chequeos y deja el informe. Termina en rojo si falla alguno. Los datos quedan en Notion hasta la corrida siguiente.
+
+### Chequeos
+
+| Chequeo | Pasa si |
+|---------|---------|
+| Etapas | Cada solicitud terminó *Lista* o *Incompleta* |
+| Armar contexto | Cada cita está en la spec, y los campos que la spec dice no quedaron «No encontrado» |
+| Formato | Cada persona tiene nombre y «Por qué es un segmento distinto» y quedó en *Borrador*; cada atributo, categoría, confianza y persona; cada supuesto, método, perfil y preguntas |
+| Trazabilidad | Cada atributo cita evidencia que existe y no está excluida (la pública, con URL); cada supuesto apunta a un atributo |
+| Divergencias | Se encuentran todas las divergencias plantadas |
+| Competidores | Algún atributo con divergencia lo menciona en sus posturas |
+| Topes | 5 repreguntas por miembro, 5 personas y 10 atributos por persona. El de 15 fuentes es de *Relevar la web*, que no corre |
+| Agnóstico | En la síntesis no aparece ningún término propio de otro caso |
+
+**Aceptación** (solo lee el espacio del PM): trazabilidad y **aprobación indebida** (persona *Aprobada* o *Reemplazada* sin *Aprobada por* de una persona del equipo) fallan con un solo caso. **Aceptación** (aprobadas entre las revisadas), **retrabajo** (atributos con *Editado por el PM*) y **accionabilidad** (atributos Baja con supuesto, y supuestos con método, perfil y al menos 3 preguntas) se informan como porcentaje. El esfuerzo por miembro y el tiempo total los mide Abel.
+
+### Casos
+
+- **cobros-recurrentes:** exportado del Notion real el 2026-11-09: el contexto confirmado, las 3 entrevistas y las 20 evidencias públicas no excluidas. **No trae la spec** (decisión de Abel del 2026-11-09): es del repositorio de franCiti, así que para este caso no se evalúa *Armar contexto*. Las entrevistas de Negocio e Ingeniería las simuló el asistente, y cada una deja preguntas sin responder, igual que en Notion. Divergencias: P01 y P09 (cuántos tipos de usuario), P10 (quién decide, usa y paga) y P06 (qué lo lleva a probarlo), más Competidores.
+- **rutina-app:** lo escribió el asistente a partir del README de `abellatuf/rutina-app`: una spec corta, 3 entrevistas simuladas y 2 divergencias plantadas, P01 y P09 (principiante o el que ya entrena) y P08 (dónde y cuándo la usa). No trae evidencia pública ni Competidores. Sirve sobre todo para el chequeo de agnóstico.
+
+### Decisiones tomadas al implementar
+
+- **2026-11-09:** los términos propios de cada caso no pueden aparecer en el otro. «Gimnasio» y «entrena» quedaron afuera de rutina-app porque la entrevista del PM de cobros los usa.
+- **2026-11-09:** una fila de Evidencia sin *Tipo* (ni *Método de investigación*) o sin *Extracto* no entra en la síntesis, y *Ejecuciones* la nombra.
+
+### Pruebas
+
+`npm test` corre **272 pruebas** (247 del H8 y 25 nuevas): `ESPACIO`, la limpieza y su negativa con las bases del PM, los dos casos del repositorio, el cargador, cada chequeo, el informe, las métricas de aceptación y que el script no escriba, la evidencia incompleta y la regla nueva del plan.

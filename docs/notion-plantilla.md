@@ -19,6 +19,23 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 | Atributos | `10c0eff2-9f48-4a11-b773-4e361d1f2629` | ↔ User Personas, ↔ Evidencia, ↔ Supuestos a validar |
 | Supuestos a validar | `52dcc77d-24a1-4584-ad0d-c25fed833fc4` | ↔ Atributos |
 
+## Espacio de evaluación (H9)
+
+Creado el 2026-11-09 con el MCP de Notion: página [Evaluaciones](https://app.notion.com/p/411245a35f2b81feae4bf98386f719e1), dentro de la raíz. Tiene una copia de las diez bases, con las mismas propiedades y relaciones. Solo la usa `evals.yml` (`ESPACIO=evaluacion`), y el runner manda a la papelera sus filas en cada corrida, menos *Configuración* (*Agente activo* marcada, `gemini-3.6-flash` y `openrouter/free`).
+
+| Base | Data source ID |
+|------|----------------|
+| Configuración | `2b65c12d-6400-43ea-8049-05f68919de7f` |
+| Equipo | `425f5e8c-4056-4dac-863f-f18832bb5efd` |
+| Contexto del producto | `64f03849-afb1-4322-afd1-d9e2ee571c73` |
+| Solicitudes | `c5abee68-1c42-44c3-b9e5-d6d6920165e5` |
+| Entrevistas | `46010d33-58e2-4f7c-9b28-8d14750454a2` |
+| Ejecuciones | `1fb7094b-c903-476e-a8c0-a7ed3685ce93` |
+| User Personas | `981330cd-367c-4c74-abfe-df72a8f90b4a` |
+| Evidencia | `8a889fa4-71bc-40cb-812f-350d88aa47e0` |
+| Atributos | `13500cab-4def-4513-934e-ca642a40f68e` |
+| Supuestos a validar | `ccf23d55-ad76-45e6-b4a4-ac712898e9b2` |
+
 ## Decisiones de implementación
 
 - **Configuración es una base con una sola fila**, no una página suelta, porque Notion solo permite casillas como *Agente activo* dentro de una base.

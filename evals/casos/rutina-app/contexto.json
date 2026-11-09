@@ -1,0 +1,16 @@
+{
+  "Nombre": "Carga",
+  "Idioma": "español",
+  "Problema": "Quien entrena en un gimnasio repite la misma rutina durante meses: no sabe cuándo cambiarla ni cómo adaptarla a las máquinas de su gimnasio, y armar una nueva le lleva tiempo o le cuesta un profesor.",
+  "Problema · fuente": "spec.md · «Quien entrena en un gimnasio repite la misma rutina durante meses»",
+  "Propuesta de valor": "Genera una rutina con IA según nivel, objetivo, días por semana, lesiones y equipamiento del gimnasio, y avisa cuando conviene cambiarla.",
+  "Propuesta de valor · fuente": "spec.md · «Genera una rutina con IA a partir del nivel, el objetivo, los días por semana, las lesiones y el equipamiento real del gimnasio»",
+  "Usuarios que creemos tener": "Personas que entrenan en un gimnasio, con distinto nivel de experiencia.",
+  "Usuarios · fuente": "spec.md · «Personas que entrenan en un gimnasio, con distinto nivel de experiencia»",
+  "Mercado": "Argentina, en español.",
+  "Mercado · fuente": "spec.md · «Argentina, en español»",
+  "Modelo de negocio": "A definir: plan gratuito con una rutina activa y plan pago con renovaciones ilimitadas.",
+  "Modelo de negocio · fuente": "spec.md · «Se evalúa un plan gratuito con una rutina activa y un plan pago con renovaciones ilimitadas»",
+  "Competidores": "",
+  "Competidores · fuente": ""
+}

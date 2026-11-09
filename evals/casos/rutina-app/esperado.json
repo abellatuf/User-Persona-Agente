@@ -1,0 +1,15 @@
+{
+  "divergencias": [
+    {
+      "tema": "Quién es el usuario: el principiante o el que ya entrena",
+      "preguntas": ["P01", "P09"],
+      "lados": [["Sofía", "Diego"], ["Marcos"]]
+    },
+    {
+      "tema": "Dónde y cuándo la usa: en el gimnasio o planificando en la casa",
+      "preguntas": ["P08"],
+      "lados": [["Sofía"], ["Marcos"]]
+    }
+  ],
+  "terminosPropios": ["rutina", "máquina", "ejercicio", "inventario"]
+}

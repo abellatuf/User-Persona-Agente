@@ -1,0 +1,16 @@
+{
+  "Nombre": "App de Cobros Recurrentes",
+  "Idioma": "español",
+  "Problema": "Un emisor (persona física o entidad chica: particular, sociedad de fomento, profesional independiente, etc.) necesita cobrarle a un pagador un monto recurrente e indefinido (hasta que el pagador decida cancelar), sin exigirle login ni manejar datos sensibles de pago, apoyándose en un vínculo de confianza preexistente entre ambos (ej. contacto de WhatsApp).",
+  "Problema · fuente": "Cargado por el PM",
+  "Propuesta de valor": "Permite cobrar recurrentemente sin login ni manejo de datos sensibles, usando canales como WhatsApp y email para la comunicación y conciliación manual.",
+  "Propuesta de valor · fuente": "Cargado por el PM",
+  "Usuarios que creemos tener": "Los usuarios principales son el emisor (persona física o entidad chica como profesionales independientes o sociedades de fomento) y el pagador, quien interactúa mediante mensajes de correo o WhatsApp.",
+  "Usuarios · fuente": "cobros-recurrentes-spec.md.md · «Un emisor (persona física o entidad chica: particular, sociedad de fomento, profesional independiente, etc.)»",
+  "Mercado": "El producto se ofrece en Argentina, operando comercialmente en pesos (ARS).",
+  "Mercado · fuente": "cobros-recurrentes-spec.md.md · «País/moneda: Argentina, pesos (ARS). El pago real lo ejecuta el pagador»",
+  "Modelo de negocio": "Negocio B2B, la aplicación se pretende vender a pequeños emprendedores que necesiten hacer cobros recurrentes a sus clientes",
+  "Modelo de negocio · fuente": "Cargado por el PM",
+  "Competidores": "Hay aplicaciones que permiten hacer lo que se conoce como ‘debin recurrente’ pero no es exactamente lo mismo, por lo cual no podemos nombrar competidores directos",
+  "Competidores · fuente": "Cargado por el PM"
+}

@@ -7,7 +7,7 @@ import type { FilaEvidencia } from '../src/notion/espacio.js';
 import { MARCA_RESPUESTA } from '../src/stages/2-repreguntar/cuerpo.js';
 import { OPCION_AVANZAR_SIN_INCOMPLETAS } from '../src/stages/2-repreguntar/reglas.js';
 import { sintetizarEtapa } from '../src/stages/4-sintetizar/index.js';
-import { FUENTE_CONTEXTO, MAX_ATRIBUTOS, MAX_PERSONAS, tipoDe } from '../src/stages/4-sintetizar/reglas.js';
+import { FUENTE_CONTEXTO, MAX_ATRIBUTOS, MAX_PERSONAS, prepararEvidencias, tipoDe } from '../src/stages/4-sintetizar/reglas.js';
 import { ETAPAS } from '../src/stages/registro.js';
 import { ProveedorFalso, respuesta } from './apoyo/api-modelo-falsa.js';
 import { EspacioFalso } from './apoyo/espacio-falso.js';
@@ -608,5 +608,20 @@ describe('persona viva (H8)', () => {
     expect(espacio.notion.paginas.get(v2)!.properties['Estado']).toEqual({ status: { name: 'Aprobada' } });
     expect(espacio.ejecuciones[0]!.cierre!.notas).toContain('Persona «Clubes» (versión 1): pasó a Reemplazada porque el PM aprobó la versión 2.');
     expect(espacio.contadores().bloqueos).toBe(0);
+  });
+});
+
+describe('evidencia incompleta (H9)', () => {
+  const fila = (cambios: Partial<FilaEvidencia>): FilaEvidencia => ({
+    id: 'x', titulo: 'Un artículo', tipo: 'Pública', extracto: 'Texto citado.', entrevistas: [], url: null, etapa: null, metodo: null, muestra: '', creada: null, excluida: false, ...cambios,
+  });
+
+  it('una fila sin Tipo o sin Extracto no entra en la síntesis', () => {
+    const preparadas = prepararEvidencias(
+      [fila({ id: 'ok' }), fila({ id: 'sin-tipo', titulo: 'Sintetizar en Pendiente', tipo: null }), fila({ id: 'sin-extracto', extracto: '  ' })],
+      [],
+      [],
+    );
+    expect(preparadas.map((e) => e.id)).toEqual(['ok']);
   });
 });
