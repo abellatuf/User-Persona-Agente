@@ -51,6 +51,7 @@ const palabras = (texto: string) => normalizar(texto).split(' ').filter((p) => p
  * Motivo por el que una pregunta está sesgada, o null si está bien:
  * - empieza con «¿No…?», que sugiere la respuesta;
  * - pregunta por el futuro o por una hipótesis;
+ * - menciona «el producto» (H9): la persona tiene que hablar de lo que hace hoy, no del producto;
  * - repite la afirmación del atributo (así se la confirma en lugar de validarla).
  */
 export function sesgoDePregunta(pregunta: string, afirmacion: string): string | null {
@@ -59,6 +60,7 @@ export function sesgoDePregunta(pregunta: string, afirmacion: string): string | 
   const normal = normalizar(texto);
   if (/^no\b/.test(normal)) return 'empieza con «¿No…?» y sugiere la respuesta';
   if (FUTURO_O_HIPOTESIS.test(normal)) return 'pregunta por el futuro o por una hipótesis; preguntá por lo que la persona hizo';
+  if (/\bproductos?\b/.test(normal)) return 'menciona el producto; preguntá por lo que la persona hace hoy';
   const deLaAfirmacion = [...new Set(palabras(afirmacion))];
   if (deLaAfirmacion.length >= 3) {
     const enLaPregunta = new Set(palabras(texto));

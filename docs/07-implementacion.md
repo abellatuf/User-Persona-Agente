@@ -884,7 +884,7 @@ El agente se mide con casos fijos, sin juez de modelo: el código compara lo que
 | Tarea | Quién | Estado |
 |-------|-------|--------|
 | T9.1 Caso cobros-recurrentes | 🤖 + 👤 | ✅ Exportado de Notion, sin la spec |
-| T9.2 Runner y `evals.yml` | 🤖 | 🟡 Código listo; falta la primera corrida |
+| T9.2 Runner y `evals.yml` | 🤖 | 🟡 Primera corrida con rutina-app; falta cobros-recurrentes |
 | T9.3 Prueba de aceptación | 👤 | ⚪ Pendiente |
 | T9.4 Caso rutina-app (*should*) | 🤖 + 👤 | 🟡 Escrito; falta que Abel lo apruebe |
 | T9.5 Resultados en el README | 🤖 | ⚪ Pendiente |
@@ -897,7 +897,7 @@ El agente se mide con casos fijos, sin juez de modelo: el código compara lo que
 - **Etapas:** *Armar contexto* desde la spec (si el caso la trae), *Repreguntar*, *Sintetizar* y *Planificar validación*, una solicitud por etapa. *Relevar la web* no corre: el caso trae la evidencia pública fija, para que las corridas se puedan comparar. Las repreguntas no se responden: el runner pasa las entrevistas a *Completa* y *Sintetizar* usa el formulario base.
 - **Después de *Armar contexto***, el runner reemplaza el contexto armado por el confirmado del caso, así las etapas siguientes no dependen de esa extracción.
 - **Divergencias por código:** un atributo con divergencia tiene que citar respuestas a esas preguntas de al menos un miembro de cada lado. **Competidores es un chequeo aparte** y no cuenta para la alineación.
-- **Un caso por día:** usa unas 11 llamadas y Gemini admite 20. El informe queda en el resumen de la ejecución de Actions y no va al commit.
+- **Un caso por día:** se estimaron unas 11 llamadas y Gemini admite 20. En la primera corrida no alcanzó: los 503 y las correcciones también gastan pedidos (ver el resultado). El informe queda en el resumen de la ejecución de Actions y no va al commit.
 - **Entran al H9:** no usar evidencia sin *Tipo* ni *Extracto*, una regla en el prompt del plan contra las preguntas que dan algo por supuesto y una vista de *User Personas* con *Versión* junto al nombre. Quedan para después del MVP la confianza Media, el país en Tavily, las voces de usuarios y las filas de contexto vacías.
 
 ### Cómo corre una evaluación
@@ -928,11 +928,27 @@ El agente se mide con casos fijos, sin juez de modelo: el código compara lo que
 - **cobros-recurrentes:** exportado del Notion real el 2026-11-09: el contexto confirmado, las 3 entrevistas y las 20 evidencias públicas no excluidas. **No trae la spec** (decisión de Abel del 2026-11-09): es del repositorio de franCiti, así que para este caso no se evalúa *Armar contexto*. Las entrevistas de Negocio e Ingeniería las simuló el asistente, y cada una deja preguntas sin responder, igual que en Notion. Divergencias: P01 y P09 (cuántos tipos de usuario), P10 (quién decide, usa y paga) y P06 (qué lo lleva a probarlo), más Competidores.
 - **rutina-app:** lo escribió el asistente a partir del README de `abellatuf/rutina-app`: una spec corta, 3 entrevistas simuladas y 2 divergencias plantadas, P01 y P09 (principiante o el que ya entrena) y P08 (dónde y cuándo la usa). No trae evidencia pública ni Competidores. Sirve sobre todo para el chequeo de agnóstico.
 
+### Resultado de la primera corrida (rutina-app, 2026-11-09)
+
+Las 4 etapas terminaron en *Lista* ([*Armar contexto*](https://app.notion.com/p/413245a35f2b812e8563cc83cfef8036), [*Repreguntar*](https://app.notion.com/p/413245a35f2b8196b94cfd7f48dbad27), [*Sintetizar*](https://app.notion.com/p/413245a35f2b81dd9d1fd543e4800b1d) y [*Planificar validación*](https://app.notion.com/p/413245a35f2b81558537db06e1a2f799)). Por lo que quedó escrito en Notion, pasan los 8 chequeos:
+
+- *Armar contexto* encontró 5 de 6 campos. Competidores quedó «No encontrado», que es correcto porque la spec no lo menciona.
+- 2 personas, *Principiantes sin experiencia* (10 atributos) y *Entrenadores intermedios con experiencia* (8), con 18 supuestos. Todo quedó en confianza Baja: el caso no trae evidencia pública ni investigación propia.
+- Se encontraron las 2 divergencias plantadas, con citas de los dos lados: P01/P09 (Sofía y Diego contra Marcos) y P08 (Sofía contra Marcos). No aparece ningún término de cobros.
+
+**Lo que los chequeos no ven:**
+
+- **Gemini se quedó sin cuota diaria** (429, límite de 20) durante *Planificar validación*, y `openrouter/free` mandó el plan de *Principiantes* a `liquid/lfm-2.5-2.6b`, un modelo de 2.600 millones de parámetros. Sus 10 supuestos tienen preguntas que mencionan el producto («antes de probar el producto»), que dan algo por supuesto («¿Qué te impide…?») o que piden una opinión («¿Confías en rutinas generadas por IA…?»). Los 8 de *Intermedios* salieron de modelos más grandes y no tienen esos problemas.
+- **Atributos flojos en *Principiantes*:** «Recomendación de cuándo cambiar la rutina.» no es una afirmación y cita a Marcos, que habla del usuario intermedio; «El equipo asume que el usuario confiará…» habla del equipo, no del usuario; otro repite la definición de la persona.
+
+**Abel aprueba el filtro A:** el código rechaza las preguntas que mencionan «producto». Quedan en el prompt, sin filtro, las que dan algo por supuesto y las de opinión, porque una lista de palabras daría falsos positivos. Cambiar *Modelo de respaldo* por un modelo gratuito fijo y más grande queda como opción, sin decidir.
+
 ### Decisiones tomadas al implementar
 
 - **2026-11-09:** los términos propios de cada caso no pueden aparecer en el otro. «Gimnasio» y «entrena» quedaron afuera de rutina-app porque la entrevista del PM de cobros los usa.
+- **2026-11-09:** el filtro de «producto» busca la palabra entera («producto» o «productos»). No usa el nombre del contexto, porque «Carga» rechazaría «tus series y cargas», ni «app» o «aplicación», que aparecen con razón en preguntas sobre las herramientas que usa la persona hoy.
 - **2026-11-09:** una fila de Evidencia sin *Tipo* (ni *Método de investigación*) o sin *Extracto* no entra en la síntesis, y *Ejecuciones* la nombra.
 
 ### Pruebas
 
-`npm test` corre **272 pruebas** (247 del H8 y 25 nuevas): `ESPACIO`, la limpieza y su negativa con las bases del PM, los dos casos del repositorio, el cargador, cada chequeo, el informe, las métricas de aceptación y que el script no escriba, la evidencia incompleta y la regla nueva del plan.
+`npm test` corre **274 pruebas** (247 del H8 y 27 nuevas): `ESPACIO`, la limpieza y su negativa con las bases del PM, los dos casos del repositorio, el cargador, cada chequeo, el informe, las métricas de aceptación y que el script no escriba, la evidencia incompleta, la regla nueva del plan y el filtro de «producto».

@@ -181,3 +181,15 @@ describe('preguntas que dan algo por supuesto (H9)', () => {
     expect(pedido).toContain('No des por hecho algo que la persona no dijo');
   });
 });
+
+describe('preguntas que mencionan el producto (H9)', () => {
+  it('rechaza las que nombran «el producto», en singular o plural', () => {
+    expect(sesgoDePregunta('¿Cuánto tiempo entrenaste antes de probar el producto?', AFIRMACION)).toMatch(/menciona el producto/);
+    expect(sesgoDePregunta('¿Qué PRODUCTOS usaste el mes pasado?', AFIRMACION)).toMatch(/menciona el producto/);
+  });
+
+  it('deja pasar «aplicación» y palabras que solo empiezan igual', () => {
+    expect(sesgoDePregunta('¿Por qué dejaste de usar alguna aplicación de entrenamiento?', AFIRMACION)).toBeNull();
+    expect(sesgoDePregunta('¿Qué tan productiva fue tu última semana de cobranza?', AFIRMACION)).toBeNull();
+  });
+});
