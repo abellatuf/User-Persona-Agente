@@ -21,7 +21,7 @@ Creada el 2026-10-15 con el MCP de Notion (tarea T1.2), en el espacio **"Espacio
 
 ## Espacio de evaluación (H9)
 
-Creado el 2026-11-09 con el MCP de Notion: página [Evaluaciones](https://app.notion.com/p/411245a35f2b81feae4bf98386f719e1), dentro de la raíz. Tiene una copia de las diez bases, con las mismas propiedades y relaciones. Solo la usa `evals.yml` (`ESPACIO=evaluacion`), y el runner manda a la papelera sus filas en cada corrida, menos *Configuración* (*Agente activo* marcada, `gemini-3.6-flash` y `openrouter/free`).
+Creado el 2026-11-09 con el MCP de Notion: página [Evaluaciones](https://app.notion.com/p/411245a35f2b81feae4bf98386f719e1), dentro de la raíz. Tiene una copia de las diez bases, con las mismas propiedades y relaciones. Solo la usa `evals.yml` (`ESPACIO=evaluacion`), y el runner manda a la papelera sus filas en cada corrida, menos *Configuración* (*Agente activo* marcada y `gemini-3.6-flash`). Desde el 2026-11-10, su *Modelo de respaldo* es `nvidia/nemotron-3.5-super-vl:free` en lugar de `openrouter/free`, para probar un respaldo fijo más grande sin tocar el espacio del PM.
 
 | Base | Data source ID |
 |------|----------------|
