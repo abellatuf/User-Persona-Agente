@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ErrorNotion, conReintentos, interpretarResultado } from '../src/notion/cliente-mcp.js';
+import { ErrorNotion, REINTENTO_POR_DEFECTO, conReintentos, conRitmo, interpretarResultado } from '../src/notion/cliente-mcp.js';
 
 const texto = (datos: unknown) => ({ content: [{ type: 'text', text: JSON.stringify(datos) }] });
 
@@ -52,5 +52,37 @@ describe('conReintentos', () => {
 
     await expect(conReintentos({ llamar }, opciones).llamar('X', {})).rejects.toThrow('caído');
     expect(llamar).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('reintentos por defecto', () => {
+  it('esperan hasta ~31 s ante un 429 (6 intentos: 1, 2, 4, 8 y 16 s)', () => {
+    expect(REINTENTO_POR_DEFECTO).toEqual({ intentos: 6, esperaInicialMs: 1_000 });
+  });
+});
+
+describe('conRitmo', () => {
+  const intervalo = 40;
+
+  it('deja al menos el intervalo entre un pedido y el siguiente, aunque se pidan juntos', async () => {
+    const inicios: number[] = [];
+    const llamar = vi.fn(async () => {
+      inicios.push(Date.now());
+      return { ok: true };
+    });
+    const ritmo = conRitmo({ llamar }, intervalo);
+
+    await Promise.all([ritmo.llamar('A', {}), ritmo.llamar('B', {}), ritmo.llamar('C', {})]);
+
+    expect(llamar.mock.calls.map((c) => (c as unknown[])[0])).toEqual(['A', 'B', 'C']);
+    for (let i = 1; i < inicios.length; i++) expect(inicios[i]! - inicios[i - 1]!).toBeGreaterThanOrEqual(intervalo - 5);
+  });
+
+  it('un pedido que falla no traba a los siguientes', async () => {
+    const llamar = vi.fn().mockRejectedValueOnce(new ErrorNotion('lento', 'rate_limited', 429)).mockResolvedValueOnce({ ok: true });
+    const ritmo = conRitmo({ llamar }, intervalo);
+
+    await expect(ritmo.llamar('A', {})).rejects.toThrow('lento');
+    await expect(ritmo.llamar('B', {})).resolves.toEqual({ ok: true });
   });
 });

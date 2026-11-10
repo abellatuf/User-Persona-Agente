@@ -143,6 +143,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-09 | 7 | Primera corrida de `evals.yml` con **rutina-app**: las 4 etapas en *Lista* y, por lo que quedó en Notion, los 8 chequeos pasan, con las 2 divergencias plantadas. Gemini se quedó sin cuota diaria en *Planificar validación* y un modelo de OpenRouter de 2.600 millones de parámetros escribió 10 supuestos con preguntas flojas: mencionan el producto, dan algo por supuesto o piden una opinión. **Abel aprueba que el filtro rechace las preguntas que mencionan «producto»** (274 pruebas). El detalle está en la [Fase 7](docs/07-implementacion.md#resultado-de-la-primera-corrida-rutina-app-2026-11-09). |
 | 2026-11-10 | 7 | Abel **aprueba el caso rutina-app** (T9.4). En Notion, vista ***Por versión*** en *User Personas*, con *Versión* junto al nombre: resuelve el pendiente de las versiones con el mismo nombre, sin código. |
 | 2026-11-10 | 7 | A prueba, en la *Configuración* de evaluación: *Modelo de respaldo* pasa de `openrouter/free` a **`nvidia/nemotron-3.5-super-vl:free`** (120.000 millones de parámetros, acepta el JSON con esquema). El espacio del PM no cambia hasta comparar las preguntas de la corrida de cobros-recurrentes. |
+| 2026-11-10 | 7 | La corrida de **cobros-recurrentes** se cortó en *Repreguntar* por el límite de pedidos de Notion (429), no por Gemini. **Abel aprueba** reintentar hasta ~31 s y no pasar de unos 3 pedidos por segundo, en todo el agente (277 pruebas). Hay que volver a correr el caso. |
 
 ### Próximo paso
 

@@ -1,7 +1,7 @@
 import { leerClavesModelos, leerEntorno } from './config.js';
 import { conFallaSimulada, probarModelos } from './diagnostico/probar-modelos.js';
 import { crearGenerador, crearProveedores } from './llm/index.js';
-import { conReintentos, conectarNotionMcp } from './notion/cliente-mcp.js';
+import { conReintentos, conRitmo, conectarNotionMcp } from './notion/cliente-mcp.js';
 import { EspacioNotionMcp } from './notion/espacio.js';
 
 /** Punto de entrada del workflow probar-modelos.yml (demo del H3). */
@@ -15,7 +15,7 @@ async function main(): Promise<number> {
     ...(entorno.notionBaseUrl ? { baseUrl: entorno.notionBaseUrl } : {}),
   });
   try {
-    const espacio = new EspacioNotionMcp(conReintentos(conexion));
+    const espacio = new EspacioNotionMcp(conReintentos(conRitmo(conexion)));
     const configuracion = await espacio.leerConfiguracion();
     const { principal, respaldo } = crearProveedores(claves, configuracion);
     console.log(`Principal: ${principal.nombre} · ${principal.modelo}. Respaldo: ${respaldo.nombre} · ${respaldo.modelo}.`);

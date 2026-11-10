@@ -1,7 +1,7 @@
 import { appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { BASES_PRINCIPAL, leerEntorno, type ClaveBase } from '../config.js';
-import { conReintentos, conectarNotionMcp, type LlamadorHerramientas } from '../notion/cliente-mcp.js';
+import { conReintentos, conRitmo, conectarNotionMcp, type LlamadorHerramientas } from '../notion/cliente-mcp.js';
 import * as p from '../notion/propiedades.js';
 import { resultadoConsulta, usuarioPropio, type Pagina } from '../schemas/notion.js';
 import { MIN_PREGUNTAS } from '../stages/5-planificar-validacion/reglas.js';
@@ -123,7 +123,7 @@ async function main(): Promise<number> {
   const entorno = leerEntorno(process.env);
   const conexion = await conectarNotionMcp({ token: entorno.notionToken, ...(entorno.notionBaseUrl ? { baseUrl: entorno.notionBaseUrl } : {}) });
   try {
-    const chequeos = medirAceptacion(await leerDatosAceptacion(conReintentos(conexion)));
+    const chequeos = medirAceptacion(await leerDatosAceptacion(conReintentos(conRitmo(conexion))));
     const texto = informe('Aceptación · espacio del PM', chequeos);
     console.log(texto);
     const resumen = process.env['GITHUB_STEP_SUMMARY'];

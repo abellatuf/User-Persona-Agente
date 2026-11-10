@@ -1,7 +1,7 @@
 import { ejecutarAgente } from './ciclo.js';
 import { leerClavesModelos, leerEntorno, type ClavesModelos } from './config.js';
 import { crearModelos } from './llm/index.js';
-import { conReintentos, conectarNotionMcp } from './notion/cliente-mcp.js';
+import { conReintentos, conRitmo, conectarNotionMcp } from './notion/cliente-mcp.js';
 import { EspacioNotionMcp } from './notion/espacio.js';
 import { ETAPAS } from './stages/registro.js';
 
@@ -23,7 +23,7 @@ async function main(): Promise<number> {
     ...(entorno.notionBaseUrl ? { baseUrl: entorno.notionBaseUrl } : {}),
   });
   try {
-    const espacio = new EspacioNotionMcp(conReintentos(conexion));
+    const espacio = new EspacioNotionMcp(conReintentos(conRitmo(conexion)));
     const resumen = await ejecutarAgente({
       espacio,
       etapas: ETAPAS,

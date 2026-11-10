@@ -5,7 +5,7 @@ import path from 'node:path';
 import { ejecutarAgente } from '../ciclo.js';
 import { BASES, ESPACIO, leerClavesModelos, leerEntorno } from '../config.js';
 import { crearModelos } from '../llm/index.js';
-import { conReintentos, conectarNotionMcp, type LlamadorHerramientas } from '../notion/cliente-mcp.js';
+import { conReintentos, conRitmo, conectarNotionMcp, type LlamadorHerramientas } from '../notion/cliente-mcp.js';
 import { EspacioNotionMcp, type EtapaSolicitable } from '../notion/espacio.js';
 import { crearArmarContexto } from '../stages/1-armar-contexto/index.js';
 import { ETAPAS } from '../stages/registro.js';
@@ -103,7 +103,7 @@ async function main(): Promise<number> {
   const entorno = leerEntorno(process.env);
   const conexion = await conectarNotionMcp({ token: entorno.notionToken, ...(entorno.notionBaseUrl ? { baseUrl: entorno.notionBaseUrl } : {}) });
   try {
-    const { chequeos, notas } = await evaluarCaso(conReintentos(conexion), caso, terminosAjenos);
+    const { chequeos, notas } = await evaluarCaso(conReintentos(conRitmo(conexion)), caso, terminosAjenos);
     const texto = informe(`Evaluación · ${caso.nombre}`, chequeos, notas);
     console.log(texto);
     const resumen = process.env['GITHUB_STEP_SUMMARY'];

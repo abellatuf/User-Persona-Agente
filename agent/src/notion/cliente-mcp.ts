@@ -35,7 +35,14 @@ export interface OpcionesReintento {
   esperaInicialMs: number;
 }
 
-const REINTENTO_POR_DEFECTO: OpcionesReintento = { intentos: 3, esperaInicialMs: 1_000 };
+/**
+ * Ante un 429, Notion necesita unos segundos para liberar el límite: 6 intentos con esperas
+ * de 1, 2, 4, 8 y 16 s (hasta ~31 s en total). Con 3 intentos (~3 s) no alcanzaba (H9, 2026-11-10).
+ */
+export const REINTENTO_POR_DEFECTO: OpcionesReintento = { intentos: 6, esperaInicialMs: 1_000 };
+
+/** La API de Notion admite unos 3 pedidos por segundo en promedio. */
+export const INTERVALO_NOTION_MS = 350;
 
 /**
  * Interpreta el resultado de una herramienta del servidor MCP de Notion.
@@ -78,6 +85,27 @@ export function conReintentos(
           await esperar(opciones.esperaInicialMs * 2 ** (intento - 1));
         }
       }
+    },
+  };
+}
+
+/**
+ * Envuelve un llamador para que deje al menos `intervaloMs` entre el comienzo de un pedido y
+ * el del siguiente, y así no pasarse del ritmo de Notion. Los pedidos salen de a uno y en orden.
+ * Va por dentro de `conReintentos`, para que los reintentos también respeten el ritmo.
+ */
+export function conRitmo(llamador: LlamadorHerramientas, intervaloMs = INTERVALO_NOTION_MS): LlamadorHerramientas {
+  let turno: Promise<void> = Promise.resolve();
+  let ultimo = Number.NEGATIVE_INFINITY;
+  return {
+    llamar(herramienta, args) {
+      const mio = turno.then(async () => {
+        const falta = ultimo + intervaloMs - Date.now();
+        if (falta > 0) await esperar(falta);
+        ultimo = Date.now();
+      });
+      turno = mio;
+      return mio.then(() => llamador.llamar(herramienta, args));
     },
   };
 }
