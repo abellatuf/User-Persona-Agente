@@ -146,6 +146,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-10 | 7 | La corrida de **cobros-recurrentes** se cortó en *Repreguntar* por el límite de pedidos de Notion (429), no por Gemini. **Abel aprueba** reintentar hasta ~31 s y no pasar de unos 3 pedidos por segundo, en todo el agente (277 pruebas). Hay que volver a correr el caso. |
 | 2026-11-10 | 7 | Segunda corrida de cobros-recurrentes: 6 de 7 chequeos. La persona *Tesorero* no se escribió porque Gemini respondió 503 por saturación y OpenRouter devolvió algo que no era JSON, y por eso faltó la divergencia de P10. **Abel decide que, hasta cerrar el H9, las corridas sean manuales:** `agente.yml` pierde el programado de las 15 h. |
 | 2026-11-10 | 7 | Tercera corrida de cobros-recurrentes: Gemini sin cuota diaria, y nemotron cortado por un error del agente: el tiempo máximo de 90 s cortaba la lectura de las respuestas largas, y el error decía «no es un JSON». **Abel aprueba** 180 s por llamada, un error que nombra el corte y topes de los jobs más altos (281 pruebas). El caso se vuelve a correr con la cuota de Gemini completa. |
+| 2026-11-10 | 7 | **Medición de aceptación en verde**, después de que Abel completara *Aprobada por* en las dos versiones de *Dueño de comercio o servicio*: trazabilidad 100 %, aceptación 50 %, retrabajo 2 % y accionabilidad 100 % de los supuestos, pero solo 33 % de los atributos Baja con supuesto. El detalle está en la [Fase 7](docs/07-implementacion.md#medición-de-aceptación-2026-11-10). |
 
 ### Próximo paso
 
@@ -153,6 +154,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 
 Pendientes a tener en cuenta:
 - El caso cobros-recurrentes **no trae la spec**, que es del repositorio de franCiti: *Armar contexto* se evalúa solo con rutina-app.
+- **Pedir *Planificar validación*** para *Dueño de comercio o servicio* v2 y *Pagador de cuotas recurrentes*: sin eso, solo el 33 % de los atributos Baja tiene un supuesto a validar.
 - Personas vigentes: *Dueño de comercio o servicio* v2 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*).
 - En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente». Desde el H9 el agente ya no la usa, porque no tiene *Tipo*.
 - `gemini-3.6-flash` admite solo 20 pedidos por día, y la corrida de rutina-app los agotó. Cuando responde un modelo chico de `openrouter/free`, la calidad baja: se puede fijar un respaldo más grande en *Configuración*.

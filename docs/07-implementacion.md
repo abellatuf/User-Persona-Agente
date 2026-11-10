@@ -482,6 +482,20 @@ Cada descarte queda en las notas de Ejecuciones con su motivo. Que las repregunt
 - **Segunda: 6 de 7 chequeos.** *Sintetizar* propuso 3 segmentos y escribió 2, *Emisor independiente o dueño de comercio pequeño* y *Pagador recurrente*. Para *Tesorero o administrativo de organización chica*, Gemini respondió tres veces 503 por saturación y `nvidia/nemotron-3.5-super-vl:free` devolvió tres veces una respuesta que no era JSON. Por eso falló *Divergencias*: la de P10 (quién decide, quién usa y quién paga) es la del tesorero. Las otras dos divergencias y *Competidores* pasan. Para las otras personas, nemotron respondió bien.
 - **Tercera: 6 de 7 chequeos, con 1 persona de 3.** Gemini se quedó sin cuota diaria (429) a mitad de *Sintetizar*, y 7 de los 9 intentos con nemotron terminaron en «el cuerpo no es un JSON». Era un error del agente, no del modelo: el tiempo máximo de 90 s también corre mientras se lee la respuesta, OpenRouter manda el 200 enseguida y una persona sintetizada por un modelo gratuito (4.000 a 8.000 tokens) tarda más. Al cumplirse, la lectura se cortaba y el JSON quedaba incompleto (se comprobó con un servidor local). Hay que volver a correr el caso con la cuota de Gemini completa.
 
+### Medición de aceptación (2026-11-10)
+
+La primera medición dio 4 de 5: *Dueño de comercio o servicio* v2 (*Aprobada*) y v1 (*Reemplazada*) no tenían *Aprobada por*. Abel las había aprobado a mano en la demo del H8 sin completarlo; el agente no puede aprobar, y solo pasó la v1 a *Reemplazada*. Abel completó *Aprobada por* en las dos y la segunda medición pasa entera:
+
+| Métrica | Resultado |
+| --- | --- |
+| Trazabilidad | ✅ 100 % (43 de 43 atributos con evidencia) |
+| Aprobación indebida | ✅ las 2 personas aprobadas tienen *Aprobada por* |
+| Aceptación | 50 % (2 aprobadas de 4 revisadas; las dos *Tesorero* fueron rechazadas) |
+| Retrabajo | 2 % (1 de 43 atributos editados por el PM) |
+| Accionabilidad | 100 % de los supuestos con método, perfil y al menos 3 preguntas; 33 % de los atributos Baja con supuesto (10 de 30) |
+
+El 33 % se debe a que *Dueño de comercio o servicio* v2 y *Pagador de cuotas recurrentes* todavía no pasaron por *Planificar validación*. Queda como mejora posible que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
+
 ### Decisiones tomadas al implementar
 
 - **Repreguntas con marcas fijas.** El servidor MCP de Notion (2.5.2) solo acepta párrafos y viñetas en el cuerpo de una página. Cada repregunta usa tres renglones: "❓ Repregunta 1 · sobre tu respuesta a P04 («…»)", el texto de la repregunta y "✍️ Tu respuesta:". El código lee la respuesta que está después de esa marca, en el mismo renglón o en los siguientes, hasta la próxima repregunta.
