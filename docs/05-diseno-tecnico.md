@@ -58,7 +58,7 @@ flowchart LR
 | Modelo principal / de respaldo | Cambiar de modelo sin tocar código |
 | Idioma | Se completa al confirmar el contexto (RNF-05) |
 
-**Programación.** El workflow corre **todos los días a las 15:00 de Argentina** (18:00 UTC, `cron: "0 18 * * *"`). También se puede ejecutar a mano desde GitHub para pruebas.
+**Programación.** El workflow corre **todos los días a las 15:00 de Argentina** (18:00 UTC, `cron: "0 18 * * *"`). También se puede ejecutar a mano desde GitHub para pruebas. **Desde el 2026-11-10 el programado está apagado y el agente corre solo a mano**, hasta cerrar el H9 (ver la [Fase 7](07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación)).
 
 **Cómo se evita gastar de más:**
 1. Si en Configuración el agente está **pausado**, termina sin hacer nada.

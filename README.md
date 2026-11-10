@@ -60,7 +60,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | Conexión con Notion | El asistente usa el MCP de Notion de su sesión. El agente usa el servidor MCP oficial de Notion (`@notionhq/notion-mcp-server` 2.5.2) con el token de la integración *User-Persona Agente* (secreto `NOTION_TOKEN`). |
 | Modelos | Gemini (principal) y OpenRouter (respaldo). Se eligen desde la página Configuración de Notion: hoy `gemini-3.6-flash` y `openrouter/free`. Si los campos quedan vacíos, se usan los valores por defecto del código (`gemini-3.8-flash` y `openrouter/free`). |
 | Buscador web | **Tavily**, plan gratuito *Researcher* (1.000 créditos por mes, sin tarjeta), cuenta de Abel. Secreto `TAVILY_API_KEY`. Solo lo usa la etapa *Relevar la web* (H6): 4 búsquedas básicas por corrida. |
-| Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (programado a las 15 h de Argentina, y manual), [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio) y [`probar-modelos.yml`](.github/workflows/probar-modelos.yml) (prueba de modelos, solo manual). |
+| Código del agente | [`agent/`](agent/) (TypeScript). Workflows: [`agente.yml`](.github/workflows/agente.yml) (solo manual desde el 2026-11-10; antes, programado a las 15 h de Argentina), [`ci.yml`](.github/workflows/ci.yml) (pruebas en cada cambio) y [`probar-modelos.yml`](.github/workflows/probar-modelos.yml) (prueba de modelos, solo manual). |
 
 ### Bitácora de decisiones
 
@@ -144,6 +144,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-10 | 7 | Abel **aprueba el caso rutina-app** (T9.4). En Notion, vista ***Por versión*** en *User Personas*, con *Versión* junto al nombre: resuelve el pendiente de las versiones con el mismo nombre, sin código. |
 | 2026-11-10 | 7 | A prueba, en la *Configuración* de evaluación: *Modelo de respaldo* pasa de `openrouter/free` a **`nvidia/nemotron-3.5-super-vl:free`** (120.000 millones de parámetros, acepta el JSON con esquema). El espacio del PM no cambia hasta comparar las preguntas de la corrida de cobros-recurrentes. |
 | 2026-11-10 | 7 | La corrida de **cobros-recurrentes** se cortó en *Repreguntar* por el límite de pedidos de Notion (429), no por Gemini. **Abel aprueba** reintentar hasta ~31 s y no pasar de unos 3 pedidos por segundo, en todo el agente (277 pruebas). Hay que volver a correr el caso. |
+| 2026-11-10 | 7 | Segunda corrida de cobros-recurrentes: 6 de 7 chequeos. La persona *Tesorero* no se escribió porque Gemini respondió 503 por saturación y OpenRouter devolvió algo que no era JSON, y por eso faltó la divergencia de P10. **Abel decide que, hasta cerrar el H9, las corridas sean manuales:** `agente.yml` pierde el programado de las 15 h. |
 
 ### Próximo paso
 
@@ -155,7 +156,7 @@ Pendientes a tener en cuenta:
 - En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente». Desde el H9 el agente ya no la usa, porque no tiene *Tipo*.
 - `gemini-3.6-flash` admite solo 20 pedidos por día, y la corrida de rutina-app los agotó. Cuando responde un modelo chico de `openrouter/free`, la calidad baja: se puede fijar un respaldo más grande en *Configuración*.
 - Las entrevistas de Ingeniería y Negocio, y las 3 de rutina-app, las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
-- *Agente activo* está **marcada**: el programado diario de las 15 h atiende las solicitudes pendientes.
+- *Agente activo* está **marcada**, pero el programado de las 15 h está apagado: las solicitudes pendientes se atienden corriendo `agente.yml` a mano. Se vuelve a programar al cerrar el H9.
 - El esfuerzo por miembro, el tiempo total y el efecto del ajuste del prompt del H5 se miden en la prueba de aceptación.
 - T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
 

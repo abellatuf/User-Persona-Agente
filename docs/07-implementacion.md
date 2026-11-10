@@ -476,6 +476,11 @@ Cada descarte queda en las notas de Ejecuciones con su motivo. Que las repregunt
 
 **Entrevistas para sintetizar (T5.4, HU-06).** Solo entran las *Completas*. Si falta alguna, la síntesis no arranca, salvo que la solicitud tenga en *Opciones* "avanzar sin las entrevistas incompletas". En ese caso se registra cuáles quedaron afuera. La regla está en `reglas.ts` y se conecta en el H7.
 
+### Corridas de cobros-recurrentes (2026-11-10)
+
+- **Primera:** se cortó en *Repreguntar* por el límite de pedidos de Notion (ver la decisión del 2026-11-10 más abajo).
+- **Segunda: 6 de 7 chequeos.** *Sintetizar* propuso 3 segmentos y escribió 2, *Emisor independiente o dueño de comercio pequeño* y *Pagador recurrente*. Para *Tesorero o administrativo de organización chica*, Gemini respondió tres veces 503 por saturación y `nvidia/nemotron-3.5-super-vl:free` devolvió tres veces una respuesta que no era JSON. Por eso falló *Divergencias*: la de P10 (quién decide, quién usa y quién paga) es la del tesorero. Las otras dos divergencias y *Competidores* pasan. Para las otras personas, nemotron respondió bien. Hay que volver a correr el caso.
+
 ### Decisiones tomadas al implementar
 
 - **Repreguntas con marcas fijas.** El servidor MCP de Notion (2.5.2) solo acepta párrafos y viñetas en el cuerpo de una página. Cada repregunta usa tres renglones: "❓ Repregunta 1 · sobre tu respuesta a P04 («…»)", el texto de la repregunta y "✍️ Tu respuesta:". El código lee la respuesta que está después de esa marca, en el mismo renglón o en los siguientes, hasta la próxima repregunta.
@@ -950,6 +955,7 @@ Las 4 etapas terminaron en *Lista* ([*Armar contexto*](https://app.notion.com/p/
 - **2026-11-09:** el filtro de «producto» busca la palabra entera («producto» o «productos»). No usa el nombre del contexto, porque «Carga» rechazaría «tus series y cargas», ni «app» o «aplicación», que aparecen con razón en preguntas sobre las herramientas que usa la persona hoy.
 - **2026-11-09:** una fila de Evidencia sin *Tipo* (ni *Método de investigación*) o sin *Extracto* no entra en la síntesis, y *Ejecuciones* la nombra.
 - **2026-11-10, límite de Notion (aprobado por Abel):** la primera corrida de cobros-recurrentes se cortó en *Repreguntar* con `429 rate_limited` de Notion, no de Gemini: el vaciado de la corrida anterior, la carga de 20 evidencias y la lectura de las entrevistas salieron seguidos, y los 3 intentos (~3 s) no alcanzaron. Como el registro del error también recibió 429, la ejecución quedó *En curso* sin *Errores*. Se aplicaron dos cambios, para todo el agente: **A**, 6 intentos con esperas de 1, 2, 4, 8 y 16 s; **B**, `conRitmo`, que deja al menos 350 ms entre pedidos (Notion admite unos 3 por segundo) y va por dentro de `conReintentos`, para que los reintentos también respeten el ritmo.
+- **2026-11-10, corridas solo manuales (aprobado por Abel):** `agente.yml` pierde el programado de las 15 h y queda solo con ejecución manual, porque comparte la cuota diaria de Gemini con las evaluaciones. Se vuelve a programar al cerrar el H9. `ci.yml` sigue en cada push porque no usa modelos.
 
 ### Pruebas
 
