@@ -886,7 +886,7 @@ El agente se mide con casos fijos, sin juez de modelo: el código compara lo que
 | T9.1 Caso cobros-recurrentes | 🤖 + 👤 | ✅ Exportado de Notion, sin la spec |
 | T9.2 Runner y `evals.yml` | 🤖 | 🟡 Primera corrida con rutina-app; falta cobros-recurrentes |
 | T9.3 Prueba de aceptación | 👤 | ⚪ Pendiente |
-| T9.4 Caso rutina-app (*should*) | 🤖 + 👤 | 🟡 Escrito; falta que Abel lo apruebe |
+| T9.4 Caso rutina-app (*should*) | 🤖 + 👤 | ✅ Aprobado por Abel el 2026-11-10; pasó el chequeo de agnóstico |
 | T9.5 Resultados en el README | 🤖 | ⚪ Pendiente |
 
 ### Decisiones de diseño (aprobadas por Abel el 2026-11-09)
@@ -946,6 +946,7 @@ Las 4 etapas terminaron en *Lista* ([*Armar contexto*](https://app.notion.com/p/
 ### Decisiones tomadas al implementar
 
 - **2026-11-09:** los términos propios de cada caso no pueden aparecer en el otro. «Gimnasio» y «entrena» quedaron afuera de rutina-app porque la entrevista del PM de cobros los usa.
+- **2026-11-10:** vista ***Por versión*** en *User Personas* del espacio del PM: muestra *Versión* junto al nombre, ordenada por nombre y por versión de mayor a menor, con *Estado*, *Sintetizada el*, las dos relaciones de versión y *Aprobada por*. Resuelve el pendiente 2 de la demo del H8 sin tocar código.
 - **2026-11-09:** el filtro de «producto» busca la palabra entera («producto» o «productos»). No usa el nombre del contexto, porque «Carga» rechazaría «tus series y cargas», ni «app» o «aplicación», que aparecen con razón en preguntas sobre las herramientas que usa la persona hoy.
 - **2026-11-09:** una fila de Evidencia sin *Tipo* (ni *Método de investigación*) o sin *Extracto* no entra en la síntesis, y *Ejecuciones* la nombra.
 
