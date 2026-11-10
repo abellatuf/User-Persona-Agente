@@ -1,7 +1,8 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { ProveedorGemini } from '../src/llm/gemini.js';
 import { ProveedorOpenRouter } from '../src/llm/openrouter.js';
-import { ErrorModelo, esperaDeCabecera, type PeticionProveedor } from '../src/llm/tipos.js';
+import { createServer, type Server } from 'node:http';
+import { ErrorModelo, TIMEOUT_MS, esperaDeCabecera, leerCuerpo, pedir, type PeticionProveedor } from '../src/llm/tipos.js';
 import { ApiModeloFalsa } from './apoyo/api-modelo-falsa.js';
 
 const peticion: PeticionProveedor = {
@@ -247,5 +248,48 @@ describe('esperaDeCabecera', () => {
     expect(esperaDeCabecera('Thu, 01 Jan 2026 00:00:10 GMT', Date.parse('2026-01-01T00:00:00Z'))).toBe(10000);
     expect(esperaDeCabecera(null)).toBeUndefined();
     expect(esperaDeCabecera('cualquier cosa')).toBeUndefined();
+  });
+});
+
+describe('tiempo máximo de una llamada', () => {
+  let servidor: Server;
+  let url: string;
+
+  beforeAll(async () => {
+    // /lento manda el 200 y la mitad del JSON, y no termina nunca; /mudo no responde.
+    servidor = createServer((pedido, respuesta) => {
+      if (pedido.url === '/lento') {
+        respuesta.writeHead(200, { 'content-type': 'application/json' });
+        respuesta.write('{"ok":');
+      }
+    });
+    await new Promise<void>((listo) => servidor.listen(0, '127.0.0.1', listo));
+    const direccion = servidor.address();
+    url = `http://127.0.0.1:${typeof direccion === 'object' && direccion ? direccion.port : 0}`;
+  });
+  afterAll(() => {
+    servidor.closeAllConnections();
+    servidor.close();
+  });
+
+  it('es de 180 s', () => {
+    expect(TIMEOUT_MS).toBe(180_000);
+  });
+
+  it('si se cumple mientras llega la respuesta, dice que se cortó (no que no es JSON)', async () => {
+    const r = await pedir(`${url}/lento`, {}, 1_000);
+    const e = await errorDe(leerCuerpo(r, 1_000));
+    expect(e.tipo).toBe('transitorio');
+    expect(e.message).toBe('La respuesta se cortó a los 1 s, antes de terminar de llegar.');
+  });
+
+  it('si se cumple antes de que llegue la respuesta, dice que no llegó', async () => {
+    const e = await errorDe(pedir(`${url}/mudo`, {}, 1_000));
+    expect(e.tipo).toBe('transitorio');
+    expect(e.message).toBe('No llegó respuesta en 1 s.');
+  });
+
+  it('un cuerpo que no es JSON sigue siendo undefined', async () => {
+    await expect(leerCuerpo({ json: () => Promise.reject(new SyntaxError('no es JSON')) })).resolves.toBeUndefined();
   });
 });

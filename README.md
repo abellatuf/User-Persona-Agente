@@ -145,6 +145,7 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-10 | 7 | A prueba, en la *Configuración* de evaluación: *Modelo de respaldo* pasa de `openrouter/free` a **`nvidia/nemotron-3.5-super-vl:free`** (120.000 millones de parámetros, acepta el JSON con esquema). El espacio del PM no cambia hasta comparar las preguntas de la corrida de cobros-recurrentes. |
 | 2026-11-10 | 7 | La corrida de **cobros-recurrentes** se cortó en *Repreguntar* por el límite de pedidos de Notion (429), no por Gemini. **Abel aprueba** reintentar hasta ~31 s y no pasar de unos 3 pedidos por segundo, en todo el agente (277 pruebas). Hay que volver a correr el caso. |
 | 2026-11-10 | 7 | Segunda corrida de cobros-recurrentes: 6 de 7 chequeos. La persona *Tesorero* no se escribió porque Gemini respondió 503 por saturación y OpenRouter devolvió algo que no era JSON, y por eso faltó la divergencia de P10. **Abel decide que, hasta cerrar el H9, las corridas sean manuales:** `agente.yml` pierde el programado de las 15 h. |
+| 2026-11-10 | 7 | Tercera corrida de cobros-recurrentes: Gemini sin cuota diaria, y nemotron cortado por un error del agente: el tiempo máximo de 90 s cortaba la lectura de las respuestas largas, y el error decía «no es un JSON». **Abel aprueba** 180 s por llamada, un error que nombra el corte y topes de los jobs más altos (281 pruebas). El caso se vuelve a correr con la cuota de Gemini completa. |
 
 ### Próximo paso
 

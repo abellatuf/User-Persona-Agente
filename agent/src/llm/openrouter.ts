@@ -2,6 +2,7 @@ import { z } from 'zod';
 import {
   ErrorModelo,
   esperaDeCabecera,
+  leerCuerpo,
   pedir,
   tipoPorEstado,
   type PeticionProveedor,
@@ -74,7 +75,7 @@ export class ProveedorOpenRouter implements Proveedor {
         temperature: 0.2,
       }),
     });
-    const cuerpo: unknown = await r.json().catch(() => undefined);
+    const cuerpo: unknown = await leerCuerpo(r);
 
     if (!r.ok) {
       const e = errorOpenRouter.safeParse(cuerpo);

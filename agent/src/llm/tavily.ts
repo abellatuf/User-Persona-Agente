@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ErrorModelo, esperaDeCabecera, pedir, tipoPorEstado, type FuenteEncontrada, type ProveedorBusqueda } from './tipos.js';
+import { ErrorModelo, esperaDeCabecera, leerCuerpo, pedir, tipoPorEstado, type FuenteEncontrada, type ProveedorBusqueda } from './tipos.js';
 
 export const TAVILY_BASE_URL = 'https://api.tavily.com';
 
@@ -48,7 +48,7 @@ export class ProveedorTavily implements ProveedorBusqueda {
       },
       TIMEOUT_BUSQUEDA_MS,
     );
-    const cuerpo: unknown = await r.json().catch(() => undefined);
+    const cuerpo: unknown = await leerCuerpo(r);
 
     if (!r.ok) {
       const e = errorTavily.safeParse(cuerpo);

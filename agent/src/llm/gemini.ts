@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   ErrorModelo,
+  leerCuerpo,
   pedir,
   tipoPorEstado,
   type Mensajes,
@@ -133,7 +134,7 @@ export class ProveedorGemini implements Proveedor {
         ...extra,
       }),
     });
-    const cuerpo: unknown = await r.json().catch(() => undefined);
+    const cuerpo: unknown = await leerCuerpo(r);
 
     if (!r.ok) {
       const e = errorGemini.safeParse(cuerpo);

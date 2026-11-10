@@ -18,7 +18,8 @@ concurrency:
 jobs:
   agente:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 30 min: con 180 s por llamada a un modelo, los reintentos pueden pasar de 20 (H9, 2026-11-10).
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: agent

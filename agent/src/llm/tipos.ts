@@ -95,15 +95,35 @@ export function esperaDeCabecera(valor: string | null, ahora = Date.now()): numb
   return Number.isNaN(fecha) ? undefined : Math.max(0, fecha - ahora);
 }
 
-/** Tiempo máximo de espera de una llamada a un modelo. */
-export const TIMEOUT_MS = 90_000;
+/**
+ * Tiempo máximo de una llamada a un modelo, incluida la lectura de la respuesta. Era de 90 s:
+ * una persona sintetizada por un modelo gratuito de OpenRouter (4.000 a 8.000 tokens) no llegaba (H9, 2026-11-10).
+ */
+export const TIMEOUT_MS = 180_000;
+
+const esCortePorTiempo = (e: unknown) => e instanceof Error && e.name === 'TimeoutError';
+const segundos = (ms: number) => `${Math.round(ms / 1000)} s`;
 
 /** Hace la llamada HTTP y convierte las fallas de red o timeout en ErrorModelo transitorio. */
 export async function pedir(url: string, init: RequestInit, timeoutMs = TIMEOUT_MS): Promise<Response> {
   try {
     return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
   } catch (e) {
+    if (esCortePorTiempo(e)) throw new ErrorModelo(`No llegó respuesta en ${segundos(timeoutMs)}.`, 'transitorio');
     const mensaje = e instanceof Error ? e.message : String(e);
     throw new ErrorModelo(`No se pudo conectar: ${mensaje}`, 'transitorio');
+  }
+}
+
+/**
+ * Lee el cuerpo JSON de la respuesta, o undefined si no es JSON. El tiempo máximo de `pedir`
+ * sigue corriendo durante la lectura: si se cumple, lo dice, en lugar de parecer un cuerpo que no es JSON.
+ */
+export async function leerCuerpo(r: Pick<Response, 'json'>, timeoutMs = TIMEOUT_MS): Promise<unknown> {
+  try {
+    return await r.json();
+  } catch (e) {
+    if (esCortePorTiempo(e)) throw new ErrorModelo(`La respuesta se cortó a los ${segundos(timeoutMs)}, antes de terminar de llegar.`, 'transitorio');
+    return undefined;
   }
 }
