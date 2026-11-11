@@ -27,9 +27,13 @@ export function soloLectura(mcp: LlamadorHerramientas): LlamadorHerramientas {
 export interface DatosAceptacion {
   idAgente: string;
   personas: Array<{ nombre: string; estado: string | null; aprobadaPor: string[] }>;
-  atributos: Array<{ afirmacion: string; confianza: string | null; evidencias: number; editadoPorPm: boolean; supuestos: number }>;
+  /** «personaVigente»: el atributo es de una persona en Borrador, En revisión o Aprobada. */
+  atributos: Array<{ afirmacion: string; confianza: string | null; evidencias: number; editadoPorPm: boolean; supuestos: number; personaVigente: boolean }>;
   supuestos: Array<{ supuesto: string; metodo: string | null; perfil: string; preguntas: number }>;
 }
+
+/** Personas que siguen valiendo: una Rechazada o Reemplazada ya no se valida ni se planifica. */
+const ESTADOS_VIGENTES = new Set(['Borrador', 'En revisión', 'Aprobada']);
 
 const pct = (parte: number, total: number) => (total === 0 ? 'sin datos' : `${Math.round((parte / total) * 100)}% (${parte} de ${total})`);
 
@@ -41,7 +45,8 @@ export function medirAceptacion(d: DatosAceptacion): Chequeo[] {
   const revisadas = d.personas.filter((x) => x.estado === 'Aprobada' || x.estado === 'Reemplazada' || x.estado === 'Rechazada');
   const editados = d.atributos.filter((a) => a.editadoPorPm);
   const accionables = d.supuestos.filter((s) => s.metodo && s.perfil && s.preguntas >= MIN_PREGUNTAS);
-  const bajas = d.atributos.filter((a) => a.confianza === 'Baja');
+  // Solo personas vigentes: los atributos de una persona Rechazada o Reemplazada no se planifican (H9, 2026-11-11).
+  const bajas = d.atributos.filter((a) => a.confianza === 'Baja' && a.personaVigente);
   const bajasConPlan = bajas.filter((a) => a.supuestos > 0);
   return [
     {
@@ -71,7 +76,7 @@ export function medirAceptacion(d: DatosAceptacion): Chequeo[] {
       ok: true,
       detalle: [
         `Supuestos con método, perfil y al menos ${MIN_PREGUNTAS} preguntas: ${pct(accionables.length, d.supuestos.length)}.`,
-        `Atributos de confianza Baja con un supuesto a validar: ${pct(bajasConPlan.length, bajas.length)}.`,
+        `Atributos de confianza Baja con un supuesto a validar, en personas vigentes: ${pct(bajasConPlan.length, bajas.length)}.`,
       ],
     },
   ];
@@ -100,6 +105,7 @@ export async function leerDatosAceptacion(mcp: LlamadorHerramientas): Promise<Da
   const lector = soloLectura(mcp);
   const idAgente = usuarioPropio.parse(await lector.llamar('API-get-self', {})).id;
   const [personas, atributos, supuestos] = [await filas(lector, 'personas'), await filas(lector, 'atributos'), await filas(lector, 'supuestos')];
+  const vigentes = new Set(personas.filter((f) => ESTADOS_VIGENTES.has(p.leerSeleccion(f, 'Estado') ?? 'Borrador')).map((f) => f.id));
   return {
     idAgente,
     personas: personas.map((f) => ({ nombre: p.leerTexto(f, 'Nombre').trim(), estado: p.leerSeleccion(f, 'Estado'), aprobadaPor: personasDe(f, 'Aprobada por') })),
@@ -109,6 +115,7 @@ export async function leerDatosAceptacion(mcp: LlamadorHerramientas): Promise<Da
       editadoPorPm: p.leerCasilla(f, 'Editado por el PM'),
       confianza: p.leerSeleccion(f, 'Confianza'),
       supuestos: p.leerRelacion(f, 'Supuesto a validar').length,
+      personaVigente: p.leerRelacion(f, 'Persona').some((id) => vigentes.has(id)),
     })),
     supuestos: supuestos.map((f) => ({
       supuesto: p.leerTexto(f, 'Supuesto').trim(),

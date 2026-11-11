@@ -10,8 +10,8 @@ const datos = (cambios: Partial<DatosAceptacion> = {}): DatosAceptacion => ({
     { nombre: 'C', estado: 'Borrador', aprobadaPor: [] },
   ],
   atributos: [
-    { afirmacion: 'x', confianza: 'Baja', evidencias: 2, editadoPorPm: true, supuestos: 1 },
-    { afirmacion: 'y', confianza: 'Baja', evidencias: 1, editadoPorPm: false, supuestos: 0 },
+    { afirmacion: 'x', confianza: 'Baja', evidencias: 2, editadoPorPm: true, supuestos: 1, personaVigente: true },
+    { afirmacion: 'y', confianza: 'Baja', evidencias: 1, editadoPorPm: false, supuestos: 0, personaVigente: true },
   ],
   supuestos: [
     { supuesto: 's1', metodo: 'Entrevista', perfil: 'p', preguntas: 3 },
@@ -28,9 +28,19 @@ describe('aceptación', () => {
     expect(detalle(datos(), 'Retrabajo').detalle[0]).toContain('50% (1 de 2)');
     expect(detalle(datos(), 'Accionabilidad').detalle).toEqual([
       'Supuestos con método, perfil y al menos 3 preguntas: 50% (1 de 2).',
-      'Atributos de confianza Baja con un supuesto a validar: 50% (1 de 2).',
+      'Atributos de confianza Baja con un supuesto a validar, en personas vigentes: 50% (1 de 2).',
     ]);
     expect(medirAceptacion(datos()).every((c) => c.ok)).toBe(true);
+  });
+
+  it('los atributos Baja de personas Rechazadas o Reemplazadas no cuentan para la accionabilidad', () => {
+    const d = datos({
+      atributos: [
+        { afirmacion: 'x', confianza: 'Baja', evidencias: 1, editadoPorPm: false, supuestos: 1, personaVigente: true },
+        { afirmacion: 'y', confianza: 'Baja', evidencias: 1, editadoPorPm: false, supuestos: 0, personaVigente: false },
+      ],
+    });
+    expect(detalle(d, 'Accionabilidad').detalle[1]).toContain('100% (1 de 1)');
   });
 
   it('una persona aprobada sin «Aprobada por», o aprobada por el agente, es indebida', () => {
@@ -45,7 +55,7 @@ describe('aceptación', () => {
   });
 
   it('un atributo sin evidencia rompe la trazabilidad', () => {
-    const d = datos({ atributos: [{ afirmacion: 'z', confianza: 'Alta', evidencias: 0, editadoPorPm: false, supuestos: 0 }] });
+    const d = datos({ atributos: [{ afirmacion: 'z', confianza: 'Alta', evidencias: 0, editadoPorPm: false, supuestos: 0, personaVigente: true }] });
     expect(detalle(d, 'Trazabilidad').ok).toBe(false);
   });
 
