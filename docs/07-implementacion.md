@@ -966,7 +966,9 @@ La primera medición dio 4 de 5: *Dueño de comercio o servicio* v2 (*Aprobada*)
 | Retrabajo | 2 % (1 de 43 atributos editados por el PM) |
 | Accionabilidad | 100 % de los supuestos con método, perfil y al menos 3 preguntas; 33 % de los atributos Baja con supuesto (10 de 30) |
 
-De los 30 atributos Baja, 13 eran de las dos versiones *Tesorero* (*Rechazadas*) y 5 de *Dueño de comercio o servicio* v1 (*Reemplazada*), que ya no se planifican. Por eso, desde el 2026-11-11 la métrica cuenta solo personas vigentes (ver la decisión más abajo). *Planificar validación* trabaja solo sobre personas en *Borrador*: *Pagador de cuotas recurrentes* se puede planificar, pero *Dueño de comercio o servicio* v2, que está *Aprobada*, necesita una versión nueva. Queda como mejora posible que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
+De los 30 atributos Baja, 13 eran de las dos versiones *Tesorero* (*Rechazadas*) y 5 de *Dueño de comercio o servicio* v1 (*Reemplazada*), que ya no se planifican. Por eso, desde el 2026-11-11 la métrica cuenta solo personas vigentes (ver la decisión más abajo). *Planificar validación* trabaja solo sobre personas en *Borrador*: *Pagador de cuotas recurrentes* se puede planificar, pero *Dueño de comercio o servicio* v2, que está *Aprobada*, necesita una versión nueva.
+
+**Tercera medición (2026-11-11), después de pedir *Planificar validación* en el espacio del PM:** *Pagador de cuotas recurrentes* recibió 4 supuestos, uno por cada atributo Baja sin plan (Gemini, una sola llamada). Las cinco métricas pasan. Cambian solo los números de accionabilidad: **100 % de los supuestos** con método, perfil y al menos 3 preguntas (14 de 14), y **75 % de los atributos Baja de personas vigentes** con supuesto (9 de 12). Los 3 que faltan son de *Dueño de comercio o servicio* v2. Queda como mejora posible que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
 
 ### Decisiones tomadas al implementar
 
