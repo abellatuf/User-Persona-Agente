@@ -150,14 +150,15 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-11 | 7 | Cuarta corrida de **cobros-recurrentes: los 7 chequeos pasan**, con 3 personas y las 3 divergencias plantadas. **Abel aprueba el caso** (T9.1) con cuatro observaciones de calidad para después del MVP. El detalle está en la [Fase 7](docs/07-implementacion.md#corridas-de-cobros-recurrentes-2026-11-10). |
 | 2026-11-11 | 7 | **Abel aprueba** que la accionabilidad cuente solo los atributos Baja de personas vigentes (*Borrador*, *En revisión* o *Aprobada*): las *Rechazadas* y *Reemplazadas* ya no se planifican (282 pruebas). |
 | 2026-11-11 | 7 | *Planificar validación* en el espacio del PM: 4 supuestos para *Pagador de cuotas recurrentes*. **Medición de aceptación: 5 de 5**, con accionabilidad del 100 % de los supuestos y del 75 % de los atributos Baja vigentes (9 de 12; faltan los de *Dueño de comercio o servicio* v2, que está *Aprobada*). |
+| 2026-11-11 | 7 | Prueba de aceptación en curso: el asistente simuló la entrevista *Abel Ventas* (el esfuerzo por sombrero queda medido solo para el PM). Con esa evidencia se creó *Dueño de comercio* v3, pero sin cuota de Gemini la escribieron modelos chicos: mezcla el segmento rechazado y perdió las divergencias. **No se aprueba**; se repite con Gemini. |
 
 ### Próximo paso
 
-**H9: la prueba de aceptación de Abel (T9.3)**; después, los resultados en el README (T9.5). El detalle está en la [Fase 7](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
+**H9: repetir *Sintetizar* y *Planificar validación* con la cuota de Gemini completa** (dos solicitudes, una sola corrida de `agente.yml`), revisar y aprobar *Dueño de comercio* v3 y volver a medir la aceptación (T9.3). Después, los resultados en el README (T9.5). El detalle está en la [Fase 7](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
 
 Pendientes a tener en cuenta:
 - El caso cobros-recurrentes **no trae la spec**, que es del repositorio de franCiti: *Armar contexto* se evalúa solo con rutina-app.
-- *Dueño de comercio o servicio* v2 está *Aprobada* y sus 3 atributos Baja no tienen supuesto: *Planificar validación* solo trabaja sobre personas en *Borrador*, así que necesitaría una versión nueva.
+- *Dueño de comercio o servicio* v3 está en *Borrador*, escrita por modelos chicos: no aprobarla ni rechazarla antes de repetir *Sintetizar*.
 - Personas vigentes: *Dueño de comercio o servicio* v2 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*).
 - En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente». Desde el H9 el agente ya no la usa, porque no tiene *Tipo*.
 - `gemini-3.6-flash` admite solo 20 pedidos por día, y un caso de evaluación usa unos 11. El respaldo del espacio de evaluación es `nvidia/nemotron-3.5-super-vl:free`; el del PM sigue en `openrouter/free`, que puede tocar un modelo chico con preguntas más flojas.
