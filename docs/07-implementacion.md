@@ -476,26 +476,6 @@ Cada descarte queda en las notas de Ejecuciones con su motivo. Que las repregunt
 
 **Entrevistas para sintetizar (T5.4, HU-06).** Solo entran las *Completas*. Si falta alguna, la síntesis no arranca, salvo que la solicitud tenga en *Opciones* "avanzar sin las entrevistas incompletas". En ese caso se registra cuáles quedaron afuera. La regla está en `reglas.ts` y se conecta en el H7.
 
-### Corridas de cobros-recurrentes (2026-11-10)
-
-- **Primera:** se cortó en *Repreguntar* por el límite de pedidos de Notion (ver la decisión del 2026-11-10 más abajo).
-- **Segunda: 6 de 7 chequeos.** *Sintetizar* propuso 3 segmentos y escribió 2, *Emisor independiente o dueño de comercio pequeño* y *Pagador recurrente*. Para *Tesorero o administrativo de organización chica*, Gemini respondió tres veces 503 por saturación y `nvidia/nemotron-3.5-super-vl:free` devolvió tres veces una respuesta que no era JSON. Por eso falló *Divergencias*: la de P10 (quién decide, quién usa y quién paga) es la del tesorero. Las otras dos divergencias y *Competidores* pasan. Para las otras personas, nemotron respondió bien.
-- **Tercera: 6 de 7 chequeos, con 1 persona de 3.** Gemini se quedó sin cuota diaria (429) a mitad de *Sintetizar*, y 7 de los 9 intentos con nemotron terminaron en «el cuerpo no es un JSON». Era un error del agente, no del modelo: el tiempo máximo de 90 s también corre mientras se lee la respuesta, OpenRouter manda el 200 enseguida y una persona sintetizada por un modelo gratuito (4.000 a 8.000 tokens) tarda más. Al cumplirse, la lectura se cortaba y el JSON quedaba incompleto (se comprobó con un servidor local). Hay que volver a correr el caso con la cuota de Gemini completa.
-
-### Medición de aceptación (2026-11-10)
-
-La primera medición dio 4 de 5: *Dueño de comercio o servicio* v2 (*Aprobada*) y v1 (*Reemplazada*) no tenían *Aprobada por*. Abel las había aprobado a mano en la demo del H8 sin completarlo; el agente no puede aprobar, y solo pasó la v1 a *Reemplazada*. Abel completó *Aprobada por* en las dos y la segunda medición pasa entera:
-
-| Métrica | Resultado |
-| --- | --- |
-| Trazabilidad | ✅ 100 % (43 de 43 atributos con evidencia) |
-| Aprobación indebida | ✅ las 2 personas aprobadas tienen *Aprobada por* |
-| Aceptación | 50 % (2 aprobadas de 4 revisadas; las dos *Tesorero* fueron rechazadas) |
-| Retrabajo | 2 % (1 de 43 atributos editados por el PM) |
-| Accionabilidad | 100 % de los supuestos con método, perfil y al menos 3 preguntas; 33 % de los atributos Baja con supuesto (10 de 30) |
-
-El 33 % se debe a que *Dueño de comercio o servicio* v2 y *Pagador de cuotas recurrentes* todavía no pasaron por *Planificar validación*. Queda como mejora posible que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
-
 ### Decisiones tomadas al implementar
 
 - **Repreguntas con marcas fijas.** El servidor MCP de Notion (2.5.2) solo acepta párrafos y viñetas en el cuerpo de una página. Cada repregunta usa tres renglones: "❓ Repregunta 1 · sobre tu respuesta a P04 («…»)", el texto de la repregunta y "✍️ Tu respuesta:". El código lee la respuesta que está después de esa marca, en el mismo renglón o en los siguientes, hasta la próxima repregunta.
@@ -903,8 +883,8 @@ El agente se mide con casos fijos, sin juez de modelo: el código compara lo que
 
 | Tarea | Quién | Estado |
 |-------|-------|--------|
-| T9.1 Caso cobros-recurrentes | 🤖 + 👤 | ✅ Exportado de Notion, sin la spec |
-| T9.2 Runner y `evals.yml` | 🤖 | 🟡 Primera corrida con rutina-app; falta cobros-recurrentes |
+| T9.1 Caso cobros-recurrentes | 🤖 + 👤 | ✅ Exportado de Notion, sin la spec. Aprobado por Abel el 2026-11-11 |
+| T9.2 Runner y `evals.yml` | 🤖 | ✅ Los dos casos pasan los chequeos |
 | T9.3 Prueba de aceptación | 👤 | ⚪ Pendiente |
 | T9.4 Caso rutina-app (*should*) | 🤖 + 👤 | ✅ Aprobado por Abel el 2026-11-10; pasó el chequeo de agnóstico |
 | T9.5 Resultados en el README | 🤖 | ⚪ Pendiente |
@@ -962,6 +942,31 @@ Las 4 etapas terminaron en *Lista* ([*Armar contexto*](https://app.notion.com/p/
 - **Atributos flojos en *Principiantes*:** «Recomendación de cuándo cambiar la rutina.» no es una afirmación y cita a Marcos, que habla del usuario intermedio; «El equipo asume que el usuario confiará…» habla del equipo, no del usuario; otro repite la definición de la persona.
 
 **Abel aprueba el filtro A:** el código rechaza las preguntas que mencionan «producto». Quedan en el prompt, sin filtro, las que dan algo por supuesto y las de opinión, porque una lista de palabras daría falsos positivos. **Respaldo fijo, a prueba (aprobado por Abel el 2026-11-10):** en la *Configuración* de evaluación, *Modelo de respaldo* pasa de `openrouter/free` a `nvidia/nemotron-3.5-super-vl:free`. Se eligió entre los 13 modelos gratuitos que listaba OpenRouter ese día: tiene 120.000 millones de parámetros (12.000 activos), acepta el JSON con esquema y ya había respondido bien en *Sintetizar*. El espacio del PM sigue con `openrouter/free` hasta comparar las preguntas de la corrida de cobros-recurrentes. El riesgo de un modelo fijo es que deje de ser gratuito: entonces, sin cuota de Gemini, la etapa termina en *Error*.
+
+### Corridas de cobros-recurrentes (2026-11-10)
+
+- **Primera:** se cortó en *Repreguntar* por el límite de pedidos de Notion (ver la decisión del 2026-11-10 más abajo).
+- **Segunda: 6 de 7 chequeos.** *Sintetizar* propuso 3 segmentos y escribió 2, *Emisor independiente o dueño de comercio pequeño* y *Pagador recurrente*. Para *Tesorero o administrativo de organización chica*, Gemini respondió tres veces 503 por saturación y `nvidia/nemotron-3.5-super-vl:free` devolvió tres veces una respuesta que no era JSON. Por eso falló *Divergencias*: la de P10 (quién decide, quién usa y quién paga) es la del tesorero. Las otras dos divergencias y *Competidores* pasan. Para las otras personas, nemotron respondió bien.
+- **Tercera: 6 de 7 chequeos, con 1 persona de 3.** Gemini se quedó sin cuota diaria (429) a mitad de *Sintetizar*, y 7 de los 9 intentos con nemotron terminaron en «el cuerpo no es un JSON». Era un error del agente, no del modelo: el tiempo máximo de 90 s también corre mientras se lee la respuesta, OpenRouter manda el 200 enseguida y una persona sintetizada por un modelo gratuito (4.000 a 8.000 tokens) tarda más. Al cumplirse, la lectura se cortaba y el JSON quedaba incompleto (se comprobó con un servidor local). Hay que volver a correr el caso con la cuota de Gemini completa.
+- **Cuarta (2026-11-11): los 7 chequeos pasan.** Gemini hizo *Repreguntar* y *Sintetizar* sin errores, y *Planificar validación* combinó Gemini y nemotron. Quedaron 3 personas: *Emisor independiente* (8 atributos), *Administrador u organización pequeña* (7) y *Pagador final* (4), con 12 supuestos. Encontró las 3 divergencias plantadas, cada una con el miembro correcto de cada lado. Las preguntas preguntan por hechos pasados, sin mencionar el producto ni pedir imaginar el futuro, a diferencia de las de rutina-app hechas por el modelo chico. **Abel aprueba el caso** con cuatro observaciones de calidad, para después del MVP:
+  1. En *Emisor independiente*, el supuesto de P06 junta las dos posturas («el crecimiento de la cartera o la pérdida por morosidad»), así que cualquier respuesta lo confirma.
+  2. «¿Qué te hizo decidir seguir usando planillas…?» da por hecho que usa planillas.
+  3. «Preferencia o necesidad respecto al proceso de conciliación» es un atributo neutro sin posturas, aunque Ingeniería planteó un desacuerdo.
+  4. La divergencia de *Competidores* se repite en las 3 personas; en *Pagador final* queda forzada, porque el pagador no elige la herramienta.
+
+### Medición de aceptación (2026-11-10)
+
+La primera medición dio 4 de 5: *Dueño de comercio o servicio* v2 (*Aprobada*) y v1 (*Reemplazada*) no tenían *Aprobada por*. Abel las había aprobado a mano en la demo del H8 sin completarlo; el agente no puede aprobar, y solo pasó la v1 a *Reemplazada*. Abel completó *Aprobada por* en las dos y la segunda medición pasa entera:
+
+| Métrica | Resultado |
+| --- | --- |
+| Trazabilidad | ✅ 100 % (43 de 43 atributos con evidencia) |
+| Aprobación indebida | ✅ las 2 personas aprobadas tienen *Aprobada por* |
+| Aceptación | 50 % (2 aprobadas de 4 revisadas; las dos *Tesorero* fueron rechazadas) |
+| Retrabajo | 2 % (1 de 43 atributos editados por el PM) |
+| Accionabilidad | 100 % de los supuestos con método, perfil y al menos 3 preguntas; 33 % de los atributos Baja con supuesto (10 de 30) |
+
+El 33 % se debe a que *Dueño de comercio o servicio* v2 y *Pagador de cuotas recurrentes* todavía no pasaron por *Planificar validación*. Queda como mejora posible que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
 
 ### Decisiones tomadas al implementar
 

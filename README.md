@@ -147,17 +147,18 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-10 | 7 | Segunda corrida de cobros-recurrentes: 6 de 7 chequeos. La persona *Tesorero* no se escribió porque Gemini respondió 503 por saturación y OpenRouter devolvió algo que no era JSON, y por eso faltó la divergencia de P10. **Abel decide que, hasta cerrar el H9, las corridas sean manuales:** `agente.yml` pierde el programado de las 15 h. |
 | 2026-11-10 | 7 | Tercera corrida de cobros-recurrentes: Gemini sin cuota diaria, y nemotron cortado por un error del agente: el tiempo máximo de 90 s cortaba la lectura de las respuestas largas, y el error decía «no es un JSON». **Abel aprueba** 180 s por llamada, un error que nombra el corte y topes de los jobs más altos (281 pruebas). El caso se vuelve a correr con la cuota de Gemini completa. |
 | 2026-11-10 | 7 | **Medición de aceptación en verde**, después de que Abel completara *Aprobada por* en las dos versiones de *Dueño de comercio o servicio*: trazabilidad 100 %, aceptación 50 %, retrabajo 2 % y accionabilidad 100 % de los supuestos, pero solo 33 % de los atributos Baja con supuesto. El detalle está en la [Fase 7](docs/07-implementacion.md#medición-de-aceptación-2026-11-10). |
+| 2026-11-11 | 7 | Cuarta corrida de **cobros-recurrentes: los 7 chequeos pasan**, con 3 personas y las 3 divergencias plantadas. **Abel aprueba el caso** (T9.1) con cuatro observaciones de calidad para después del MVP. El detalle está en la [Fase 7](docs/07-implementacion.md#corridas-de-cobros-recurrentes-2026-11-10). |
 
 ### Próximo paso
 
-**H9: correr cobros-recurrentes en `evals.yml`** (otro día, por la cuota de Gemini) y la prueba de aceptación de Abel (T9.3). El detalle está en la [Fase 7](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
+**H9: pedir *Planificar validación* en el espacio del PM y la prueba de aceptación de Abel (T9.3)**; después, los resultados en el README (T9.5). El detalle está en la [Fase 7](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
 
 Pendientes a tener en cuenta:
 - El caso cobros-recurrentes **no trae la spec**, que es del repositorio de franCiti: *Armar contexto* se evalúa solo con rutina-app.
 - **Pedir *Planificar validación*** para *Dueño de comercio o servicio* v2 y *Pagador de cuotas recurrentes*: sin eso, solo el 33 % de los atributos Baja tiene un supuesto a validar.
 - Personas vigentes: *Dueño de comercio o servicio* v2 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*).
 - En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente». Desde el H9 el agente ya no la usa, porque no tiene *Tipo*.
-- `gemini-3.6-flash` admite solo 20 pedidos por día, y la corrida de rutina-app los agotó. Cuando responde un modelo chico de `openrouter/free`, la calidad baja: se puede fijar un respaldo más grande en *Configuración*.
+- `gemini-3.6-flash` admite solo 20 pedidos por día, y un caso de evaluación usa unos 11. El respaldo del espacio de evaluación es `nvidia/nemotron-3.5-super-vl:free`; el del PM sigue en `openrouter/free`, que puede tocar un modelo chico con preguntas más flojas.
 - Las entrevistas de Ingeniería y Negocio, y las 3 de rutina-app, las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
 - *Agente activo* está **marcada**, pero el programado de las 15 h está apagado: las solicitudes pendientes se atienden corriendo `agente.yml` a mano. Se vuelve a programar al cerrar el H9.
 - El esfuerzo por miembro, el tiempo total y el efecto del ajuste del prompt del H5 se miden en la prueba de aceptación.
