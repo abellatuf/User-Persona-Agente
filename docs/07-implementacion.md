@@ -15,7 +15,7 @@ Se sigue el plan de la [Fase 6](06-plan-de-tareas.md), hito por hito. Cada hito 
 | H6. Web | ✅ Cerrado |
 | H7. Síntesis | ✅ Cerrado |
 | H8. Validación y persona viva | ✅ Cerrado |
-| H9. Evaluaciones y aceptación | 🟡 En curso |
+| H9. Evaluaciones y aceptación | ✅ Cerrado |
 
 ---
 
@@ -885,9 +885,9 @@ El agente se mide con casos fijos, sin juez de modelo: el código compara lo que
 |-------|-------|--------|
 | T9.1 Caso cobros-recurrentes | 🤖 + 👤 | ✅ Exportado de Notion, sin la spec. Aprobado por Abel el 2026-11-11 |
 | T9.2 Runner y `evals.yml` | 🤖 | ✅ Los dos casos pasan los chequeos |
-| T9.3 Prueba de aceptación | 👤 | ⚪ Pendiente |
+| T9.3 Prueba de aceptación | 👤 | ✅ Medida el 2026-11-12. Aceptación por debajo del objetivo (ver el resultado) |
 | T9.4 Caso rutina-app (*should*) | 🤖 + 👤 | ✅ Aprobado por Abel el 2026-11-10; pasó el chequeo de agnóstico |
-| T9.5 Resultados en el README | 🤖 | ⚪ Pendiente |
+| T9.5 Resultados en el README | 🤖 | ✅ [Resultados del MVP](../README.md#resultados-del-mvp) |
 
 ### Decisiones de diseño (aprobadas por Abel el 2026-11-09)
 
@@ -970,9 +970,24 @@ De los 30 atributos Baja, 13 eran de las dos versiones *Tesorero* (*Rechazadas*)
 
 **Tercera medición (2026-11-11), después de pedir *Planificar validación* en el espacio del PM:** *Pagador de cuotas recurrentes* recibió 4 supuestos, uno por cada atributo Baja sin plan (Gemini, una sola llamada). Las cinco métricas pasan. Cambian solo los números de accionabilidad: **100 % de los supuestos** con método, perfil y al menos 3 preguntas (14 de 14), y **75 % de los atributos Baja de personas vigentes** con supuesto (9 de 12). Los 3 que faltan son de *Dueño de comercio o servicio* v2.
 
-**Prueba de aceptación (T9.3), en curso (2026-11-11):**
+**Prueba de aceptación (T9.3), 2026-11-11 y 2026-11-12:**
 - **Esfuerzo por sombrero:** a pedido de Abel, el asistente simuló una cuarta entrevista, *Abel Ventas* (Negocio), en el espacio del PM, y respondió sus 5 repreguntas. Una entrevista simulada no mide el esfuerzo de una persona real: queda medido solo el sombrero PM (menos de 15 minutos, H5).
 - **Dueño de comercio v3:** con esa evidencia nueva, *Sintetizar* creó la v3 en *Borrador*, y *Planificar validación* le armó supuestos. Gemini ya no tenía cuota y respondieron modelos chicos de `openrouter/free` (entre ellos `liquid/lfm-3-1.7b`). La v3 mezcla el segmento *Tesorero*, que Abel rechazó dos veces, perdió la divergencia de la v2, no detectó la nueva de *Abel Ventas* (no saber de quién es cada transferencia, frente al olvido del pagador) y su *Registro de cambios* repite la misma fuente 18 veces. **No se aprueba:** Abel decide repetir *Sintetizar* y *Planificar validación* al día siguiente con Gemini. Como la v3 sigue en *Borrador*, se reescribe sin crear otra versión. Queda como mejora posible que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
+- **Repetición con Gemini (2026-11-12):** una sola corrida con dos solicitudes (*Sintetizar* y *Planificar validación*), las dos con `gemini-3.6-flash` y sin respaldo. La v3 quedó con 7 atributos (Media 5 · Baja 2, los dos con plan) y 2 divergencias: la de herramientas, que ya tenía la v2, y una nueva sobre los roles (en una organización chica decide la comisión, paga la entidad y opera el tesorero, frente a una sola persona que hace todo). El segmento *Tesorero* queda así como desacuerdo a validar, no como persona aparte. *Profesional* y *Pagador* también se reescribieron. Dos campos quedaron como los escribió el modelo chico el día anterior, porque al reescribir un *Borrador* el agente no los toca: el *Nombre* (es del PM) y el *Registro de cambios*. El asistente los corrigió a mano en Notion, con el visto bueno de Abel.
+- **Cierre (2026-11-12):** Abel aprueba la v3. Una corrida de `agente.yml` sin solicitudes pasa la v2 a *Reemplazada* sin llamar a ningún modelo, y la medición final queda así:
+
+| Métrica (Fase 2) | Objetivo | Resultado | ¿Cumple? |
+| --- | --- | --- | --- |
+| Trazabilidad | 100 % | 100 % (52 de 52 atributos) | ✅ |
+| Aprobación indebida | 0 | 0: las 3 aprobadas tienen *Aprobada por* de Abel | ✅ |
+| Aceptación | ≥ 70 % | 60 % (3 aprobadas de 5 revisadas) | ❌ |
+| Retrabajo | ≤ 30 % | 2 % (1 de 52 atributos editados) | ✅ |
+| Esfuerzo por miembro | ≤ 30 min | PM: menos de 15 min (H5). Los otros sombreros no se midieron: sus entrevistas son simuladas | ⚠️ Parcial |
+| Tiempo total | ≤ 1 día | No se midió: el agente se construyó por hitos, así que el contexto y la primera aprobación quedaron separados por días de desarrollo, no de uso | ⚠️ Sin medir |
+| Accionabilidad | 100 % | 100 % de los supuestos con método, perfil y 3 preguntas (17 de 17); 100 % de los atributos Baja vigentes con supuesto (12 de 12) | ✅ |
+| Alineación | Todas las plantadas | 3 de 3 en cobros-recurrentes y 2 de 2 en rutina-app | ✅ |
+
+**Por qué la aceptación no llega:** las 2 personas rechazadas son las dos versiones de *Tesorero o administrativo de organización chica*. Abel rechazó el segmento, el agente volvió a proponerlo, y con evidencia nueva lo volvió a mezclar en *Dueño de comercio* v3 (con modelos chicos). Con Gemini, el tema quedó como divergencia de roles dentro de *Dueño de comercio*, que es la forma correcta. Las 3 aprobadas son las 3 versiones de *Dueño de comercio o servicio*. *Profesional independiente* y *Pagador de cuotas recurrentes* siguen en *Borrador*, sin revisar. Queda para después del MVP que *Sintetizar* respete un segmento rechazado sin necesitar una versión nueva.
 
 ### Decisiones tomadas al implementar
 
@@ -981,10 +996,11 @@ De los 30 atributos Baja, 13 eran de las dos versiones *Tesorero* (*Rechazadas*)
 - **2026-11-09:** el filtro de «producto» busca la palabra entera («producto» o «productos»). No usa el nombre del contexto, porque «Carga» rechazaría «tus series y cargas», ni «app» o «aplicación», que aparecen con razón en preguntas sobre las herramientas que usa la persona hoy.
 - **2026-11-09:** una fila de Evidencia sin *Tipo* (ni *Método de investigación*) o sin *Extracto* no entra en la síntesis, y *Ejecuciones* la nombra.
 - **2026-11-10, límite de Notion (aprobado por Abel):** la primera corrida de cobros-recurrentes se cortó en *Repreguntar* con `429 rate_limited` de Notion, no de Gemini: el vaciado de la corrida anterior, la carga de 20 evidencias y la lectura de las entrevistas salieron seguidos, y los 3 intentos (~3 s) no alcanzaron. Como el registro del error también recibió 429, la ejecución quedó *En curso* sin *Errores*. Se aplicaron dos cambios, para todo el agente: **A**, 6 intentos con esperas de 1, 2, 4, 8 y 16 s; **B**, `conRitmo`, que deja al menos 350 ms entre pedidos (Notion admite unos 3 por segundo) y va por dentro de `conReintentos`, para que los reintentos también respeten el ritmo.
-- **2026-11-10, corridas solo manuales (aprobado por Abel):** `agente.yml` pierde el programado de las 15 h y queda solo con ejecución manual, porque comparte la cuota diaria de Gemini con las evaluaciones. Se vuelve a programar al cerrar el H9. `ci.yml` sigue en cada push porque no usa modelos.
+- **2026-11-10, corridas solo manuales (aprobado por Abel):** `agente.yml` pierde el programado de las 15 h y queda solo con ejecución manual, porque comparte la cuota diaria de Gemini con las evaluaciones. Se vuelve a programar al cerrar el H9. `ci.yml` sigue en cada push porque no usa modelos. **2026-11-12:** con el H9 cerrado, vuelve el programado de las 15 h.
 - **2026-11-11, accionabilidad sobre personas vigentes (aprobado por Abel):** «Atributos de confianza Baja con un supuesto a validar» cuenta solo los atributos de personas en *Borrador*, *En revisión* o *Aprobada*. Los de una persona *Rechazada* o *Reemplazada* ya no se planifican, y antes bajaban el porcentaje.
+- **2026-11-12, una línea por fuente en el *Registro de cambios* (aprobado por Abel):** la versión nueva lista cada fuente de la evidencia nueva una sola vez. Antes había una línea por evidencia, y una entrevista con 18 evidencias aparecía 18 veces. Queda pendiente para después del MVP: al reescribir un *Borrador* que es versión de otra persona, el registro no se actualiza.
 - **2026-11-10, tiempo máximo de los modelos (aprobado por Abel):** **A**, pasa de 90 s a 180 s por llamada, incluida la lectura de la respuesta. **B**, `leerCuerpo` distingue el corte por tiempo («La respuesta se cortó a los 180 s…») de un cuerpo que no es JSON, y `pedir` dice «No llegó respuesta en 180 s» en lugar del mensaje en inglés. Vale para Gemini, OpenRouter y Tavily. **C**, el tope de los jobs sube: `evals.yml` de 30 a 45 min y `agente.yml` de 20 a 30 min, porque con 180 s por llamada los reintentos pueden pasar del tope anterior.
 
 ### Pruebas
 
-`npm test` corre **282 pruebas** (247 del H8 y 35 nuevas): `ESPACIO`, la limpieza y su negativa con las bases del PM, los dos casos del repositorio, el cargador, cada chequeo, el informe, las métricas de aceptación (la accionabilidad, solo sobre personas vigentes) y que el script no escriba, la evidencia incompleta, la regla nueva del plan, el filtro de «producto», los reintentos por defecto, el ritmo de los pedidos a Notion y el tiempo máximo de los modelos.
+`npm test` corre **283 pruebas** (247 del H8 y 36 nuevas): `ESPACIO`, la limpieza y su negativa con las bases del PM, los dos casos del repositorio, el cargador, cada chequeo, el informe, las métricas de aceptación (la accionabilidad, solo sobre personas vigentes) y que el script no escriba, la evidencia incompleta, la regla nueva del plan, el filtro de «producto», los reintentos por defecto, el ritmo de los pedidos a Notion, el tiempo máximo de los modelos y que el registro liste cada fuente una vez.

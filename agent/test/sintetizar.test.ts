@@ -548,6 +548,21 @@ describe('persona viva (H8)', () => {
     expect(espacio.contadores().bloqueos).toBe(0);
   });
 
+  it('en el registro, cada fuente nueva aparece una sola vez aunque aporte varias evidencias', async () => {
+    const { espacio, aprobada } = conAprobada();
+    sembrarEvidencia(espacio, { titulo: 'Encuesta a tesoreros', extracto: 'Tres de diez usan transferencia.', metodo: 'Encuesta' });
+    const { correr, filas } = preparar(espacio, [
+      segmentos({ nombre: 'Clubes', personaExistente: 'P1' }),
+      persona([atributo('Cobra en efectivo', ['E5', 'E6'])], 'Sumé los medios de pago.'),
+    ]);
+
+    await correr();
+
+    const v2 = filas('personas').find(([id]) => id !== aprobada)![1];
+    const registro = textoDe(v2['Registro de cambios']);
+    expect(registro.split('- Investigación propia: Encuesta a tesoreros').length - 1).toBe(1);
+  });
+
   it('si ningún atributo usa la evidencia nueva, no crea la versión', async () => {
     const { espacio } = conAprobada();
     const { correr, filas } = preparar(espacio, [segmentos({ nombre: 'Clubes', personaExistente: 'P1' }), persona([atributo('Cobra cuotas sociales', ['E1'])])]);

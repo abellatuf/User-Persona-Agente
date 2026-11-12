@@ -286,7 +286,8 @@ async function escribirPersona(
     const origen = destino.nuevas
       ? [
           `Versión ${destino.version}, creada a partir de la versión ${destino.version - 1} (Aprobada), por evidencia nueva:`,
-          ...destino.nuevas.map((e) => `- ${e.fuente}`),
+          // Una línea por fuente, no por evidencia: una entrevista suele aportar varias.
+          ...[...new Set(destino.nuevas.map((e) => e.fuente))].map((f) => `- ${f}`),
         ]
       : [
           `Versión ${destino.version}, creada a partir de la versión ${destino.version - 1}, que el PM rechazó.`,

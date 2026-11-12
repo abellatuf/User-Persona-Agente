@@ -32,7 +32,40 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 4 | [Especificación del agente](docs/04-especificacion-del-agente.md) (rol, capacidades, herramientas, límites) | ✅ Aprobada |
 | 5 | [Diseño técnico](docs/05-diseno-tecnico.md) (arquitectura, modelo, prompts, memoria, evals) | ✅ Aprobada |
 | 6 | [Plan de tareas](docs/06-plan-de-tareas.md) | ✅ Aprobada |
-| 7 | [Implementación y validación](docs/07-implementacion.md) | 🟡 En curso: H0 a H8 ✅, H9 en curso |
+| 7 | [Implementación y validación](docs/07-implementacion.md) | ✅ MVP terminado: H0 a H9 ✅ ([resultados](#resultados-del-mvp)) |
+
+---
+
+## Resultados del MVP
+
+Medido el 2026-11-12 sobre el caso **cobros-recurrentes**, en el Notion real del PM. El detalle de cada corrida está en el [H9](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
+
+| Métrica (Fase 2) | Objetivo | Resultado | ¿Cumple? |
+| --- | --- | --- | --- |
+| Trazabilidad | 100 % | 100 % (52 de 52 atributos con evidencia) | ✅ |
+| Aprobación indebida | 0 | 0 | ✅ |
+| Aceptación | ≥ 70 % | 60 % (3 aprobadas de 5 revisadas) | ❌ |
+| Retrabajo | ≤ 30 % | 2 % (1 de 52 atributos) | ✅ |
+| Esfuerzo por miembro | ≤ 30 min | PM: menos de 15 min. El resto, sin medir (entrevistas simuladas) | ⚠️ Parcial |
+| Tiempo total | ≤ 1 día | Sin medir: durante la construcción, los días fueron de desarrollo, no de uso | ⚠️ Sin medir |
+| Accionabilidad | 100 % | 100 % de los supuestos accionables (17 de 17) y de los atributos Baja vigentes con supuesto (12 de 12) | ✅ |
+| Alineación | Todas las plantadas | 3 de 3 (cobros-recurrentes) y 2 de 2 (rutina-app) | ✅ |
+
+**Evaluaciones automáticas** (`evals.yml`, sin juez de modelo): cobros-recurrentes pasa los 7 chequeos y rutina-app los 8, incluido que ningún término de un caso aparezca en el otro.
+
+**Lo que no salió bien:**
+- **Aceptación 60 %.** Las 2 rechazadas son el mismo segmento, *Tesorero*, que el agente volvió a proponer después del primer rechazo. Las 3 aprobadas son versiones de *Dueño de comercio o servicio*.
+- **La calidad depende del modelo.** Con Gemini los resultados son buenos; cuando se acaba la cuota diaria (20 pedidos) y responde un modelo gratuito chico, la síntesis mezcla segmentos y pierde divergencias. Los guardrails de código (trazabilidad, aprobación) se cumplen igual.
+- **Parte de la evidencia es simulada.** Las entrevistas de Ingeniería y Negocio las escribió el asistente: miden el agente, no el conocimiento del equipo.
+
+### Mejoras después del MVP
+
+1. Que *Sintetizar* no vuelva a proponer un segmento que el PM rechazó (aceptación).
+2. Al reescribir un *Borrador* que es versión de otra persona, actualizar el *Registro de cambios*.
+3. Que *Controles* avise cuando una persona *Aprobada* no tiene *Aprobada por*.
+4. Calidad de los supuestos: no juntar las dos posturas en uno solo, no dar por hecho lo que se pregunta, y no repetir la divergencia de *Competidores* en personas que no eligen la herramienta.
+5. Respaldo fijo del espacio del PM (`nvidia/nemotron-3.5-super-vl:free`), como en evaluación.
+6. Las que ya estaban anotadas: confianza Media, país en Tavily, voces de usuarios (foros y reseñas), filas de contexto vacías y contexto desde GitHub (T4.6).
 
 ---
 
@@ -151,21 +184,20 @@ Cada fase está en su propio archivo dentro de [`docs/`](docs/).
 | 2026-11-11 | 7 | **Abel aprueba** que la accionabilidad cuente solo los atributos Baja de personas vigentes (*Borrador*, *En revisión* o *Aprobada*): las *Rechazadas* y *Reemplazadas* ya no se planifican (282 pruebas). |
 | 2026-11-11 | 7 | *Planificar validación* en el espacio del PM: 4 supuestos para *Pagador de cuotas recurrentes*. **Medición de aceptación: 5 de 5**, con accionabilidad del 100 % de los supuestos y del 75 % de los atributos Baja vigentes (9 de 12; faltan los de *Dueño de comercio o servicio* v2, que está *Aprobada*). |
 | 2026-11-11 | 7 | Prueba de aceptación en curso: el asistente simuló la entrevista *Abel Ventas* (el esfuerzo por sombrero queda medido solo para el PM). Con esa evidencia se creó *Dueño de comercio* v3, pero sin cuota de Gemini la escribieron modelos chicos: mezcla el segmento rechazado y perdió las divergencias. **No se aprueba**; se repite con Gemini. |
+| 2026-11-12 | 7 | Con Gemini, la v3 sale bien: 7 atributos y una divergencia nueva sobre los roles, en lugar del segmento *Tesorero*. El asistente corrige a mano el *Nombre* y el *Registro de cambios* que quedaban del día anterior, y **Abel aprueba** que el registro liste cada fuente una vez (283 pruebas). Abel aprueba la v3. |
+| 2026-11-12 | 7 | **Cierre del H9 y del MVP.** Medición final: trazabilidad 100 %, aprobación indebida 0, retrabajo 2 %, accionabilidad 100 % y alineación 3 de 3; **aceptación 60 %, por debajo del 70 %**. `agente.yml` vuelve a correr todos los días a las 15 h. El detalle está en [Resultados del MVP](#resultados-del-mvp). |
 
 ### Próximo paso
 
-**H9: repetir *Sintetizar* y *Planificar validación* con la cuota de Gemini completa** (dos solicitudes, una sola corrida de `agente.yml`), revisar y aprobar *Dueño de comercio* v3 y volver a medir la aceptación (T9.3). Después, los resultados en el README (T9.5). El detalle está en la [Fase 7](docs/07-implementacion.md#h9-evaluaciones-y-prueba-de-aceptación).
+**El MVP está terminado.** Lo que sigue es opcional y está en [Mejoras después del MVP](#mejoras-después-del-mvp). Lo más importante es la aceptación: que *Sintetizar* no vuelva a proponer un segmento que el PM rechazó.
 
 Pendientes a tener en cuenta:
 - El caso cobros-recurrentes **no trae la spec**, que es del repositorio de franCiti: *Armar contexto* se evalúa solo con rutina-app.
-- *Dueño de comercio o servicio* v3 está en *Borrador*, escrita por modelos chicos: no aprobarla ni rechazarla antes de repetir *Sintetizar*.
-- Personas vigentes: *Dueño de comercio o servicio* v2 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*).
+- Personas vigentes: *Dueño de comercio o servicio* v3 (*Aprobada*), *Profesional independiente* y *Pagador de cuotas recurrentes* (las dos en *Borrador*, sin revisar).
 - En Evidencia quedó una fila cargada por error, «Sintetizar en Pendiente». Desde el H9 el agente ya no la usa, porque no tiene *Tipo*.
-- `gemini-3.6-flash` admite solo 20 pedidos por día, y un caso de evaluación usa unos 11. El respaldo del espacio de evaluación es `nvidia/nemotron-3.5-super-vl:free`; el del PM sigue en `openrouter/free`, que puede tocar un modelo chico con preguntas más flojas.
-- Las entrevistas de Ingeniería y Negocio, y las 3 de rutina-app, las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
-- *Agente activo* está **marcada**, pero el programado de las 15 h está apagado: las solicitudes pendientes se atienden corriendo `agente.yml` a mano. Se vuelve a programar al cerrar el H9.
-- El esfuerzo por miembro, el tiempo total y el efecto del ajuste del prompt del H5 se miden en la prueba de aceptación.
-- T4.6 (contexto desde GitHub, *could*) queda para el final del MVP.
+- `gemini-3.6-flash` admite solo 20 pedidos por día, y lo comparten el agente y las evaluaciones: conviene juntar las solicitudes en una sola corrida. El respaldo del espacio de evaluación es `nvidia/nemotron-3.5-super-vl:free`; el del PM sigue en `openrouter/free`, que puede tocar un modelo chico con resultados flojos (pasó el 2026-11-11).
+- Las entrevistas de Ingeniería, Negocio y *Abel Ventas*, y las 3 de rutina-app, las simuló el asistente: sirven para probar el agente, no reflejan conocimiento real del equipo.
+- T4.6 (contexto desde GitHub, *could*) no se hizo.
 
 ### Cómo retomar en otro chat
 

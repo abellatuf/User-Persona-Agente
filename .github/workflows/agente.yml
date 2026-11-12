@@ -2,9 +2,11 @@
 # Se pausa desde la casilla «Agente activo» de Configuración, en Notion.
 name: Agente
 
-# Solo manual desde el 2026-11-10, para cuidar la cuota de los modelos hasta cerrar el H9.
-# El programado era todos los días a las 15:00 de Argentina: schedule con cron "0 18 * * *".
+# Estuvo solo manual del 2026-11-10 al cierre del H9 (2026-11-12), para cuidar la cuota de los modelos.
 on:
+  schedule:
+    # Todos los días a las 15:00 de Argentina (18:00 UTC).
+    - cron: "0 18 * * *"
   workflow_dispatch:
 
 permissions:
